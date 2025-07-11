@@ -1,21 +1,69 @@
-TriScout: A Cross-Language Reconnaissance Tool 
+TriScout
+TriScout is a powerful and modular cybersecurity tool designed for comprehensive reconnaissance. It seamlessly integrates Go for lightning-fast port scanning, Python for intelligent data processing, and Node.js for an interactive, real-time web dashboard. Whether you're a student, researcher, or penetration tester, TriScout provides an open-source, developer-friendly platform to gain insights into network vulnerabilities.
+📌 Features
+ * 🔍 Fast TCP Port Scanning: Leverage Go's concurrency for high-speed and efficient port scanning.
+ * 📊 Enriched Result Analysis: Utilize Python to process raw scan data, adding valuable context and insights.
+ * 🌐 Real-time Browser Dashboard: Visualize your scan results instantly with a dynamic and responsive web interface built with Node.js.
+ * 🧩 Modular Cross-Language Design: Easily extend or modify individual components thanks to its well-defined, language-specific architecture.
+---
+📁 Project Structure
+TriScout/
+├── go_scanner/             # Go-based port scanner
+├── python_processor/       # Python data processor
+├── web_dashboard/          # Node.js web server & UI
+├── shared_data/            # Output storage (JSON results)
+└── README.md
 
-TriScout is a medium-level modular cybersecurity tool that combines the power of three languages:
+---
+🛠️ Quick Setup
+Getting TriScout up and running is straightforward:
+ * Clone the repository:
+   git clone https://github.com/yourusername/triscout.git
+cd triscout
 
-🐹 Go for high-speed concurrent port scanning 🐍 Python for intelligent data processing and enrichment 🌐 Node.js for serving a live, interactive dashboard 
+ * Run the Go Scanner:
+   Navigate to the go_scanner directory, build, and execute. This will generate results.json in shared_data/.
+   cd go_scanner
+go build scanner.go
+./scanner
 
-It’s designed for internal reconnaissance, education, or penetration testing scenarios where modular architecture and language versatility are key.
+ * Process with Python:
+   Move to python_processor and run the script, which will enrich the raw scan data into processed.json.
+   cd ../python_processor
+python3 processor.py ../shared_data/results.json
 
-📌 Features 🔍 Fast TCP port scanning (1–1024) 📊 Enriched scan result analysis 🌐 Real-time browser dashboard 🧩 Clean separation of responsibilities across languages 🛠️ Fully open-source and extensible 📁 Project Structure TriScout/ ├── go_scanner/ # Port scanner (Go) │ └── scanner.go ├── python_processor/ # Data processor (Python) │ ├── processor.py │ └── requirements.txt ├── web_dashboard/ # Dashboard (Node.js) │ ├── server.js │ └── views/index.ejs ├── shared_data/ # JSON file storage │ ├── results.json │ └── processed.json └── README.md 🛠️ Installation & Usage 1. 🚀 Clone the Repository git clone https://github.com/yourusername/triscout.git cd triscout 2. ⚙️ Run the Go Port Scanner cd go_scanner go build scanner.go ./scanner # Output saved to: ../shared_data/results.json 3. 🧠 Process Results with Python cd ../python_processor python3 processor.py ../shared_data/results.json # Output saved to: ../shared_data/processed.json 4. 🌐 Launch the Node.js Dashboard cd ../web_dashboard npm install node server.js # Visit: http://localhost:3000 🔍 Example Workflow (Tutorial) Scan local network ports using Go Process the results into a readable format with Python Visualize the final results in a browser using Node.js dashboard 
+ * Launch the Web Dashboard:
+   From web_dashboard, install dependencies and start the Node.js server.
+   cd ../web_dashboard
+npm install
+node server.js
 
-You can repeat this cycle on different IP addresses or ranges.
-
-📦 Dependencies Go net, os, encoding/json, sync, time — All standard libraries Python No external packages required Uses: json, sys, os Node.js npm install express ejs 📄 Output Files results.json — Raw port scan data (Go) processed.json — Human-readable, enriched scan results (Python) 🧪 Example Entry (processed.json) { "ip": "127.0.0.1", "port": 22, "status": "open", "description": "Port 22 is open." } 📜 License 
-
-MIT License — free to use, modify, and distribute.
-
-🤝 Contributing 
-
-Pull requests and suggestions are welcome! Open an issue first to discuss any major changes.
-
-🔮 Roadmap / Future Ideas 🌐 Scan remote IPs or CIDR ranges 🧠 Integrate with CVE databases 📦 Export results as CSV/PDF 🔐 Add user authentication for dashboard 
+ * View Results:
+   Open your web browser and visit http://localhost:3000 to see your scan results in real-time.
+---
+🔍 Dependencies
+ * Go: net, fmt, os, sync, encoding/json, time
+ * Python: json, sys, os (no external libraries needed)
+ * Node.js: express, ejs (install via npm install express ejs)
+---
+📄 Output Format
+ * results.json: Raw scan data from the Go scanner.
+ * processed.json: Enriched scan data from the Python processor.
+---
+🧑‍💻 Developer
+Kiran “Babai” Mondal
+ * GitHub: github.com/yourusername
+ * Role: Full-stack security tools developer
+ * Focus: Python | Go | Node.js | Cybersecurity | Recon tools
+---
+📝 License
+TriScout is released under the MIT License. This means it's completely free for both personal and commercial use.
+---
+📬 Contribute
+We welcome contributions! If you encounter issues, have feature ideas, or want to improve the codebase, please open an issue or submit a pull request. Feel free to contact the developer or fork the repository to build your custom version.
+---
+📌 Roadmap
+ * Support for remote targets
+ * Export results to CSV or PDF
+ * Advanced dashboard filters
+ * Authentication for UI access
