@@ -18,5 +18,11 @@ fi
 
 echo "🌐 Step 3: Launching Node.js Dashboard..."
 cd ../web_dashboard
-npm install
+
+if [ ! -f package.json ]; then
+  echo "📦 Initializing Node.js project..."
+  npm init -y
+fi
+
+npm install express ejs
 node server.js
