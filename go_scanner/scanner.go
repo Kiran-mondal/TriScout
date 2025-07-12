@@ -41,7 +41,7 @@ func main() {
 
     wg.Wait()
 
-    file, _ := os.Create("../shared_data/results.json")
+    file, _ := os.Create("../shared_data/scan_data.json")
     defer file.Close()
     json.NewEncoder(file).Encode(results)
 
