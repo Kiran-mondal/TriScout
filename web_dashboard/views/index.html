@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TriScout v2.0.0 - Pipeline Console</title>
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #131a2c;
+            --border-color: #1e2942;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #38bdf8;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            color: var(--accent-blue);
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .status-pill {
+            background: #10b98122;
+            color: #10b981;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid #10b98144;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .meta-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .meta-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .port-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .port-row:last-child {
+            border-bottom: none;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .High { background: #ef444422; color: #ef4444; border: 1px solid #ef444444; }
+        .Medium { background: #f9731622; color: #f97316; border: 1px solid #f9731644; }
+        .Low { background: #eab30822; color: #eab308; border: 1px solid #eab30844; }
+        .None { background: #10b98122; color: #10b981; border: 1px solid #10b98144; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛰️ TriScout Multi-Language Console</h1>
+            <div class="status-pill" id="ws-status">Live Stream Disconnected</div>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <h2>Pipeline Profile</h2>
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 16px 0;">
+                
+                <div class="meta-label">Target Authority</div>
+                <div class="meta-value" id="lbl-target">Awaiting Pipeline...</div>
+
+                <div class="meta-label">Capture Synchronization Time</div>
+                <div class="meta-value" id="lbl-time">N/A</div>
+
+                <div class="meta-label">System Structural State</div>
+                <div class="meta-value" id="lbl-status">-</div>
+            </div>
+
+            <div class="card">
+                <h2>Enriched Service Analysis</h2>
