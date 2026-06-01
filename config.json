@@ -1,0 +1,23 @@
+{
+  "project_name": "TriScout Recon Framework",
+  "version": "2.0.0",
+  "pipeline_settings": {
+    "default_target": "127.0.0.1",
+    "default_port_range": "1-1024",
+    "temporary_buffer": "go_scanner/results.json",
+    "enriched_buffer": "python_processor/processed.json"
+  },
+  "scanner_engine": {
+    "concurrency_limit": 100,
+    "dial_timeout_ms": 1000
+  },
+  "processor_engine": {
+    "fallback_format": "txt",
+    "enable_cve_correlation": true
+  },
+  "dashboard_service": {
+    "http_port": 3000,
+    "auth_expiry_hours": 1,
+    "refresh_rate_ms": 500
+  }
+}
