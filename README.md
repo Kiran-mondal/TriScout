@@ -1,69 +1,63 @@
-TriScout
-TriScout is a powerful and modular cybersecurity tool designed for comprehensive reconnaissance. It seamlessly integrates Go for lightning-fast port scanning, Python for intelligent data processing, and Node.js for an interactive, real-time web dashboard. Whether you're a student, researcher, or penetration tester, TriScout provides an open-source, developer-friendly platform to gain insights into network vulnerabilities.
-📌 Features
- * 🔍 Fast TCP Port Scanning: Leverage Go's concurrency for high-speed and efficient port scanning.
- * 📊 Enriched Result Analysis: Utilize Python to process raw scan data, adding valuable context and insights.
- * 🌐 Real-time Browser Dashboard: Visualize your scan results instantly with a dynamic and responsive web interface built with Node.js.
- * 🧩 Modular Cross-Language Design: Easily extend or modify individual components thanks to its well-defined, language-specific architecture.
----
-📁 Project Structure
+🛰️ TriScout (v2.0.0)
+TriScout is a powerful, modular, and polyglot cybersecurity framework built for comprehensive network reconnaissance. By combining the raw speed of Go, the analytical power of Python, and the real-time visualization capabilities of Node.js, TriScout offers a seamless pipeline from low-level packet scanning to high-level security insights.
+Whether you are a security researcher, penetration tester, or DevOps engineer, TriScout provides an open-source, developer-friendly ecosystem to discover assets and map attack surfaces instantly.
+🚀 New in v2.0.0 (Latest Update)
+We have graduated from local-only scanning to an enterprise-grade recon suite!
+Unified Automation: Run the entire scanner-to-dashboard pipeline using a single root script (run_all.sh).
+Centralized Profile Infrastructure: Moved pipeline configurations into a decoupled root config.json.
+Remote Target Scanning: Scan domains, CIDR blocks, and remote IP ranges directly from the CLI.
+Multi-Format Export Engine: Python processor now generates clean CSV and PDF reports alongside JSON.
+Secure Middleware Architecture: Integrated JWT-based authentication via dedicated middleware layers to lock down the real-time web console.
+Live WebSockets Display: Replaced polling with active, asynchronous WebSocket streams rendering an updated, high-fidelity SOC dashboard view.
+📌 Core Features
+⚡ Blazing Fast Concurrency: Leverages Go’s native goroutines and sync pools to scan thousands of ports per second safely.
+🧠 Intelligent Data Enrichment: Python backend automatically correlates open ports with known service definitions and local signature risks.
+🌐 Real-Time Web Dashboard: A sleek, responsive Node.js/Express interface featuring dynamic charts, live scan logs, and credential-secured views.
+🧩 Language-Agnostic Modularity: Every component communicates via standardized JSON contracts, allowing you to swap out any layer (e.g., swapping the Go scanner for a Rust scanner) effortlessly.
+📁 Project Structure:
 TriScout/
-├── go_scanner/             # Go-based port scanner
-├── python_processor/       # Python data processor
-├── web_dashboard/          # Node.js web server & UI
-├── shared_data/            # Output storage (JSON results)
-└── README.md
+├── go_scanner/             # Go concurrent port scanner (CLI tool)
+│   ├── scanner.go          # Main scanning logic
+│   └── results.json        # Raw intermediate scan buffer
+├── python_processor/       # Python vulnerability & data enrichment engine
+│   ├── processor.py        # Enrichment & reporting script
+│   └── processed.json      # Enriched JSON data contract
+├── web_dashboard/          # Node.js + Express web dashboard
+│   ├── middleware/
+│   │   └── auth.js         # JWT Route & WebSocket protection middleware
+│   ├── views/
+│   │   └── index.html      # Dark-themed real-time SOC interface
+│   ├── server.js           # Express & WebSockets server backend
+│   └── processed.json      # Synced dashboard data file
+├── config.json             # Decoupled project profile settings
+├── run_all.sh              # Orchestration shell script to run the whole stack
+├── LICENSE                 # MIT License file
+└── README.md               # Documentation
 
----
-🛠️ Quick Setup
-Getting TriScout up and running is straightforward:
- * Clone the repository:
-   git clone https://github.com/yourusername/triscout.git
+🛠️ Quick Setup & Execution
+Prerequisites
+Ensure your local system has the following runtimes installed:
+Go Engine (1.18+)
+Python Runtime (3.8+)
+Node.js Environment (16+)
+
+Clone the Repository
+git clone https://github.com/yourusername/triscout.git
 cd triscout
+chmod +x run_all.sh
+./run_all.sh -target 192.168.1.1 -ports 1-1024 -format pdf
 
- * Run the Go Scanner:
-   Navigate to the go_scanner directory, build, and execute. This will generate results.json in shared_data/.
-   cd go_scanner
-go build scanner.go
-./scanner
-
- * Process with Python:
-   Move to python_processor and run the script, which will enrich the raw scan data into processed.json.
-   cd ../python_processor
-python3 processor.py ../shared_data/results.json
-
- * Launch the Web Dashboard:
-   From web_dashboard, install dependencies and start the Node.js server.
-   cd ../web_dashboard
+Manual Step-by-Step Execution
+Step A: Run the Go Scanner
+cd go_scanner
+go build -o triscout-scan scanner.go
+./triscout-scan -target 192.168.1.1 -ports 1-1024
+Step B: Enrich Data with Pythoncd ../python_processor
+python3 processor.py ../go_scanner/results.json pdf
+Step C: Launch the Authenticated Web Dashboard
+cd ../web_dashboard
 npm install
 node server.js
+View Results: Open your browser to http://localhost:3000
 
- * View Results:
-   Open your web browser and visit http://localhost:3000 to see your scan results in real-time.
----
-🔍 Dependencies
- * Go: net, fmt, os, sync, encoding/json, time
- * Python: json, sys, os (no external libraries needed)
- * Node.js: express, ejs (install via npm install express ejs)
----
-📄 Output Format
- * results.json: Raw scan data from the Go scanner.
- * processed.json: Enriched scan data from the Python processor.
----
-🧑‍💻 Developer
-Kiran “Babai” Mondal
- * GitHub: github.com/yourusername
- * Role: Full-stack security tools developer
- * Focus: Python | Go | Node.js | Cybersecurity | Recon tools
----
-📝 License
-TriScout is released under the MIT License. This means it's completely free for both personal and commercial use.
----
-📬 Contribute
-We welcome contributions! If you encounter issues, have feature ideas, or want to improve the codebase, please open an issue or submit a pull request. Feel free to contact the developer or fork the repository to build your custom version.
----
-📌 Roadmap
- * Support for remote targets
- * Export results to CSV or PDF
- * Advanced dashboard filters
- * Authentication for UI access
+Default Credentials: admin / triscout2026 (Change this inside server.js or configure environment variables for deployment).
