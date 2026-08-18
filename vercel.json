@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "web_dashboard/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/scanner.go",
+      "use": "@vercel/go"
+    },
+    {
+      "src": "api/processor.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/scanner",
+      "dest": "/api/scanner.go"
+    },
+    {
+      "src": "/api/processor",
+      "dest": "/api/processor.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/web_dashboard/server.js"
+    }
+  ]
+}
