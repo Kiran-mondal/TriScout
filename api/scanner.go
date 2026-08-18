@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -34,6 +36,19 @@ var commonPorts = map[int]string{
 	5432: "PostgreSQL",
 }
 
+// cleanTarget extracts clean hostname from user input (removes https://, http://, and trailing slashes)
+func cleanTarget(rawTarget string) string {
+	rawTarget = strings.TrimSpace(rawTarget)
+	if !strings.HasPrefix(rawTarget, "http://") && !strings.HasPrefix(rawTarget, "https://") {
+		rawTarget = "http://" + rawTarget
+	}
+	parsedUrl, err := url.Parse(rawTarget)
+	if err != nil {
+		return strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(rawTarget, "https://"), "http://"), "/")
+	}
+	return parsedUrl.Hostname()
+}
+
 func scanPort(target string, port int, service string, results chan<- ScanResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 	address := fmt.Sprintf("%s:%d", target, port)
@@ -44,15 +59,14 @@ func scanPort(target string, port int, service string, results chan<- ScanResult
 	}
 }
 
-func checkSecurityHeaders(target string) []HeaderCheck {
-	url := fmt.Sprintf("https://%s", target)
+func checkSecurityHeaders(hostname string) []HeaderCheck {
+	targetUrl := fmt.Sprintf("https://%s", hostname)
 	client := &http.Client{Timeout: 4 * time.Second}
 	
-	resp, err := client.Get(url)
+	resp, err := client.Get(targetUrl)
 	if err != nil {
-		// Fallback to HTTP if HTTPS fails
-		url = fmt.Sprintf("http://%s", target)
-		resp, err = client.Get(url)
+		targetUrl = fmt.Sprintf("http://%s", hostname)
+		resp, err = client.Get(targetUrl)
 		if err != nil {
 			return []HeaderCheck{{HeaderName: "Connection", Status: "Failed", Details: "Could not reach target for header analysis."}}
 		}
@@ -61,21 +75,18 @@ func checkSecurityHeaders(target string) []HeaderCheck {
 
 	var checks []HeaderCheck
 
-	// 1. Strict-Transport-Security (HSTS)
 	if resp.Header.Get("Strict-Transport-Security") != "" {
 		checks = append(checks, HeaderCheck{HeaderName: "HSTS", Status: "Secure", Details: "Enforces secure HTTPS connections."})
 	} else {
 		checks = append(checks, HeaderCheck{HeaderName: "HSTS", Status: "Missing", Details: "Vulnerable to protocol downgrade attacks."})
 	}
 
-	// 2. Content-Security-Policy (CSP)
 	if resp.Header.Get("Content-Security-Policy") != "" {
 		checks = append(checks, HeaderCheck{HeaderName: "CSP", Status: "Secure", Details: "Protects against Cross-Site Scripting (XSS)."})
 	} else {
 		checks = append(checks, HeaderCheck{HeaderName: "CSP", Status: "Missing", Details: "No XSS protection policy defined."})
 	}
 
-	// 3. X-Frame-Options
 	if resp.Header.Get("X-Frame-Options") != "" {
 		checks = append(checks, HeaderCheck{HeaderName: "X-Frame-Options", Status: "Secure", Details: "Protected against Clickjacking."})
 	} else {
@@ -98,12 +109,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hostname := cleanTarget(payload.Target)
+
 	var wg sync.WaitGroup
 	resultsChan := make(chan ScanResult, len(commonPorts))
 
 	for port, service := range commonPorts {
 		wg.Add(1)
-		go scanPort(payload.Target, port, service, resultsChan, &wg)
+		go scanPort(hostname, port, service, resultsChan, &wg)
 	}
 
 	wg.Wait()
@@ -114,15 +127,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		openPorts = append(openPorts, res)
 	}
 
-	// Run Advanced Header Check
-	headerResults := checkSecurityHeaders(payload.Target)
+	headerResults := checkSecurityHeaders(hostname)
 
 	response := map[string]interface{}{
-		"status":          "success",
-		"scanned_target":  payload.Target,
-		"open_ports":      openPorts,
+		"status":           "success",
+		"scanned_target":   hostname,
+		"open_ports":       openPorts,
 		"security_headers": headerResults,
-		"message":         "Advanced Reconnaissance and Header check complete.",
+		"message":          "Advanced Reconnaissance and Header check complete.",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
