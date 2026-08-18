@@ -2,7 +2,7 @@
     --bg-color: #050505;
     --card-bg: #0a0a0a;
     --border-color: #333333;
-    --accent-green: #d4ff00; /* Neon Green from your reference */
+    --accent-green: #d4ff00; /* Neon Green */
     --text-main: #e0e0e0;
     --text-muted: #888888;
     --danger-red: #ff3333;
@@ -14,7 +14,7 @@ body {
     color: var(--text-main);
     padding: 30px;
     line-height: 1.6;
-    text-transform: uppercase; /* Authentic brutalist look */
+    text-transform: uppercase;
     /* Subtle grid background */
     background-image: linear-gradient(var(--border-color) 1px, transparent 1px),
     linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
@@ -22,12 +22,39 @@ body {
     background-position: -1px -1px;
 }
 
+/* Header Flexbox for Logout */
+.header-container { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    border-bottom: 2px solid var(--border-color); 
+    padding-bottom: 10px; 
+    margin-bottom: 30px; 
+}
+
 h1 {
     color: var(--accent-green);
     letter-spacing: 2px;
     font-size: 2.5em;
-    margin-bottom: 30px;
+    margin-bottom: 0;
     text-shadow: 0 0 5px rgba(212, 255, 0, 0.3);
+}
+
+.logout-btn { 
+    background: var(--danger-red); 
+    color: #000; 
+    border: none; 
+    padding: 10px 15px; 
+    font-weight: bold; 
+    cursor: pointer; 
+    text-transform: uppercase; 
+    font-family: inherit; 
+}
+
+.logout-btn:hover { 
+    background: #000; 
+    color: var(--danger-red); 
+    border: 1px solid var(--danger-red); 
 }
 
 h3 {
@@ -176,4 +203,4 @@ button:hover:not(:disabled) {
     background: rgba(212, 255, 0, 0.1);
     border-left: 4px solid var(--accent-green);
     color: var(--accent-green);
-      }
+                     }
