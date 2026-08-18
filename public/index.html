@@ -5,7 +5,11 @@
     <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <h1>TRISCOUT // SYS_SCANNER</h1>
+    <div class="header-container">
+        <h1>TRISCOUT // SYS_SCANNER</h1>
+        <button class="logout-btn" onclick="logoutSession()">[X] LOGOUT</button>
+    </div>
+
     <div id="auth-status" style="color: var(--accent-green);">[!] VERIFYING SECURE NODE...</div>
     
     <div id="dashboard-content" style="display:none;">
@@ -49,6 +53,12 @@
             document.getElementById('dashboard-content').style.display = 'block';
         }
 
+        // --- Session Logout Function ---
+        function logoutSession() {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+        }
+
         function toggleButton() {
             const consent = document.getElementById('consent-check').checked;
             document.getElementById('scan-btn').disabled = !consent;
@@ -80,7 +90,6 @@
                 const openPorts = scannerData.open_ports || [];
                 const securityHeaders = scannerData.security_headers || [];
                 
-                // 1. Render Headers Report (Brutalist style)
                 let headerHtml = "<table class='cyber-table'>";
                 headerHtml += "<tr><th>SECURITY_HEADER</th><th>STATUS</th><th>EXPLANATION</th></tr>";
                 securityHeaders.forEach(h => {
@@ -94,7 +103,6 @@
                 headerHtml += "</table>";
                 document.getElementById('header-listings').innerHTML = headerHtml;
 
-                // 2. Render Ports Report (Brutalist style)
                 let portHtml = "";
                 if (openPorts.length === 0) {
                     portHtml = "<div class='cyber-success'>[+] ZERO VULNERABLE PORTS DETECTED. SYSTEM REMAINS SECURE.</div>";
