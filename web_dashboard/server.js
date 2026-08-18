@@ -15,7 +15,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- Authentication Routes ---
 app.get('/login', (req, res) => {
-    // Fixed: Added backticks for multi-line string
     res.send(`
         <div style="font-family: sans-serif; max-width: 300px; margin: 100px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
             <h2>TriScout Console Login</h2>
@@ -32,7 +31,6 @@ app.post('/login', (req, res) => {
     const { username, password } = req.body;
     if (username === 'admin' && password === 'triscout2026') {
         const token = jwt.sign({ user: 'admin' }, JWT_SECRET, { expiresIn: '1h' });
-        // Fixed: Added backticks for multi-line string
         res.send(`
             <script>
                 localStorage.setItem('token', '${token}');
@@ -104,7 +102,7 @@ app.get('/', (req, res) => {
                         
                         // Display the raw JSON response for now
                         document.getElementById('port-listings').innerHTML = 
-                            '<pre style="background: #0f172a; padding: 10px;">' + JSON.stringify(data, null, 2) + '</pre>';
+                            '<pre style="background: #0f172a; padding: 10px; overflow-x: auto;">' + JSON.stringify(data, null, 2) + '</pre>';
                     } catch(err) {
                         document.getElementById('target-ip').innerText = "Scan Failed.";
                         console.error(err);
@@ -116,7 +114,7 @@ app.get('/', (req, res) => {
     `);
 });
 
-// --- Orchestrator API (from previous steps) ---
+// --- Orchestrator API ---
 app.get('/api/run-pipeline', async (req, res) => {
   try {
     const host = req.headers.host;
@@ -149,6 +147,6 @@ module.exports = app;
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(\`Local server running on port \${PORT}\`);
+    console.log(`Local server running on port ${PORT}`);
   });
 }
