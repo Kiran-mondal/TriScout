@@ -10,16 +10,33 @@ const JWT_SECRET = process.env.JWT_SECRET || 'triscout_super_secret_key_2026';
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// --- Authentication Routes (Updated Design) ---
 app.get('/login', (req, res) => {
     res.send(`
-        <div style="font-family: sans-serif; max-width: 300px; margin: 100px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
-            <h2>TriScout Console Login</h2>
-            <form action="/login" method="POST">
-                <input type="text" name="username" placeholder="Username" required style="width:100%; margin-bottom:10px; padding:8px;"><br>
-                <input type="password" name="password" placeholder="Password" required style="width:100%; margin-bottom:10px; padding:8px;"><br>
-                <button type="submit" style="width:100%; padding:10px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">Authenticate</button>
-            </form>
-        </div>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>TRISCOUT // AUTH</title>
+            <style>
+                body { font-family: 'Courier New', Courier, monospace; background: #050505; color: #d4ff00; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                .login-box { border: 1px solid #333; padding: 30px; background: #0a0a0a; width: 300px; }
+                input { width: 100%; padding: 10px; margin-bottom: 15px; background: #000; border: 1px solid #333; color: #d4ff00; font-family: inherit; box-sizing: border-box; outline: none; }
+                input:focus { border-color: #d4ff00; }
+                button { width: 100%; padding: 12px; background: #d4ff00; color: #000; border: none; font-weight: bold; cursor: pointer; font-family: inherit; text-transform: uppercase; }
+                button:hover { background: #fff; }
+            </style>
+        </head>
+        <body>
+            <div class="login-box">
+                <h2>TRISCOUT // AUTH</h2>
+                <form action="/login" method="POST">
+                    <input type="text" name="username" placeholder="USERNAME" required>
+                    <input type="password" name="password" placeholder="PASSWORD" required>
+                    <button type="submit">ACCESS SYSTEM</button>
+                </form>
+            </div>
+        </body>
+        </html>
     `);
 });
 
@@ -34,59 +51,92 @@ app.post('/login', (req, res) => {
             </script>
         `);
     } else {
-        res.status(401).send('<h3>Invalid Credentials. <a href="/login">Try again</a></h3>');
+        res.status(401).send('<h3 style="color:red; font-family:monospace; text-align:center; margin-top:50px;">INVALID CREDENTIALS. <a href="/login" style="color:#d4ff00;">RETRY</a></h3>');
     }
 });
 
+// --- Dashboard Route (Cyber Brutalism + Session Logout) ---
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>TriScout Advanced Security Dashboard</title>
+            <title>TRISCOUT // CYBER_BRUTALISM</title>
             <style>
-                body { font-family: sans-serif; background: #0f172a; color: #e2e8f0; padding: 30px; line-height: 1.6; }
-                .card { background: #1e293b; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #334155; }
-                h1 { color: #38bdf8; }
-                h3 { color: #e2e8f0; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-                .input-box { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box; }
-                button { background: #0ea5e9; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; }
-                button:disabled { background: #475569; cursor: not-allowed; }
+                :root { --bg-color: #050505; --card-bg: #0a0a0a; --border-color: #333333; --accent-green: #d4ff00; --text-main: #e0e0e0; --text-muted: #888888; --danger-red: #ff3333; }
+                body { font-family: 'Courier New', Courier, monospace; background-color: var(--bg-color); color: var(--text-main); padding: 30px; line-height: 1.6; text-transform: uppercase; background-image: linear-gradient(var(--border-color) 1px, transparent 1px), linear-gradient(90deg, var(--border-color) 1px, transparent 1px); background-size: 50px 50px; background-position: -1px -1px; }
+                
+                /* Header Flexbox for Logout */
+                .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 30px; }
+                h1 { color: var(--accent-green); letter-spacing: 2px; font-size: 2em; margin: 0; text-shadow: 0 0 5px rgba(212, 255, 0, 0.3); }
+                .logout-btn { background: var(--danger-red); color: #000; border: none; padding: 10px 15px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-family: inherit; }
+                .logout-btn:hover { background: #000; color: var(--danger-red); border: 1px solid var(--danger-red); }
+
+                h3 { color: #ffffff; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; font-weight: normal; letter-spacing: 1.5px; }
+                h3::before { content: '> '; color: var(--accent-green); }
+                
+                .card { background: var(--card-bg); padding: 25px; border: 1px solid var(--border-color); border-radius: 0; margin-bottom: 25px; position: relative; }
+                .card::before { content: ''; position: absolute; top: -1px; left: -1px; width: 15px; height: 15px; border-top: 2px solid var(--accent-green); border-left: 2px solid var(--accent-green); }
+                
+                .input-box { width: 100%; padding: 15px; margin-bottom: 20px; border: 1px solid var(--border-color); background: #000; color: var(--accent-green); box-sizing: border-box; font-family: inherit; font-size: 16px; outline: none; }
+                .input-box:focus { border-color: var(--accent-green); }
+                
+                .consent-box { display: block; margin-bottom: 20px; color: var(--text-main); background: #000; padding: 15px; border: 1px dashed var(--border-color); cursor: pointer; }
+                
+                .scan-btn { background: var(--accent-green); color: #000; border: 1px solid var(--accent-green); padding: 15px 25px; cursor: pointer; font-weight: bold; font-size: 16px; font-family: inherit; text-transform: uppercase; }
+                .scan-btn:disabled { background: #111; color: #555; border-color: #333; cursor: not-allowed; }
+                .scan-btn:hover:not(:disabled) { background: #000; color: var(--accent-green); }
+                
+                .cyber-table { width: 100%; border-collapse: collapse; background: #000; border: 1px solid var(--border-color); margin-top: 15px; }
+                .cyber-table th { padding: 15px; background: #111; color: var(--accent-green); border: 1px solid var(--border-color); font-weight: normal; }
+                .cyber-table td { padding: 15px; border: 1px solid var(--border-color); color: var(--text-main); }
+                
+                .status-badge { padding: 5px 10px; font-weight: bold; display: inline-block; }
+                .status-secure { color: #000; background: var(--accent-green); }
+                .status-danger { color: #000; background: var(--danger-red); }
+                .status-missing { color: var(--danger-red); border: 1px solid var(--danger-red); }
+                
+                .cyber-alert { padding: 15px; background: rgba(255, 51, 51, 0.1); border-left: 4px solid var(--danger-red); color: var(--danger-red); margin-bottom: 20px; }
+                .cyber-success { padding: 15px; background: rgba(212, 255, 0, 0.1); border-left: 4px solid var(--accent-green); color: var(--accent-green); }
             </style>
         </head>
         <body>
-            <h1>🛰️ TriScout Advanced Security Scanner</h1>
-            <div id="auth-status">Verifying secure pipeline session...</div>
+            <div class="header-container">
+                <h1>TRISCOUT // SYS_SCANNER</h1>
+                <button class="logout-btn" onclick="logoutSession()">[X] LOGOUT</button>
+            </div>
+
+            <div id="auth-status" style="color: var(--accent-green);">[!] VERIFYING SECURE NODE...</div>
             
             <div id="dashboard-content" style="display:none;">
                 
                 <div class="card">
-                    <h3>🎯 Target Configuration & Authorization</h3>
-                    <p style="color: #cbd5e1;">Enter the target domain or IP to perform deep security inspection.</p>
-                    <input type="text" id="target-input" class="input-box" placeholder="e.g., example.com">
+                    <h3>01 // TARGET_CONFIG</h3>
+                    <p style="color: var(--text-muted);">INITIALIZE RECONNAISSANCE SEQUENCE ON TARGET DOMAIN OR IP.</p>
+                    <input type="text" id="target-input" class="input-box" placeholder="INPUT TARGET (E.G. EXAMPLE.COM)">
                     
-                    <label style="display: block; margin-bottom: 15px; color: #f87171; background: #281515; padding: 10px; border-radius: 5px; border: 1px solid #ef4444;">
+                    <label class="consent-box">
                         <input type="checkbox" id="consent-check" onchange="toggleButton()">
-                        <strong>I confirm that I have explicit authorization to scan this target.</strong>
+                        <strong> [!] I CONFIRM EXPLICIT AUTHORIZATION TO INITIATE SCAN ON THIS TARGET.</strong>
                     </label>
                     
-                    <button id="scan-btn" onclick="triggerPipeline()" disabled>Run Advanced Security Scan</button>
+                    <button id="scan-btn" class="scan-btn" onclick="triggerPipeline()" disabled>INITIATE SECURITY SCAN ↗</button>
                 </div>
 
                 <div class="card">
-                    <h3>⚡ Scan Status</h3>
-                    <p id="target-ip">Awaiting authorized target...</p>
-                    <p><strong>Scan Timestamp:</strong> <span id="scan-time">N/A</span></p>
+                    <h3>02 // SYSTEM_STATUS</h3>
+                    <p id="target-ip" style="color: var(--text-muted);">AWAITING TARGET INPUT...</p>
+                    <p><strong>SYS_TIME:</strong> <span id="scan-time" style="color: var(--accent-green);">--:--:--</span></p>
                 </div>
                 
                 <div class="card">
-                    <h3>🛡️ Security Headers & Configuration Report</h3>
-                    <div id="header-listings">No scan run yet.</div>
+                    <h3>03 // SECURITY_HEADERS</h3>
+                    <div id="header-listings"><span style="color: var(--text-muted);">// NO DATA.</span></div>
                 </div>
 
                 <div class="card">
-                    <h3>🔍 Open Ports & Vulnerability Advice</h3>
-                    <div id="port-listings">No scan run yet.</div>
+                    <h3>04 // PORT_VULNERABILITIES</h3>
+                    <div id="port-listings"><span style="color: var(--text-muted);">// NO DATA.</span></div>
                 </div>
             </div>
 
@@ -99,6 +149,12 @@ app.get('/', (req, res) => {
                     document.getElementById('dashboard-content').style.display = 'block';
                 }
 
+                // --- Session Logout Function ---
+                function logoutSession() {
+                    localStorage.removeItem('token');
+                    window.location.href = '/login';
+                }
+
                 function toggleButton() {
                     const consent = document.getElementById('consent-check').checked;
                     document.getElementById('scan-btn').disabled = !consent;
@@ -107,13 +163,13 @@ app.get('/', (req, res) => {
                 async function triggerPipeline() {
                     const target = document.getElementById('target-input').value.trim();
                     if(!target) {
-                        alert("Please enter a valid target IP or Domain.");
+                        alert("ERROR: NO TARGET SPECIFIED.");
                         return;
                     }
 
-                    document.getElementById('target-ip').innerText = "Running advanced scan on: " + target + " ... please wait.";
-                    document.getElementById('header-listings').innerHTML = "<p>Analyzing security headers...</p>";
-                    document.getElementById('port-listings').innerHTML = "<p>Scanning ports...</p>";
+                    document.getElementById('target-ip').innerHTML = "SCANNING TARGET: <span style='color: var(--accent-green);'>" + target + "</span> ... RENDERING.";
+                    document.getElementById('header-listings').innerHTML = "<span style='color: var(--text-muted);'>// ANALYZING HEADERS...</span>";
+                    document.getElementById('port-listings').innerHTML = "<span style='color: var(--text-muted);'>// SCANNING PORTS...</span>";
                     
                     try {
                         const res = await fetch('/api/run-pipeline', {
@@ -123,44 +179,44 @@ app.get('/', (req, res) => {
                         });
                         const data = await res.json();
                         
-                        document.getElementById('target-ip').innerText = "Advanced Scan Complete for: " + target;
+                        document.getElementById('target-ip').innerHTML = "SCAN COMPLETE FOR: <span style='color: var(--accent-green);'>" + target + "</span>";
                         document.getElementById('scan-time').innerText = new Date().toLocaleTimeString();
                         
                         const scannerData = data.scanner || {};
                         const openPorts = scannerData.open_ports || [];
                         const securityHeaders = scannerData.security_headers || [];
                         
-                        // 1. Render Headers Report
-                        let headerHtml = "<table style='width: 100%; border-collapse: collapse; text-align: left; background: #0f172a;'>";
-                        headerHtml += "<tr style='background: #334155; border-bottom: 2px solid #475569;'><th style='padding: 12px;'>Security Header</th><th style='padding: 12px;'>Status</th><th style='padding: 12px;'>Explanation</th></tr>";
+                        let headerHtml = "<table class='cyber-table'>";
+                        headerHtml += "<tr><th>SECURITY_HEADER</th><th>STATUS</th><th>EXPLANATION</th></tr>";
                         securityHeaders.forEach(h => {
-                            const badgeColor = h.status === 'Secure' ? '#22c55e' : '#ef4444';
-                            headerHtml += "<tr style='border-bottom: 1px solid #334155;'>";
-                            headerHtml += "<td style='padding: 12px; font-weight: bold;'>" + h.header_name + "</td>";
-                            headerHtml += "<td style='padding: 12px; color: " + badgeColor + "; font-weight: bold;'>" + h.status + "</td>";
-                            headerHtml += "<td style='padding: 12px; color: #cbd5e1;'>" + h.details + "</td>";
+                            let badgeClass = h.status === 'Secure' ? 'status-secure' : 'status-missing';
+                            headerHtml += "<tr>";
+                            headerHtml += "<td>" + h.header_name + "</td>";
+                            headerHtml += "<td><span class='status-badge " + badgeClass + "'>" + h.status.toUpperCase() + "</span></td>";
+                            headerHtml += "<td style='color: var(--text-muted); text-transform: none;'>" + h.details + "</td>";
                             headerHtml += "</tr>";
                         });
                         headerHtml += "</table>";
                         document.getElementById('header-listings').innerHTML = headerHtml;
 
-                        // 2. Render Ports Report
                         let portHtml = "";
                         if (openPorts.length === 0) {
-                            portHtml = "<div style='padding: 15px; background: #166534; border: 1px solid #22c55e; color: white; border-radius: 5px;'>✅ No vulnerable open ports detected.</div>";
+                            portHtml = "<div class='cyber-success'>[+] ZERO VULNERABLE PORTS DETECTED. SYSTEM REMAINS SECURE.</div>";
                         } else {
-                            portHtml = "<table style='width: 100%; border-collapse: collapse; text-align: left; background: #0f172a;'>";
-                            portHtml += "<tr style='background: #334155; border-bottom: 2px solid #475569;'><th style='padding: 12px;'>Port</th><th style='padding: 12px;'>Service</th><th style='padding: 12px;'>Security Advice</th></tr>";
+                            portHtml = "<div class='cyber-alert'>[!] WARNING: EXPOSED PORTS DETECTED.</div>";
+                            portHtml += "<table class='cyber-table'>";
+                            portHtml += "<tr><th>PORT</th><th>SERVICE</th><th>SECURITY_ADVICE</th></tr>";
                             openPorts.forEach(p => {
                                 let advice = "Ensure this port is strictly monitored.";
-                                if(p.port === 21 || p.port === 23) advice = "<strong>Insecure!</strong> Unencrypted protocol. Disable immediately.";
-                                if(p.port === 80) advice = "HTTP is open. Redirect to HTTPS.";
-                                if(p.port === 3306 || p.port === 5432) advice = "<strong>Critical Risk!</strong> Database exposed publicly.";
+                                let portClass = "";
+                                if(p.port === 21 || p.port === 23) { advice = "INSECURE PROTOCOL. DISABLE IMMEDIATELY."; portClass = "status-badge status-danger"; }
+                                else if(p.port === 80) advice = "HTTP is open. Redirect to HTTPS.";
+                                else if(p.port === 3306 || p.port === 5432) { advice = "CRITICAL RISK! Database exposed."; portClass = "status-badge status-danger"; }
                                 
-                                portHtml += "<tr style='border-bottom: 1px solid #334155;'>";
-                                portHtml += "<td style='padding: 12px; font-weight: bold; color: #f87171;'>" + p.port + "</td>";
-                                portHtml += "<td style='padding: 12px;'>" + p.service + "</td>";
-                                portHtml += "<td style='padding: 12px; color: #cbd5e1;'>" + advice + "</td>";
+                                portHtml += "<tr>";
+                                portHtml += "<td><span class='" + portClass + "'>" + p.port + "</span></td>";
+                                portHtml += "<td>" + p.service + "</td>";
+                                portHtml += "<td style='color: var(--text-muted); text-transform: none;'>" + advice + "</td>";
                                 portHtml += "</tr>";
                             });
                             portHtml += "</table>";
@@ -168,7 +224,7 @@ app.get('/', (req, res) => {
                         document.getElementById('port-listings').innerHTML = portHtml;
 
                     } catch(err) {
-                        document.getElementById('target-ip').innerText = "Scan Failed.";
+                        document.getElementById('target-ip').innerHTML = "<span style='color: var(--danger-red);'>[!] SCAN FAILED.</span>";
                         console.error(err);
                     }
                 }
@@ -178,6 +234,7 @@ app.get('/', (req, res) => {
     `);
 });
 
+// --- Pipeline API ---
 app.post('/api/run-pipeline', async (req, res) => {
   try {
     const { target } = req.body;
