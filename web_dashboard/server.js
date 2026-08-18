@@ -39,7 +39,7 @@ app.post('/login', (req, res) => {
     }
 });
 
-// --- Dashboard Route (Updated with Authorization Check) ---
+// --- Dashboard Route (Updated with Human-Readable Reports) ---
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
@@ -47,26 +47,27 @@ app.get('/', (req, res) => {
         <head>
             <title>TriScout Live Dashboard</title>
             <style>
-                body { font-family: sans-serif; background: #0f172a; color: #e2e8f0; padding: 30px; }
+                body { font-family: sans-serif; background: #0f172a; color: #e2e8f0; padding: 30px; line-height: 1.6; }
                 .card { background: #1e293b; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #334155; }
                 h1 { color: #38bdf8; }
+                h3 { color: #e2e8f0; border-bottom: 1px solid #334155; padding-bottom: 10px; }
                 .input-box { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #475569; background: #0f172a; color: white; box-sizing: border-box; }
-                button { background: #0ea5e9; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+                button { background: #0ea5e9; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; }
                 button:disabled { background: #475569; cursor: not-allowed; }
             </style>
         </head>
         <body>
-            <h1>🛰️ TriScout Real-Time Web Console</h1>
+            <h1>🛰️ TriScout Security Scanner</h1>
             <div id="auth-status">Verifying secure pipeline session...</div>
             
             <div id="dashboard-content" style="display:none;">
                 
                 <div class="card">
                     <h3>🎯 Target Configuration & Authorization</h3>
-                    <p>Enter the target IP or Domain you wish to scan.</p>
+                    <p style="color: #cbd5e1;">Enter the target IP or Domain you wish to scan (e.g., example.com).</p>
                     <input type="text" id="target-input" class="input-box" placeholder="e.g., 192.168.1.100 or example.com">
                     
-                    <label style="display: block; margin-bottom: 15px; color: #f87171;">
+                    <label style="display: block; margin-bottom: 15px; color: #f87171; background: #281515; padding: 10px; border-radius: 5px; border: 1px solid #ef4444;">
                         <input type="checkbox" id="consent-check" onchange="toggleButton()">
                         <strong>I confirm that I have explicit authorization to scan this target.</strong>
                     </label>
@@ -81,8 +82,8 @@ app.get('/', (req, res) => {
                 </div>
                 
                 <div class="card">
-                    <h3>🔍 Discovered Vulnerabilities & Ports</h3>
-                    <div id="port-listings">No active streams found.</div>
+                    <h3>🔍 Security Report (Human Readable)</h3>
+                    <div id="port-listings">No scan has been run yet. Enter a target above.</div>
                 </div>
             </div>
 
@@ -107,7 +108,8 @@ app.get('/', (req, res) => {
                         return;
                     }
 
-                    document.getElementById('target-ip').innerText = "Scanning target: " + target + " ... please wait.";
+                    document.getElementById('target-ip').innerText = "Scanning target: " + target + " ... please wait. This may take a few seconds.";
+                    document.getElementById('port-listings').innerHTML = "<p>Analyzing security vulnerabilities...</p>";
                     
                     try {
                         const res = await fetch('/api/run-pipeline', {
@@ -120,10 +122,40 @@ app.get('/', (req, res) => {
                         document.getElementById('target-ip').innerText = "Scan Complete for: " + target;
                         document.getElementById('scan-time').innerText = new Date().toLocaleTimeString();
                         
-                        document.getElementById('port-listings').innerHTML = 
-                            '<pre style="background: #0f172a; padding: 10px; overflow-x: auto;">' + JSON.stringify(data, null, 2) + '</pre>';
+                        // Human Readable Report Logic
+                        const scannerData = data.scanner || {};
+                        const openPorts = scannerData.open_ports || [];
+                        
+                        let htmlContent = "";
+                        
+                        if (openPorts.length === 0) {
+                            htmlContent += "<div style='padding: 15px; background: #166534; border: 1px solid #22c55e; color: white; border-radius: 5px;'>✅ <strong>Excellent!</strong> No critical open ports were detected. The target appears secure from basic port-based attacks.</div>";
+                        } else {
+                            htmlContent += "<div style='padding: 15px; background: #7f1d1d; border: 1px solid #ef4444; color: white; border-radius: 5px; margin-bottom: 20px;'>⚠️ <strong>Warning:</strong> Found " + openPorts.length + " open port(s) that could be potential security risks. See details below.</div>";
+                            
+                            htmlContent += "<table style='width: 100%; border-collapse: collapse; text-align: left; background: #0f172a;'>";
+                            htmlContent += "<tr style='background: #334155; border-bottom: 2px solid #475569;'><th style='padding: 12px;'>Port</th><th style='padding: 12px;'>Service Name</th><th style='padding: 12px;'>Security Advice (What this means)</th></tr>";
+                            
+                            openPorts.forEach(p => {
+                                let advice = "This port should be closed to the public if you do not actively use it.";
+                                if(p.port === 21 || p.port === 23) advice = "<strong>Highly Insecure!</strong> This transmits data without encryption. Hackers can easily steal passwords. Disable immediately.";
+                                if(p.port === 22) advice = "SSH is open. Ensure you use strong passwords or key-based login to prevent hackers from guessing your password.";
+                                if(p.port === 80) advice = "HTTP is unencrypted. You should redirect all traffic to secure HTTPS (Port 443) to protect user data.";
+                                if(p.port === 3306 || p.port === 5432) advice = "<strong>Critical Risk!</strong> Your database is exposed to the public internet. Restrict access to internal servers only.";
+                                
+                                htmlContent += "<tr style='border-bottom: 1px solid #334155;'>";
+                                htmlContent += "<td style='padding: 12px; font-weight: bold; color: #f87171;'>" + p.port + "</td>";
+                                htmlContent += "<td style='padding: 12px;'>" + p.service + "</td>";
+                                htmlContent += "<td style='padding: 12px; font-size: 0.95em; color: #cbd5e1;'>" + advice + "</td>";
+                                htmlContent += "</tr>";
+                            });
+                            htmlContent += "</table>";
+                        }
+                        
+                        document.getElementById('port-listings').innerHTML = htmlContent;
                     } catch(err) {
                         document.getElementById('target-ip').innerText = "Scan Failed.";
+                        document.getElementById('port-listings').innerHTML = "<p style='color: #ef4444;'>An error occurred while connecting to the scanner.</p>";
                         console.error(err);
                     }
                 }
@@ -151,7 +183,7 @@ app.post('/api/run-pipeline', async (req, res) => {
     });
     const scannerData = await scannerResponse.json();
 
-    // 2. Pass data to Python Processor
+    // 2. Pass data to Python Processor (Leaving this intact for future reporting features)
     const processorResponse = await fetch(`${baseUrl}/api/processor`);
     const processorData = await processorResponse.json();
 
@@ -167,3 +199,4 @@ app.post('/api/run-pipeline', async (req, res) => {
 });
 
 module.exports = app;
+    
