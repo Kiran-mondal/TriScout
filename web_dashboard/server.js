@@ -77,6 +77,15 @@ app.post('/login', (req, res) => {
         res.status(401).send('<h3 style="color:red; font-family:monospace; text-align:center;">[!] ACCESS DENIED. <a href="/login" style="color:#d4ff00;">RETRY</a></h3>');
     }
 });
+// --- Initiate GitHub OAuth ---
+app.get('/api/auth/github', (req, res) => {
+    // ডাইনামিক রিডাইরেক্ট ইউআরএল তৈরি করা হচ্ছে
+    const redirectUri = `https://${req.headers.host}/api/auth/github/callback`;
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=read:user`;
+    
+    // গিটহাবের লগইন পেজে রিডাইরেক্ট করে দেওয়া হচ্ছে
+    res.redirect(githubAuthUrl);
+});
 
 // GitHub OAuth Callback Route
 app.get('/api/auth/github/callback', async (req, res) => {
