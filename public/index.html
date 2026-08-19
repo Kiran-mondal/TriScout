@@ -1,143 +1,127 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>TRISCOUT // CYBER_BRUTALISM SCANNER</title>
+    <title>TRISCOUT // LOGIN</title>
     <link rel="stylesheet" href="/style.css">
-    
-    <!-- লোগো ফেভিকন হিসেবে যুক্ত করা হলো -->
     <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <style>
+        /* লগইন পেজকে একদম মাঝখানে রাখার জন্য */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* লগইন বক্সের নতুন ডিজাইন এবং সাইজ */
+        .login-card {
+            background: var(--card-bg);
+            padding: 40px; /* ভেতরে স্পেস বাড়ানো হয়েছে */
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 450px; /* ডেস্কটপে বক্সটি এখন অনেক চওড়া ও সুন্দর দেখাবে */
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* সাইবার কর্নার ডিজাইন */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            width: 15px;
+            height: 15px;
+            border-top: 2px solid var(--accent-green);
+            border-left: 2px solid var(--accent-green);
+        }
+
+        /* নতুন হেডার: লোগো + TRISCOUT */
+        .logo-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 35px;
+        }
+        
+        .logo-header img {
+            width: 45px;
+            height: 45px;
+            margin-right: 15px;
+        }
+
+        .logo-header h2 {
+            color: var(--accent-green);
+            letter-spacing: 4px;
+            margin: 0;
+            font-size: 32px;
+            text-shadow: 0 0 8px rgba(212, 255, 0, 0.4);
+        }
+
+        /* ডিভাইডার (OR LOCAL ADMIN) */
+        .divider {
+            text-align: center;
+            margin: 30px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+        }
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px dashed var(--border-color);
+        }
+        .divider::before { margin-right: 15px; }
+        .divider::after { margin-left: 15px; }
+        
+        /* বাটন স্টাইল */
+        .github-btn {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--text-main);
+            width: 100%;
+        }
+        .github-btn:hover {
+            background: var(--text-main);
+            color: #000;
+        }
+        .full-width-btn {
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <div class="header-container">
-        <!-- হেডারে লোগো যুক্ত করা হলো -->
-        <h1 style="display: flex; align-items: center;">
-            <img src="/logo.svg" alt="TriScout Logo" style="width: 45px; height: 45px; margin-right: 15px;">
-            TRISCOUT // SYS_SCANNER
-        </h1>
-        <button class="logout-btn" onclick="logoutSession()">[X] LOGOUT</button>
-    </div>
-
-    <div id="auth-status" style="color: var(--accent-green);">[!] VERIFYING SECURE NODE...</div>
-    
-    <div id="dashboard-content" style="display:none;">
+    <div class="login-card">
         
-        <div class="card">
-            <h3>01 // TARGET_CONFIG</h3>
-            <p style="color: var(--text-muted);">INITIALIZE RECONNAISSANCE SEQUENCE ON TARGET DOMAIN OR IP.</p>
-            <input type="text" id="target-input" class="input-box" placeholder="INPUT TARGET (E.G. EXAMPLE.COM)">
-            
-            <label class="consent-box">
-                <input type="checkbox" id="consent-check" onchange="toggleButton()">
-                <strong> [!] I CONFIRM EXPLICIT AUTHORIZATION TO INITIATE SCAN ON THIS TARGET.</strong>
-            </label>
-            
-            <button id="scan-btn" onclick="triggerPipeline()" disabled>INITIATE SECURITY SCAN ↗</button>
+        <!-- আপডেট করা হেডার (লোগো + নাম) -->
+        <div class="logo-header">
+            <img src="/logo.svg" alt="TriScout Logo">
+            <h2>TRISCOUT</h2>
         </div>
 
-        <div class="card">
-            <h3>02 // SYSTEM_STATUS</h3>
-            <p id="target-ip" style="color: var(--text-muted);">AWAITING TARGET INPUT...</p>
-            <p><strong>SYS_TIME:</strong> <span id="scan-time" style="color: var(--accent-green);">--:--:--</span></p>
-        </div>
+        <!-- গিটহাব লগইন -->
+        <!-- এখানে href এর জায়গায় আপনার আসল গিটহাব অথেন্টিকেশন লিংকটি দেবেন -->
+        <button class="github-btn" onclick="window.location.href='/api/auth/github'">
+            > AUTHENTICATE VIA GITHUB
+        </button>
+
+        <div class="divider">OR LOCAL ADMIN</div>
+
+        <!-- লোকাল লগইন -->
+        <input type="text" id="username" class="input-box" placeholder="USERNAME">
+        <input type="password" id="password" class="input-box" placeholder="PASSWORD">
         
-        <div class="card">
-            <h3>03 // SECURITY_HEADERS</h3>
-            <div id="header-listings"><span style="color: var(--text-muted);">// NO DATA.</span></div>
-        </div>
-
-        <div class="card">
-            <h3>04 // PORT_VULNERABILITIES</h3>
-            <div id="port-listings"><span style="color: var(--text-muted);">// NO DATA.</span></div>
-        </div>
+        <button class="full-width-btn" onclick="login()">ACCESS SYSTEM</button>
     </div>
 
     <script>
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.href = '/login';
-        } else {
-            document.getElementById('auth-status').style.display = 'none';
-            document.getElementById('dashboard-content').style.display = 'block';
-        }
-
-        // --- Session Logout Function ---
-        function logoutSession() {
-            localStorage.removeItem('token');
-            window.location.href = '/login';
-        }
-
-        function toggleButton() {
-            const consent = document.getElementById('consent-check').checked;
-            document.getElementById('scan-btn').disabled = !consent;
-        }
-
-        async function triggerPipeline() {
-            const target = document.getElementById('target-input').value.trim();
-            if(!target) {
-                alert("ERROR: NO TARGET SPECIFIED.");
-                return;
-            }
-
-            document.getElementById('target-ip').innerHTML = "SCANNING TARGET: <span style='color: var(--accent-green);'>" + target + "</span> ... RENDERING.";
-            document.getElementById('header-listings').innerHTML = "<span style='color: var(--text-muted);'>// ANALYZING HEADERS...</span>";
-            document.getElementById('port-listings').innerHTML = "<span style='color: var(--text-muted);'>// SCANNING PORTS...</span>";
-            
-            try {
-                const res = await fetch('/api/run-pipeline', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ target: target })
-                });
-                const data = await res.json();
-                
-                document.getElementById('target-ip').innerHTML = "SCAN COMPLETE FOR: <span style='color: var(--accent-green);'>" + target + "</span>";
-                document.getElementById('scan-time').innerText = new Date().toLocaleTimeString();
-                
-                const scannerData = data.scanner || {};
-                const openPorts = scannerData.open_ports || [];
-                const securityHeaders = scannerData.security_headers || [];
-                
-                let headerHtml = "<table class='cyber-table'>";
-                headerHtml += "<tr><th>SECURITY_HEADER</th><th>STATUS</th><th>EXPLANATION</th></tr>";
-                securityHeaders.forEach(h => {
-                    let badgeClass = h.status === 'Secure' ? 'status-secure' : 'status-missing';
-                    headerHtml += "<tr>";
-                    headerHtml += "<td>" + h.header_name + "</td>";
-                    headerHtml += "<td><span class='status-badge " + badgeClass + "'>" + h.status.toUpperCase() + "</span></td>";
-                    headerHtml += "<td style='color: var(--text-muted); text-transform: none;'>" + h.details + "</td>";
-                    headerHtml += "</tr>";
-                });
-                headerHtml += "</table>";
-                document.getElementById('header-listings').innerHTML = headerHtml;
-
-                let portHtml = "";
-                if (openPorts.length === 0) {
-                    portHtml = "<div class='cyber-success'>[+] ZERO VULNERABLE PORTS DETECTED. SYSTEM REMAINS SECURE.</div>";
-                } else {
-                    portHtml = "<div class='cyber-alert'>[!] WARNING: EXPOSED PORTS DETECTED.</div>";
-                    portHtml += "<table class='cyber-table'>";
-                    portHtml += "<tr><th>PORT</th><th>SERVICE</th><th>SECURITY_ADVICE</th></tr>";
-                    openPorts.forEach(p => {
-                        let advice = "Ensure this port is strictly monitored.";
-                        let portClass = "";
-                        if(p.port === 21 || p.port === 23) { advice = "INSECURE PROTOCOL. DISABLE IMMEDIATELY."; portClass = "status-badge status-danger"; }
-                        else if(p.port === 80) advice = "HTTP is open. Redirect to HTTPS.";
-                        else if(p.port === 3306 || p.port === 5432) { advice = "CRITICAL RISK! Database exposed."; portClass = "status-badge status-danger"; }
-                        
-                        portHtml += "<tr>";
-                        portHtml += "<td><span class='" + portClass + "'>" + p.port + "</span></td>";
-                        portHtml += "<td>" + p.service + "</td>";
-                        portHtml += "<td style='color: var(--text-muted); text-transform: none;'>" + advice + "</td>";
-                        portHtml += "</tr>";
-                    });
-                    portHtml += "</table>";
-                }
-                document.getElementById('port-listings').innerHTML = portHtml;
-
-            } catch(err) {
-                document.getElementById('target-ip').innerHTML = "<span style='color: var(--danger-red);'>[!] SCAN FAILED.</span>";
-                console.error(err);
-            }
+        // আপনার লোকাল লগইন ফাংশন এখানে থাকবে
+        function login() {
+            // Login logic
+            alert('LOCAL LOGIN FUNCTION INITIATED');
         }
     </script>
 </body>
