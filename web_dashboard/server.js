@@ -137,14 +137,14 @@ app.get('/login', (req, res) => {
     `);
 });
 
-// Existing Local Admin Login Post Route
+// Local Admin Login Post Route (Username: Admin, Password: Admin)
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    if (username === 'admin' && password === 'triscout2026') {
-        const token = jwt.sign({ user: 'admin' }, JWT_SECRET, { expiresIn: '1h' });
-        res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/';</script>`);
+    if (username === 'Admin' && password === 'Admin') {
+        const token = jwt.sign({ user: 'Admin' }, JWT_SECRET, { expiresIn: '1h' });
+        res.json({ token: token });
     } else {
-        res.status(401).send('<h3 style="color:red; font-family:monospace; text-align:center;">[!] ACCESS DENIED. <a href="/login" style="color:#d4ff00;">RETRY</a></h3>');
+        res.status(401).json({ error: 'Access Denied' });
     }
 });
 
