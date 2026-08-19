@@ -1,10 +1,22 @@
-<p align="center">
-  <img src="./public/logo.svg" width="200" alt="TriScout Logo">
-</p>
-<h1 align="center">TriScout</h1>
+<div align="center">
+  <img src="public/logo.svg" alt="TriScout Logo" width="180" />
+  
+  <h1>🛰️ TriScout</h1>
+
+  <img src="https://img.shields.io/badge/Go-1.18+-00ADD8?style=flat&logo=go" alt="Go Version">
+  <img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=flat&logo=python" alt="Python Version">
+  <img src="https://img.shields.io/badge/Node.js-16+-339933?style=flat&logo=nodedotjs" alt="Node.js Version">
+  <img src="https://img.shields.io/badge/Status-Active-success.svg" alt="Status">
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
+</div>
+
+<br>
+
 <p align="center">
   A fast, modular cybersecurity framework for network reconnaissance built with <strong>Go</strong>, <strong>Python</strong>, and <strong>Node.js</strong>.
 </p>
+
+---
 
 ## 🚀 Features
 
