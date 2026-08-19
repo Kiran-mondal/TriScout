@@ -203,4 +203,43 @@ button:hover:not(:disabled) {
     background: rgba(212, 255, 0, 0.1);
     border-left: 4px solid var(--accent-green);
     color: var(--accent-green);
-                     }
+}
+
+/* =========================================
+   GitHub Auth Button Styles (Added)
+========================================= */
+.github-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.github-btn {
+    background: transparent;
+    color: var(--text-main);
+    border: 2px solid var(--border-color);
+    width: 75px;  
+    height: 75px; 
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0; /* বাটন প্যাডিং রিসেট করা হয়েছে */
+}
+
+.github-btn svg {
+    width: 40px !important;  
+    height: 40px !important; 
+    fill: currentColor;
+}
+
+.github-btn:hover {
+    background: var(--text-main);
+    color: #000;
+    border-color: var(--text-main);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+    
