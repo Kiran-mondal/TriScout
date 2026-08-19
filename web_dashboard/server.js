@@ -62,19 +62,19 @@ app.get('/dashboard', (req, res) => {
         </head>
         <body>
             <div class="header-container">
-                <h1>TRISCOUT <span style="font-size: 14px; color: var(--text-muted);">// DEFENSIVE ASSESSMENT</span></h1>
+                <h1>TRISCOUT <span style="font-size: 14px; color: var(--text-muted);">// ADVANCED DEFENSIVE ASSESSMENT</span></h1>
                 <button class="logout-btn" onclick="localStorage.removeItem('token'); window.location.href='/'">LOGOUT</button>
             </div>
 
             <div class="cyber-alert" style="border-left-color: var(--accent-green); background: rgba(212, 255, 0, 0.1); color: var(--accent-green);">
-                SYSTEM STATUS: SECURE. PASSIVE SCANNER ONLINE.
+                SYSTEM STATUS: SECURE. ADVANCED PASSIVE SCANNER ONLINE.
             </div>
 
             <!-- স্ক্যানার টুল -->
             <div class="card">
                 <h3>TARGET SCANNER</h3>
                 <input type="text" id="targetInput" class="input-box" placeholder="ENTER DOMAIN (e.g. example.com)">
-                <button onclick="startScan()" style="width: 100%;">INITIATE PASSIVE SCAN</button>
+                <button onclick="startScan()" style="width: 100%;">INITIATE ADVANCED SCAN</button>
 
                 <!-- টার্মিনাল আউটপুট -->
                 <div style="background: #000; color: var(--accent-green); padding: 15px; border: 1px solid var(--border-color); height: 250px; overflow-y: auto; font-family: monospace; margin-top: 20px; font-size: 14px;" id="terminalOutput">
@@ -99,7 +99,7 @@ app.get('/dashboard', (req, res) => {
                     if(!target) return alert('Enter a valid target domain!');
                     
                     document.getElementById('reportSection').style.display = 'none';
-                    terminal.innerHTML = "> Initializing passive security analysis for: " + target + "...<br>> Fetching HTTP headers...<br><br>";
+                    terminal.innerHTML = "> Initializing advanced security analysis for: " + target + "...<br>> Fetching HTTP headers and source code...<br><br>";
                     
                     try {
                         const response = await fetch('/api/scan-headers', {
@@ -155,7 +155,7 @@ app.get('/dashboard', (req, res) => {
 });
 
 // ==========================================
-// ৪. প্যাসিভ স্ক্যানার API (আসল লজিক)
+// ৪. উন্নত প্যাসিভ স্ক্যানার API (Advanced Logic)
 // ==========================================
 app.post('/api/scan-headers', async (req, res) => {
     let { target } = req.body;
@@ -167,44 +167,73 @@ app.post('/api/scan-headers', async (req, res) => {
 
     try {
         const response = await axios.get(target, { 
-            timeout: 8000, 
+            timeout: 10000, 
             validateStatus: () => true 
         });
         
         const headers = response.headers;
-        let report = `--- PASSIVE SECURITY ANALYSIS FOR: ${target} ---\n\n`;
+        // সোর্স কোডকে স্ট্রিং-এ কনভার্ট করা হচ্ছে
+        const htmlBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+        let report = `--- ADVANCED SECURITY ANALYSIS FOR: ${target} ---\n\n`;
         let score = 100;
 
+        // ১. Error Handling & Information Leakage Check
+        if (htmlBody.includes('Stack trace:') || htmlBody.includes('SyntaxError:') || htmlBody.includes('SQL syntax')) {
+            report += `[!] Error Handling: CRITICAL (Stack trace or database errors exposed in source code!)\n`;
+            score -= 20;
+        } else {
+            report += `[+] Error Handling: SECURE (No visible internal errors)\n`;
+        }
+
+        // ২. Secrets Exposure Check (API Keys)
+        const secretRegex = /(?:AIza[0-9A-Za-z-_]{35}|sk-[a-zA-Z0-9]{48}|[A-Za-z0-9_]{40,})/; 
+        if (secretRegex.test(htmlBody) || htmlBody.includes('api_key')) {
+            report += `[!] Secrets Exposure: WARNING (Possible API Keys or Tokens found in front-end HTML/JS)\n`;
+            score -= 25;
+        } else {
+            report += `[+] Secrets Exposure: SECURE (No hardcoded API keys detected in plain text)\n`;
+        }
+
+        // ৩. Rate Limiting Check
+        if (headers['x-ratelimit-limit'] || headers['retry-after']) {
+            report += `[+] Rate Limiting: SECURE (Rate limiting headers detected)\n`;
+        } else {
+            report += `[-] Rate Limiting: UNKNOWN (No standard rate limit headers found. Active testing required)\n`;
+            score -= 5;
+        }
+
+        // ৪. Dependency Vulnerabilities & Tech Stack
+        if (headers['x-powered-by']) {
+            report += `[-] Dependencies: WARNING (Tech Stack Exposed: ${headers['x-powered-by']})\n`;
+            score -= 10;
+        } else if (htmlBody.includes('<meta name="generator" content="WordPress')) {
+            report += `[-] Dependencies: WARNING (WordPress version exposed. Check plugins for vulnerabilities)\n`;
+            score -= 10;
+        } else {
+            report += `[+] Dependencies: SECURE (Tech stack & versions hidden)\n`;
+        }
+
+        report += `\n--- BASIC HTTP HEADERS ---\n`;
+
+        // ৫. Basic Security Headers
         if (headers['strict-transport-security']) {
-            report += `[+] HSTS: SECURE (Enforced)\n`;
+            report += `[+] HSTS: SECURE\n`;
         } else {
             report += `[!] HSTS: MISSING (Vulnerable to downgrade attacks)\n`;
-            score -= 20;
+            score -= 10;
         }
 
         if (headers['content-security-policy']) {
-            report += `[+] CSP: SECURE (Configured)\n`;
+            report += `[+] CSP: SECURE\n`;
         } else {
             report += `[!] CSP: MISSING (Vulnerable to XSS)\n`;
-            score -= 20;
+            score -= 10;
         }
 
         if (headers['x-frame-options']) {
-            report += `[+] X-Frame-Options: SECURE (${headers['x-frame-options']})\n`;
+            report += `[+] X-Frame-Options: SECURE\n`;
         } else {
             report += `[!] X-Frame-Options: MISSING (Vulnerable to Clickjacking)\n`;
-            score -= 15;
-        }
-
-        if (headers['server']) {
-            report += `[-] Server Disclosure: WARNING (Version exposed: ${headers['server']})\n`;
-            score -= 10;
-        } else {
-            report += `[+] Server Disclosure: SECURE (Hidden)\n`;
-        }
-
-        if (headers['x-powered-by']) {
-            report += `[-] Tech Stack Disclosure: WARNING (Exposes: ${headers['x-powered-by']})\n`;
             score -= 10;
         }
 
@@ -213,7 +242,7 @@ app.post('/api/scan-headers', async (req, res) => {
         res.json({ success: true, report: report });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Target unreachable or blocking automated requests.' });
+        res.status(500).json({ success: false, error: 'Target unreachable. It might be blocking automated security scanners.' });
     }
 });
 
@@ -278,4 +307,4 @@ app.get('/api/auth/github/callback', async (req, res) => {
 });
 
 module.exports = app;
-        
+            
