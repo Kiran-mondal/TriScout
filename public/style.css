@@ -227,7 +227,7 @@ button:hover:not(:disabled) {
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    padding: 0; /* বাটন প্যাডিং রিসেট করা হয়েছে */
+    padding: 0; 
 }
 
 .github-btn svg {
@@ -241,5 +241,29 @@ button:hover:not(:disabled) {
     color: #000;
     border-color: var(--text-main);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-        }
+}
+
+/* =========================================
+   Mobile Responsiveness Fixes
+========================================= */
+@media (max-width: 480px) {
+    body {
+        padding: 15px;
+    }
     
+    .header-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    h1 {
+        font-size: 1.8em;
+    }
+    
+    .logout-btn {
+        width: 100%;
+        padding: 12px;
+    }
+    }
+        
