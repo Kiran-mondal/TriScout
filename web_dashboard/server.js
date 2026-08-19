@@ -22,10 +22,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 // ==========================================
 const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER, 
-        pass: process.env.GMAIL_PASS  
-    }
+    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
 });
 
 // ==========================================
@@ -61,41 +58,58 @@ app.get('/dashboard', (req, res) => {
             <link rel="stylesheet" href="/style.css">
         </head>
         <body>
-            <div class="header-container">
-                <!-- লোগো এবং টাইটেল একসাথে রাখার জন্য Flexbox -->
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <img src="/logo.svg" alt="TriScout Logo" style="width: 45px; height: 45px; filter: drop-shadow(0 0 8px rgba(212, 255, 0, 0.4));">
-                    <h1>TRISCOUT <span style="font-size: 14px; color: var(--text-muted);">// ADVANCED DEFENSIVE ASSESSMENT</span></h1>
+            <!-- ট্রান্সপারেন্ট হাইড মেনুবার -->
+            <nav class="cyber-navbar">
+                <div class="nav-brand">
+                    <img src="/logo.svg" alt="TriScout Logo" class="brand-logo">
+                    <h1 class="brand-title">TRISCOUT</h1>
                 </div>
-                <button class="logout-btn" onclick="localStorage.removeItem('token'); window.location.href='/'">LOGOUT</button>
-            </div>
-
-            <div class="cyber-alert" style="border-left-color: var(--accent-green); background: rgba(212, 255, 0, 0.1); color: var(--accent-green);">
-                SYSTEM STATUS: SECURE. ADVANCED PASSIVE SCANNER ONLINE.
-            </div>
-
-            <!-- স্ক্যানার টুল -->
-            <div class="card">
-                <h3>TARGET SCANNER</h3>
-                <input type="text" id="targetInput" class="input-box" placeholder="ENTER DOMAIN (e.g. example.com)">
-                <button onclick="startScan()" style="width: 100%;">INITIATE ADVANCED SCAN</button>
-
-                <!-- টার্মিনাল আউটপুট -->
-                <div style="background: #000; color: var(--accent-green); padding: 15px; border: 1px solid var(--border-color); height: 250px; overflow-y: auto; font-family: monospace; margin-top: 20px; font-size: 14px;" id="terminalOutput">
-                    > Awaiting target input...
+                
+                <!-- মোবাইল হ্যামবার্গার আইকন -->
+                <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+                
+                <div class="nav-links" id="navMenu">
+                    <a href="#" class="nav-link">> SCANNER</a>
+                    <a href="#reportSection" class="nav-link">> REPORTS</a>
+                    <button class="logout-btn" onclick="localStorage.removeItem('token'); window.location.href='/'">LOGOUT</button>
                 </div>
-            </div>
+            </nav>
 
-            <!-- রিপোর্টিং টুল -->
-            <div class="card" id="reportSection" style="display: none; border-color: var(--accent-green);">
-                <h3 style="color: var(--accent-green);">DISPATCH REPORT</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Send the security assessment report directly to the site owner.</p>
-                <input type="email" id="emailInput" class="input-box" placeholder="ENTER CLIENT EMAIL ADDRESS">
-                <button onclick="sendReport()" style="width: 100%; background: #fff; color: #000; border-color: #fff;">SEND REPORT VIA GMAIL</button>
+            <!-- মূল ড্যাশবোর্ড কনটেন্ট -->
+            <div class="content-wrapper">
+                <div class="cyber-alert" style="border-left-color: var(--accent-green); background: rgba(212, 255, 0, 0.1); color: var(--accent-green);">
+                    SYSTEM STATUS: SECURE. ADVANCED PASSIVE SCANNER ONLINE.
+                </div>
+
+                <!-- স্ক্যানার টুল -->
+                <div class="card">
+                    <h3>TARGET SCANNER</h3>
+                    <input type="text" id="targetInput" class="input-box" placeholder="ENTER DOMAIN (e.g. example.com)">
+                    <button onclick="startScan()" style="width: 100%;">INITIATE ADVANCED SCAN</button>
+
+                    <!-- টার্মিনাল আউটপুট -->
+                    <div style="background: #000; color: var(--accent-green); padding: 15px; border: 1px solid var(--border-color); height: 250px; overflow-y: auto; font-family: monospace; margin-top: 20px; font-size: 14px;" id="terminalOutput">
+                        > Awaiting target input...
+                    </div>
+                </div>
+
+                <!-- রিপোর্টিং টুল -->
+                <div class="card" id="reportSection" style="display: none; border-color: var(--accent-green);">
+                    <h3 style="color: var(--accent-green);">DISPATCH REPORT</h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Send the security assessment report directly to the site owner.</p>
+                    <input type="email" id="emailInput" class="input-box" placeholder="ENTER CLIENT EMAIL ADDRESS">
+                    <button onclick="sendReport()" style="width: 100%; background: #fff; color: #000; border-color: #fff;">SEND REPORT VIA GMAIL</button>
+                </div>
             </div>
 
             <script>
                 let currentReport = "";
+
+                // মেনুবার হাইড/শো করার ফাংশন
+                function toggleMenu() {
+                    const menu = document.getElementById('navMenu');
+                    menu.classList.toggle('active');
+                }
 
                 async function startScan() {
                     const target = document.getElementById('targetInput').value;
@@ -159,7 +173,7 @@ app.get('/dashboard', (req, res) => {
 });
 
 // ==========================================
-// ৪. উন্নত প্যাসিভ স্ক্যানার API (Advanced Logic)
+// ৪. উন্নত প্যাসিভ স্ক্যানার API
 // ==========================================
 app.post('/api/scan-headers', async (req, res) => {
     let { target } = req.body;
@@ -176,77 +190,53 @@ app.post('/api/scan-headers', async (req, res) => {
         });
         
         const headers = response.headers;
-        // সোর্স কোডকে স্ট্রিং-এ কনভার্ট করা হচ্ছে
         const htmlBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
         let report = `--- ADVANCED SECURITY ANALYSIS FOR: ${target} ---\n\n`;
         let score = 100;
 
-        // ১. Error Handling & Information Leakage Check
         if (htmlBody.includes('Stack trace:') || htmlBody.includes('SyntaxError:') || htmlBody.includes('SQL syntax')) {
-            report += `[!] Error Handling: CRITICAL (Stack trace or database errors exposed in source code!)\n`;
+            report += `[!] Error Handling: CRITICAL (Stack trace exposed!)\n`;
             score -= 20;
-        } else {
-            report += `[+] Error Handling: SECURE (No visible internal errors)\n`;
-        }
+        } else { report += `[+] Error Handling: SECURE\n`; }
 
-        // ২. Secrets Exposure Check (API Keys)
         const secretRegex = /(?:AIza[0-9A-Za-z-_]{35}|sk-[a-zA-Z0-9]{48}|[A-Za-z0-9_]{40,})/; 
         if (secretRegex.test(htmlBody) || htmlBody.includes('api_key')) {
-            report += `[!] Secrets Exposure: WARNING (Possible API Keys or Tokens found in front-end HTML/JS)\n`;
+            report += `[!] Secrets Exposure: WARNING (Possible API Keys found)\n`;
             score -= 25;
-        } else {
-            report += `[+] Secrets Exposure: SECURE (No hardcoded API keys detected in plain text)\n`;
-        }
+        } else { report += `[+] Secrets Exposure: SECURE\n`; }
 
-        // ৩. Rate Limiting Check
         if (headers['x-ratelimit-limit'] || headers['retry-after']) {
-            report += `[+] Rate Limiting: SECURE (Rate limiting headers detected)\n`;
+            report += `[+] Rate Limiting: SECURE\n`;
         } else {
-            report += `[-] Rate Limiting: UNKNOWN (No standard rate limit headers found. Active testing required)\n`;
+            report += `[-] Rate Limiting: UNKNOWN (Active testing required)\n`;
             score -= 5;
         }
 
-        // ৪. Dependency Vulnerabilities & Tech Stack
         if (headers['x-powered-by']) {
             report += `[-] Dependencies: WARNING (Tech Stack Exposed: ${headers['x-powered-by']})\n`;
             score -= 10;
         } else if (htmlBody.includes('<meta name="generator" content="WordPress')) {
-            report += `[-] Dependencies: WARNING (WordPress version exposed. Check plugins for vulnerabilities)\n`;
+            report += `[-] Dependencies: WARNING (WordPress version exposed)\n`;
             score -= 10;
-        } else {
-            report += `[+] Dependencies: SECURE (Tech stack & versions hidden)\n`;
-        }
+        } else { report += `[+] Dependencies: SECURE\n`; }
 
         report += `\n--- BASIC HTTP HEADERS ---\n`;
 
-        // ৫. Basic Security Headers
-        if (headers['strict-transport-security']) {
-            report += `[+] HSTS: SECURE\n`;
-        } else {
-            report += `[!] HSTS: MISSING (Vulnerable to downgrade attacks)\n`;
-            score -= 10;
-        }
+        if (headers['strict-transport-security']) { report += `[+] HSTS: SECURE\n`; } 
+        else { report += `[!] HSTS: MISSING\n`; score -= 10; }
 
-        if (headers['content-security-policy']) {
-            report += `[+] CSP: SECURE\n`;
-        } else {
-            report += `[!] CSP: MISSING (Vulnerable to XSS)\n`;
-            score -= 10;
-        }
+        if (headers['content-security-policy']) { report += `[+] CSP: SECURE\n`; } 
+        else { report += `[!] CSP: MISSING\n`; score -= 10; }
 
-        if (headers['x-frame-options']) {
-            report += `[+] X-Frame-Options: SECURE\n`;
-        } else {
-            report += `[!] X-Frame-Options: MISSING (Vulnerable to Clickjacking)\n`;
-            score -= 10;
-        }
+        if (headers['x-frame-options']) { report += `[+] X-Frame-Options: SECURE\n`; } 
+        else { report += `[!] X-Frame-Options: MISSING\n`; score -= 10; }
 
         report += `\nOVERALL SECURITY SCORE: ${score}/100`;
 
         res.json({ success: true, report: report });
 
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Target unreachable. It might be blocking automated security scanners.' });
+        res.status(500).json({ success: false, error: 'Target unreachable.' });
     }
 });
 
@@ -255,10 +245,7 @@ app.post('/api/scan-headers', async (req, res) => {
 // ==========================================
 app.post('/api/send-report', async (req, res) => {
     const { target, reportData, emailTo } = req.body;
-    
-    if(!target || !reportData || !emailTo) {
-        return res.status(400).json({ success: false, error: "Missing information." });
-    }
+    if(!target || !reportData || !emailTo) return res.status(400).json({ success: false, error: "Missing information." });
 
     try {
         const mailOptions = {
@@ -267,11 +254,10 @@ app.post('/api/send-report', async (req, res) => {
             subject: `[ALERT] TriScout Security Assessment: ${target}`,
             text: `TriScout Defensive Cyber Security System\n\nTarget Analyzed: ${target}\n\n${reportData}\n\n--------------------\nConfidential Report Generated by TriScout.`
         };
-
         await transporter.sendMail(mailOptions);
         res.json({ success: true, message: 'Email sent successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Internal Email Service Error. Check Vercel Variables.' });
+        res.status(500).json({ success: false, error: 'Internal Email Service Error.' });
     }
 });
 
@@ -287,7 +273,6 @@ app.get('/api/auth/github', (req, res) => {
 app.get('/api/auth/github/callback', async (req, res) => {
     const { code } = req.query;
     if (!code) return res.status(400).send('No code provided');
-
     try {
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
@@ -305,10 +290,8 @@ app.get('/api/auth/github/callback', async (req, res) => {
         const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url }, JWT_SECRET, { expiresIn: '1h' });
 
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
-    } catch (error) {
-        res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>');
-    }
+    } catch (error) { res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>'); }
 });
 
 module.exports = app;
-        
+    
