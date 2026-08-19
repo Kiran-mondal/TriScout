@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const axios = require('axios'); // প্যাসিভ স্ক্যানিংয়ের জন্য
 const { neon } = require('@neondatabase/serverless');
 require('dotenv').config();
 
@@ -14,28 +15,24 @@ const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// ১. মূল ডোমেইনে (/) ঢুকলে public/index.html (লগইন পেজ) লোড হবে
 app.use(express.static(path.join(__dirname, '../public')));
 
 // ==========================================
-// ২. ইমেইল ট্রান্সপোর্টার সেটআপ (Gmail)
+// ১. ইমেইল ট্রান্সপোর্টার সেটআপ (Gmail)
 // ==========================================
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.GMAIL_USER, // Vercel-এ দেওয়া আপনার জিমেইল আইডি
-        pass: process.env.GMAIL_PASS  // Vercel-এ দেওয়া আপনার App Password
+        user: process.env.GMAIL_USER, 
+        pass: process.env.GMAIL_PASS  
     }
 });
 
 // ==========================================
-// ৩. লগইন রাউট
+// ২. লগইন রাউট
 // ==========================================
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    
-    // লোকাল অ্যাডমিন লগইন (Username: Admin, Password: Admin)
     if (username === 'Admin' && password === 'Admin') {
         const token = jwt.sign({ user: 'Admin' }, JWT_SECRET, { expiresIn: '1h' });
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
@@ -52,7 +49,7 @@ app.post('/login', (req, res) => {
 });
 
 // ==========================================
-// ৪. ড্যাশবোর্ড রাউট (সার্ভার সাইড রেন্ডারিং)
+// ৩. ড্যাশবোর্ড রাউট (ফ্রন্টএন্ড ইন্টারফেস)
 // ==========================================
 app.get('/dashboard', (req, res) => {
     res.send(`
@@ -65,31 +62,30 @@ app.get('/dashboard', (req, res) => {
         </head>
         <body>
             <div class="header-container">
-                <h1>TRISCOUT <span style="font-size: 14px; color: var(--text-muted);">// VULNERABILITY ASSESSMENT</span></h1>
+                <h1>TRISCOUT <span style="font-size: 14px; color: var(--text-muted);">// DEFENSIVE ASSESSMENT</span></h1>
                 <button class="logout-btn" onclick="localStorage.removeItem('token'); window.location.href='/'">LOGOUT</button>
             </div>
 
             <div class="cyber-alert" style="border-left-color: var(--accent-green); background: rgba(212, 255, 0, 0.1); color: var(--accent-green);">
-                SYSTEM STATUS: SECURE. READY FOR TARGET ACQUISITION.
+                SYSTEM STATUS: SECURE. PASSIVE SCANNER ONLINE.
             </div>
 
             <!-- স্ক্যানার টুল -->
             <div class="card">
                 <h3>TARGET SCANNER</h3>
-                <input type="text" id="targetInput" class="input-box" placeholder="ENTER DOMAIN OR IP (e.g. example.com)">
-                
-                <button onclick="startScan()" style="width: 100%;">INITIATE SECURITY SCAN</button>
+                <input type="text" id="targetInput" class="input-box" placeholder="ENTER DOMAIN (e.g. example.com)">
+                <button onclick="startScan()" style="width: 100%;">INITIATE PASSIVE SCAN</button>
 
                 <!-- টার্মিনাল আউটপুট -->
-                <div style="background: #000; color: var(--accent-green); padding: 15px; border: 1px solid var(--border-color); height: 200px; overflow-y: auto; font-family: monospace; margin-top: 20px; font-size: 14px;" id="terminalOutput">
+                <div style="background: #000; color: var(--accent-green); padding: 15px; border: 1px solid var(--border-color); height: 250px; overflow-y: auto; font-family: monospace; margin-top: 20px; font-size: 14px;" id="terminalOutput">
                     > Awaiting target input...
                 </div>
             </div>
 
-            <!-- রিপোর্টিং টুল (স্ক্যান শেষ হলে দৃশ্যমান হবে) -->
+            <!-- রিপোর্টিং টুল -->
             <div class="card" id="reportSection" style="display: none; border-color: var(--accent-green);">
                 <h3 style="color: var(--accent-green);">DISPATCH REPORT</h3>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Send the vulnerability assessment report directly to the site owner.</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Send the security assessment report directly to the site owner.</p>
                 <input type="email" id="emailInput" class="input-box" placeholder="ENTER CLIENT EMAIL ADDRESS">
                 <button onclick="sendReport()" style="width: 100%; background: #fff; color: #000; border-color: #fff;">SEND REPORT VIA GMAIL</button>
             </div>
@@ -97,28 +93,37 @@ app.get('/dashboard', (req, res) => {
             <script>
                 let currentReport = "";
 
-                // স্ক্যানিং সিমুলেশন লজিক
-                function startScan() {
+                // ড্যাশবোর্ড থেকে ব্যাকএন্ড এপিআই কল করার লজিক
+                async function startScan() {
                     const target = document.getElementById('targetInput').value;
                     const terminal = document.getElementById('terminalOutput');
-                    if(!target) return alert('Enter a valid target domain or IP!');
+                    if(!target) return alert('Enter a valid target domain!');
                     
                     document.getElementById('reportSection').style.display = 'none';
-                    terminal.innerHTML = "> Initializing deep scan for: " + target + "...<br>";
+                    terminal.innerHTML = "> Initializing passive security analysis for: " + target + "...<br>> Fetching HTTP headers...<br><br>";
                     
-                    setTimeout(() => { terminal.innerHTML += "> Resolving DNS and IP address...<br>"; }, 800);
-                    setTimeout(() => { terminal.innerHTML += "> Checking open ports (80, 443, 21, 22, 3306)...<br>"; }, 1800);
-                    setTimeout(() => { terminal.innerHTML += "> Analyzing SSL/TLS Certificate status...<br>"; }, 2800);
+                    try {
+                        const response = await fetch('/api/scan-headers', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ target: target })
+                        });
+                        
+                        const data = await response.json();
 
-                    setTimeout(() => {
-                        currentReport = "Target: " + target + "\\n\\n--- VULNERABILITY REPORT ---\\n[!] Port 80 (HTTP): OPEN (Unencrypted)\\n[+] Port 443 (HTTPS): SECURE\\n[!] Port 21 (FTP): OPEN (Vulnerable to brute-force)\\n\\nRECOMMENDATION: Close Port 21 immediately and enforce HTTPS strictly.";
-                        
-                        terminal.innerHTML += "<br><span style='color: var(--danger-red);'>> [!] WARNING: UNSECURED PORTS DETECTED.</span><br>";
-                        terminal.innerHTML += "<span style='color: var(--accent-green);'>> Scan complete. Report generated.</span><br>";
-                        
-                        document.getElementById('reportSection').style.display = 'block';
-                        window.scrollTo(0, document.body.scrollHeight);
-                    }, 4000);
+                        if (data.success) {
+                            currentReport = data.report;
+                            const formattedReport = currentReport.replace(/\\n/g, '<br>');
+                            terminal.innerHTML += formattedReport + "<br><br>> Analysis complete. Report ready for dispatch.";
+                            
+                            document.getElementById('reportSection').style.display = 'block';
+                            window.scrollTo(0, document.body.scrollHeight);
+                        } else {
+                            terminal.innerHTML += "<span style='color: var(--danger-red);'>[!] ERROR: " + data.error + "</span>";
+                        }
+                    } catch (error) {
+                        terminal.innerHTML += "<span style='color: var(--danger-red);'>[!] CRITICAL ERROR: Could not reach the scanning API.</span>";
+                    }
                 }
 
                 // ইমেইল পাঠানোর API কল
@@ -152,7 +157,70 @@ app.get('/dashboard', (req, res) => {
 });
 
 // ==========================================
-// ৫. ইমেইল পাঠানোর API রাউট
+// ৪. প্যাসিভ স্ক্যানার API (আসল লজিক)
+// ==========================================
+app.post('/api/scan-headers', async (req, res) => {
+    let { target } = req.body;
+    if (!target) return res.status(400).json({ success: false, error: 'Target URL is required' });
+
+    if (!target.startsWith('http://') && !target.startsWith('https://')) {
+        target = 'https://' + target;
+    }
+
+    try {
+        const response = await axios.get(target, { 
+            timeout: 8000, 
+            validateStatus: () => true 
+        });
+        
+        const headers = response.headers;
+        let report = \`--- PASSIVE SECURITY ANALYSIS FOR: \${target} ---\\n\\n\`;
+        let score = 100;
+
+        if (headers['strict-transport-security']) {
+            report += \`[+] HSTS: SECURE (Enforced)\\n\`;
+        } else {
+            report += \`[!] HSTS: MISSING (Vulnerable to downgrade attacks)\\n\`;
+            score -= 20;
+        }
+
+        if (headers['content-security-policy']) {
+            report += \`[+] CSP: SECURE (Configured)\\n\`;
+        } else {
+            report += \`[!] CSP: MISSING (Vulnerable to XSS)\\n\`;
+            score -= 20;
+        }
+
+        if (headers['x-frame-options']) {
+            report += \`[+] X-Frame-Options: SECURE (\${headers['x-frame-options']})\\n\`;
+        } else {
+            report += \`[!] X-Frame-Options: MISSING (Vulnerable to Clickjacking)\\n\`;
+            score -= 15;
+        }
+
+        if (headers['server']) {
+            report += \`[-] Server Disclosure: WARNING (Version exposed: \${headers['server']})\\n\`;
+            score -= 10;
+        } else {
+            report += \`[+] Server Disclosure: SECURE (Hidden)\\n\`;
+        }
+
+        if (headers['x-powered-by']) {
+            report += \`[-] Tech Stack Disclosure: WARNING (Exposes: \${headers['x-powered-by']})\\n\`;
+            score -= 10;
+        }
+
+        report += \`\\nOVERALL SECURITY SCORE: \${score}/100\`;
+
+        res.json({ success: true, report: report });
+
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Target unreachable or blocking automated requests.' });
+    }
+});
+
+// ==========================================
+// ৫. ইমেইল পাঠানোর API
 // ==========================================
 app.post('/api/send-report', async (req, res) => {
     const { target, reportData, emailTo } = req.body;
@@ -165,15 +233,14 @@ app.post('/api/send-report', async (req, res) => {
         const mailOptions = {
             from: process.env.GMAIL_USER,
             to: emailTo,
-            subject: `[ALERT] TriScout Security Assessment: ${target}`,
-            text: `TriScout Defensive Cyber Security System\n\nTarget Analyzed: ${target}\n\n${reportData}\n\n--------------------\nConfidential Report Generated by TriScout.`
+            subject: \`[ALERT] TriScout Security Assessment: \${target}\`,
+            text: \`TriScout Defensive Cyber Security System\\n\\nTarget Analyzed: \${target}\\n\\n\${reportData}\\n\\n--------------------\\nConfidential Report Generated by TriScout.\`
         };
 
         await transporter.sendMail(mailOptions);
         res.json({ success: true, message: 'Email sent successfully' });
     } catch (error) {
-        console.error("Email Error: ", error);
-        res.status(500).json({ success: false, error: 'Internal Email Service Error. Check Vercel Environment Variables.' });
+        res.status(500).json({ success: false, error: 'Internal Email Service Error. Check Vercel Variables.' });
     }
 });
 
@@ -181,8 +248,8 @@ app.post('/api/send-report', async (req, res) => {
 // ৬. গিটহাব লগইন লজিক
 // ==========================================
 app.get('/api/auth/github', (req, res) => {
-    const redirectUri = `https://${req.headers.host}/api/auth/github/callback`;
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=read:user`;
+    const redirectUri = \`https://\${req.headers.host}/api/auth/github/callback\`;
+    const githubAuthUrl = \`https://github.com/login/oauth/authorize?client_id=\${GITHUB_CLIENT_ID}&redirect_uri=\${redirectUri}&scope=read:user\`;
     res.redirect(githubAuthUrl);
 });
 
@@ -201,16 +268,15 @@ app.get('/api/auth/github/callback', async (req, res) => {
         if (!accessToken) throw new Error('Failed to get access token');
 
         const userResponse = await fetch('https://api.github.com/user', {
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'User-Agent': 'TriScout-App' }
+            headers: { 'Authorization': \`Bearer \${accessToken}\`, 'User-Agent': 'TriScout-App' }
         });
         const userData = await userResponse.json();
         const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url }, JWT_SECRET, { expiresIn: '1h' });
 
-        res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
+        res.send(\`<script>localStorage.setItem('token', '\${token}'); window.location.href = '/dashboard';</script>\`);
     } catch (error) {
         res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>');
     }
 });
 
 module.exports = app;
-                              
