@@ -57,32 +57,6 @@ cd TriScout
 chmod +x run_all.sh
 ./run_all.sh -target 192.168.1.1 -ports 1-1024 -format pdf
 ```
-
-### Manual Step-by-Step
-
-**1. Run Scanner**
-```bash
-cd go_scanner
-go build -o triscout-scan scanner.go
-./triscout-scan -target 192.168.1.1 -ports 1-1024
-```
-
-**2. Enrich Data**
-```bash
-cd ../python_processor
-python3 processor.py ../go_scanner/results.json pdf
-```
-
-**3. Start Dashboard**
-```bash
-cd ../web_dashboard
-npm install
-node server.js
-```
-
-Open http://localhost:3000 in your browser  
-Default credentials: `admin` / `triscout2026`
-
 ## 🔧 Technology Stack
 
 - **Go:** Concurrent scanning, networking
