@@ -26,7 +26,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // ==========================================
-// ২. মাল্টি-পেজ লেআউট ফাংশন (Navbar Updated)
+// ২. মাল্টি-পেজ লেআউট ফাংশন 
 // ==========================================
 function generateLayout(pageTitle, content) {
     return `
@@ -38,7 +38,6 @@ function generateLayout(pageTitle, content) {
         <link rel="stylesheet" href="/style.css">
     </head>
     <body>
-        <!-- ট্রান্সপারেন্ট হাইড মেনুবার -->
         <nav class="cyber-navbar">
             <div class="nav-brand">
                 <img src="/logo.svg" alt="TriScout Logo" class="brand-logo">
@@ -84,7 +83,7 @@ app.post('/login', (req, res) => {
 });
 
 // ==========================================
-// ৪. পেজ রাউট: SCANNER (প্রথম পেজ)
+// ৪. পেজ রাউট: SCANNER
 // ==========================================
 app.get('/dashboard', (req, res) => {
     const scannerContent = `
@@ -141,7 +140,7 @@ app.get('/dashboard', (req, res) => {
 });
 
 // ==========================================
-// ৫. পেজ রাউট: REPORTS (দ্বিতীয় পেজ)
+// ৫. পেজ রাউট: REPORTS
 // ==========================================
 app.get('/reports', (req, res) => {
     const reportContent = `
@@ -202,7 +201,7 @@ app.get('/reports', (req, res) => {
 });
 
 // ==========================================
-// ৬. পেজ রাউট: CLI DOWNLOAD (নতুন পেজ)
+// ৬. পেজ রাউট: CLI DOWNLOAD
 // ==========================================
 app.get('/cli', (req, res) => {
     const cliContent = `
@@ -224,7 +223,7 @@ app.get('/cli', (req, res) => {
 });
 
 // ==========================================
-// ৭. পেজ রাউট: MY PROJECT (নতুন পেজ)
+// ৭. পেজ রাউট: MY PROJECT
 // ==========================================
 app.get('/project', (req, res) => {
     const projectContent = `
@@ -280,42 +279,44 @@ app.post('/api/scan-headers', async (req, res) => {
         const response = await axios.get(target, { timeout: 10000, validateStatus: () => true });
         const headers = response.headers;
         const htmlBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-        let report = \`--- ADVANCED SECURITY ANALYSIS FOR: \${target} ---\\n\\n\`;
+        
+        // এখানে ব্যাকস্ল্যাশ রিমুভ করা হয়েছে
+        let report = `--- ADVANCED SECURITY ANALYSIS FOR: ${target} ---\n\n`;
         let score = 100;
 
         if (htmlBody.includes('Stack trace:') || htmlBody.includes('SyntaxError:') || htmlBody.includes('SQL syntax')) {
-            report += \`[!] Error Handling: CRITICAL (Stack trace exposed!)\\n\`; score -= 20;
-        } else { report += \`[+] Error Handling: SECURE\\n\`; }
+            report += `[!] Error Handling: CRITICAL (Stack trace exposed!)\n`; score -= 20;
+        } else { report += `[+] Error Handling: SECURE\n`; }
 
         const secretRegex = /(?:AIza[0-9A-Za-z-_]{35}|sk-[a-zA-Z0-9]{48}|[A-Za-z0-9_]{40,})/; 
         if (secretRegex.test(htmlBody) || htmlBody.includes('api_key')) {
-            report += \`[!] Secrets Exposure: WARNING (Possible API Keys found)\\n\`; score -= 25;
-        } else { report += \`[+] Secrets Exposure: SECURE\\n\`; }
+            report += `[!] Secrets Exposure: WARNING (Possible API Keys found)\n`; score -= 25;
+        } else { report += `[+] Secrets Exposure: SECURE\n`; }
 
         if (headers['x-ratelimit-limit'] || headers['retry-after']) {
-            report += \`[+] Rate Limiting: SECURE\\n\`;
+            report += `[+] Rate Limiting: SECURE\n`;
         } else {
-            report += \`[-] Rate Limiting: UNKNOWN (Active testing required)\\n\`; score -= 5;
+            report += `[-] Rate Limiting: UNKNOWN (Active testing required)\n`; score -= 5;
         }
 
         if (headers['x-powered-by']) {
-            report += \`[-] Dependencies: WARNING (Tech Stack Exposed: \${headers['x-powered-by']})\\n\`; score -= 10;
+            report += `[-] Dependencies: WARNING (Tech Stack Exposed: ${headers['x-powered-by']})\n`; score -= 10;
         } else if (htmlBody.includes('<meta name="generator" content="WordPress')) {
-            report += \`[-] Dependencies: WARNING (WordPress version exposed)\\n\`; score -= 10;
-        } else { report += \`[+] Dependencies: SECURE\\n\`; }
+            report += `[-] Dependencies: WARNING (WordPress version exposed)\n`; score -= 10;
+        } else { report += `[+] Dependencies: SECURE\n`; }
 
-        report += \`\\n--- BASIC HTTP HEADERS ---\\n\`;
+        report += `\n--- BASIC HTTP HEADERS ---\n`;
 
-        if (headers['strict-transport-security']) { report += \`[+] HSTS: SECURE\\n\`; } 
-        else { report += \`[!] HSTS: MISSING\\n\`; score -= 10; }
+        if (headers['strict-transport-security']) { report += `[+] HSTS: SECURE\n`; } 
+        else { report += `[!] HSTS: MISSING\n`; score -= 10; }
 
-        if (headers['content-security-policy']) { report += \`[+] CSP: SECURE\\n\`; } 
-        else { report += \`[!] CSP: MISSING\\n\`; score -= 10; }
+        if (headers['content-security-policy']) { report += `[+] CSP: SECURE\n`; } 
+        else { report += `[!] CSP: MISSING\n`; score -= 10; }
 
-        if (headers['x-frame-options']) { report += \`[+] X-Frame-Options: SECURE\\n\`; } 
-        else { report += \`[!] X-Frame-Options: MISSING\\n\`; score -= 10; }
+        if (headers['x-frame-options']) { report += `[+] X-Frame-Options: SECURE\n`; } 
+        else { report += `[!] X-Frame-Options: MISSING\n`; score -= 10; }
 
-        report += \`\\nOVERALL SECURITY SCORE: \${score}/100\`;
+        report += `\nOVERALL SECURITY SCORE: ${score}/100`;
         res.json({ success: true, report: report });
     } catch (error) { res.status(500).json({ success: false, error: 'Target unreachable.' }); }
 });
@@ -331,8 +332,9 @@ app.post('/api/send-report', async (req, res) => {
         const mailOptions = {
             from: process.env.GMAIL_USER,
             to: emailTo,
-            subject: \`[ALERT] TriScout Security Assessment: \${target}\`,
-            text: \`TriScout Defensive Cyber Security System\\n\\nTarget Analyzed: \${target}\\n\\n\${reportData}\\n\\n--------------------\\nConfidential Report Generated by TriScout.\`
+            // এখানেও ব্যাকস্ল্যাশ রিমুভ করা হয়েছে
+            subject: `[ALERT] TriScout Security Assessment: ${target}`,
+            text: `TriScout Defensive Cyber Security System\n\nTarget Analyzed: ${target}\n\n${reportData}\n\n--------------------\nConfidential Report Generated by TriScout.`
         };
         await transporter.sendMail(mailOptions);
         res.json({ success: true, message: 'Email sent successfully' });
@@ -343,8 +345,8 @@ app.post('/api/send-report', async (req, res) => {
 // ১০. গিটহাব লগইন লজিক
 // ==========================================
 app.get('/api/auth/github', (req, res) => {
-    const redirectUri = \`https://\${req.headers.host}/api/auth/github/callback\`;
-    res.redirect(\`https://github.com/login/oauth/authorize?client_id=\${GITHUB_CLIENT_ID}&redirect_uri=\${redirectUri}&scope=read:user\`);
+    const redirectUri = `https://${req.headers.host}/api/auth/github/callback`;
+    res.redirect(`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=read:user`);
 });
 
 app.get('/api/auth/github/callback', async (req, res) => {
@@ -358,12 +360,13 @@ app.get('/api/auth/github/callback', async (req, res) => {
         });
         const tokenData = await tokenResponse.json();
         const userResponse = await fetch('https://api.github.com/user', {
-            headers: { 'Authorization': \`Bearer \${tokenData.access_token}\`, 'User-Agent': 'TriScout-App' }
+            headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'User-Agent': 'TriScout-App' }
         });
         const userData = await userResponse.json();
         const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url }, JWT_SECRET, { expiresIn: '1h' });
-        res.send(\`<script>localStorage.setItem('token', '\${token}'); window.location.href = '/dashboard';</script>\`);
+        res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
     } catch (error) { res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>'); }
 });
 
 module.exports = app;
+    
