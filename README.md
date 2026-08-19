@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/logo.svg" alt="TriScout Logo" width="180" />
+  <img src="public/logo.svg" alt="TriScout Logo" width="250" hight="250" />
   
   <h1>🛰️ TriScout</h1>
 
