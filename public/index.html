@@ -17,12 +17,13 @@
             margin: 0;
             padding: 20px; /* মোবাইলের সাইডে ফাঁকা রাখার জন্য */
             box-sizing: border-box;
+            background-color: #050505;
         }
 
         .login-card {
-            background: var(--card-bg);
+            background: #0a0a0a;
             padding: 40px; 
-            border: 1px solid var(--border-color);
+            border: 1px solid #333;
             width: 100%;
             max-width: 450px; 
             box-sizing: border-box;
@@ -36,8 +37,8 @@
             left: -1px;
             width: 15px;
             height: 15px;
-            border-top: 2px solid var(--accent-green);
-            border-left: 2px solid var(--accent-green);
+            border-top: 2px solid #d4ff00;
+            border-left: 2px solid #d4ff00;
         }
 
         .logo-header {
@@ -54,7 +55,7 @@
         }
 
         .logo-header h2 {
-            color: var(--accent-green);
+            color: #d4ff00;
             letter-spacing: 4px;
             margin: 0;
             font-size: 32px;
@@ -71,10 +72,38 @@
             }
         }
 
+        /* শুধুমাত্র গিটহাব লোগোর জন্য স্টাইল */
+        .github-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .github-btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid #555;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .github-btn:hover {
+            background: #fff;
+            color: #000;
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
         .divider {
             text-align: center;
             margin: 30px 0;
-            color: var(--text-muted);
+            color: #555;
             font-size: 12px;
             letter-spacing: 2px;
             display: flex;
@@ -83,27 +112,44 @@
         .divider::before, .divider::after {
             content: "";
             flex: 1;
-            border-bottom: 1px dashed var(--border-color);
+            border-bottom: 1px dashed #333;
         }
         .divider::before { margin-right: 15px; }
         .divider::after { margin-left: 15px; }
-        
-        .github-btn {
-            background: transparent;
-            color: var(--text-main);
-            border: 1px solid var(--text-main);
+
+        .input-box {
             width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            padding: 14px;
+            margin-bottom: 15px;
+            background: #000;
+            border: 1px solid #333;
+            color: #d4ff00;
+            font-family: inherit;
+            box-sizing: border-box;
+            outline: none;
+            font-size: 14px;
         }
-        .github-btn:hover {
-            background: var(--text-main);
-            color: #000;
+        .input-box:focus {
+            border-color: #d4ff00;
+            box-shadow: 0 0 8px rgba(212, 255, 0, 0.2);
         }
+        
         .full-width-btn {
             width: 100%;
+            padding: 14px;
+            background: #d4ff00;
+            color: #000;
+            border: 1px solid #d4ff00;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.2s;
+        }
+        .full-width-btn:hover {
+            background: #000;
+            color: #d4ff00;
         }
     </style>
 </head>
@@ -115,26 +161,26 @@
             <h2>TRISCOUT</h2>
         </div>
 
-        <button class="github-btn" onclick="window.location.href='/api/auth/github'">
-            <!-- গিটহাবের ভেক্টর লোগোটি বাটনের ভেতর যুক্ত করা হলো -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
-            AUTHENTICATE VIA GITHUB
-        </button>
+        <!-- শুধুমাত্র গিটহাব লোগো -->
+        <div class="github-container">
+            <a href="/api/auth/github" style="text-decoration: none;">
+                <button class="github-btn" type="button" title="Authenticate via GitHub">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                </button>
+            </a>
+        </div>
 
         <div class="divider">OR LOCAL ADMIN</div>
 
-        <input type="text" id="username" class="input-box" placeholder="USERNAME">
-        <input type="password" id="password" class="input-box" placeholder="PASSWORD">
-        
-        <button class="full-width-btn" onclick="login()">ACCESS SYSTEM</button>
+        <!-- আসল সার্ভার ফর্ম -->
+        <form action="/login" method="POST" style="width: 100%;">
+            <input type="text" name="username" class="input-box" placeholder="USERNAME" required>
+            <input type="password" name="password" class="input-box" placeholder="PASSWORD" required>
+            
+            <button type="submit" class="full-width-btn">ACCESS SYSTEM</button>
+        </form>
     </div>
-
-    <script>
-        function login() {
-            alert('LOCAL LOGIN FUNCTION INITIATED');
-        }
-    </script>
 </body>
 </html>
