@@ -1,7 +1,7 @@
 <div align="center">
   <img src="public/logo.svg" alt="TriScout Logo" width="250" hight="250" />
   
-  <h1>🛰️ TriScout</h1>
+  <h1>TriScout</h1>
 
   <img src="https://img.shields.io/badge/Go-1.18+-00ADD8?style=flat&logo=go" alt="Go Version">
   <img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=flat&logo=python" alt="Python Version">
