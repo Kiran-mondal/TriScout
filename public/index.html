@@ -2,30 +2,33 @@
 <html>
 <head>
     <title>TRISCOUT // LOGIN</title>
+    
+    <!-- এই লাইনটিই মোবাইল স্ক্রিনে সাইজ ঠিক করবে -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <link rel="stylesheet" href="/style.css">
     <link rel="icon" type="image/svg+xml" href="/logo.svg">
     <style>
-        /* লগইন পেজকে একদম মাঝখানে রাখার জন্য */
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px; /* মোবাইলের সাইডে ফাঁকা রাখার জন্য */
+            box-sizing: border-box;
         }
 
-        /* লগইন বক্সের নতুন ডিজাইন এবং সাইজ */
         .login-card {
             background: var(--card-bg);
-            padding: 40px; /* ভেতরে স্পেস বাড়ানো হয়েছে */
+            padding: 40px; 
             border: 1px solid var(--border-color);
             width: 100%;
-            max-width: 450px; /* ডেস্কটপে বক্সটি এখন অনেক চওড়া ও সুন্দর দেখাবে */
+            max-width: 450px; 
             box-sizing: border-box;
             position: relative;
         }
 
-        /* সাইবার কর্নার ডিজাইন */
         .login-card::before {
             content: '';
             position: absolute;
@@ -37,7 +40,6 @@
             border-left: 2px solid var(--accent-green);
         }
 
-        /* নতুন হেডার: লোগো + TRISCOUT */
         .logo-header {
             display: flex;
             align-items: center;
@@ -59,7 +61,16 @@
             text-shadow: 0 0 8px rgba(212, 255, 0, 0.4);
         }
 
-        /* ডিভাইডার (OR LOCAL ADMIN) */
+        /* মোবাইলের জন্য লেখার সাইজ একটু ছোট করা হলো */
+        @media (max-width: 480px) {
+            .logo-header h2 {
+                font-size: 26px;
+            }
+            .login-card {
+                padding: 30px 20px;
+            }
+        }
+
         .divider {
             text-align: center;
             margin: 30px 0;
@@ -77,12 +88,15 @@
         .divider::before { margin-right: 15px; }
         .divider::after { margin-left: 15px; }
         
-        /* বাটন স্টাইল */
         .github-btn {
             background: transparent;
             color: var(--text-main);
             border: 1px solid var(--text-main);
             width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         .github-btn:hover {
             background: var(--text-main);
@@ -96,21 +110,21 @@
 <body>
     <div class="login-card">
         
-        <!-- আপডেট করা হেডার (লোগো + নাম) -->
         <div class="logo-header">
             <img src="/logo.svg" alt="TriScout Logo">
             <h2>TRISCOUT</h2>
         </div>
 
-        <!-- গিটহাব লগইন -->
-        <!-- এখানে href এর জায়গায় আপনার আসল গিটহাব অথেন্টিকেশন লিংকটি দেবেন -->
         <button class="github-btn" onclick="window.location.href='/api/auth/github'">
-            > AUTHENTICATE VIA GITHUB
+            <!-- গিটহাবের ভেক্টর লোগোটি বাটনের ভেতর যুক্ত করা হলো -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            AUTHENTICATE VIA GITHUB
         </button>
 
         <div class="divider">OR LOCAL ADMIN</div>
 
-        <!-- লোকাল লগইন -->
         <input type="text" id="username" class="input-box" placeholder="USERNAME">
         <input type="password" id="password" class="input-box" placeholder="PASSWORD">
         
@@ -118,9 +132,7 @@
     </div>
 
     <script>
-        // আপনার লোকাল লগইন ফাংশন এখানে থাকবে
         function login() {
-            // Login logic
             alert('LOCAL LOGIN FUNCTION INITIATED');
         }
     </script>
