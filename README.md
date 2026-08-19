@@ -1,4 +1,12 @@
-# 🛰️ TriScout
+<p align="center">
+  <img src="./public/logo.svg" width="200" alt="TriScout Logo">
+</p>
+
+<h1 align="center">🛰️ TriScout</h1>
+
+<p align="center">
+  A fast, modular cybersecurity framework for network reconnaissance built with <strong>Go</strong>, <strong>Python</strong>, and <strong>Node.js</strong>.
+</p>
 
 A fast, modular cybersecurity framework for network reconnaissance built with **Go**, **Python**, and **Node.js**.
 
