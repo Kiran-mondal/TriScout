@@ -12,49 +12,111 @@ body {
     font-family: 'Courier New', Courier, monospace;
     background-color: var(--bg-color);
     color: var(--text-main);
-    padding: 30px;
+    margin: 0;
+    padding: 0; /* মেনুবারের জন্য প্যাডিং সরানো হয়েছে */
     line-height: 1.6;
     text-transform: uppercase;
-    /* Subtle grid background */
     background-image: linear-gradient(var(--border-color) 1px, transparent 1px),
     linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
     background-size: 50px 50px;
     background-position: -1px -1px;
 }
 
-/* Header Flexbox for Logout */
-.header-container { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    border-bottom: 2px solid var(--border-color); 
-    padding-bottom: 10px; 
-    margin-bottom: 30px; 
+/* =========================================
+   Transparent Glass Navbar
+========================================= */
+.cyber-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background: rgba(5, 5, 5, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    transition: all 0.3s ease;
 }
 
-h1 {
+.cyber-navbar:hover {
+    border-bottom: 1px solid var(--accent-green);
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.brand-logo {
+    width: 35px;
+    height: 35px;
+    filter: drop-shadow(0 0 6px rgba(212, 255, 0, 0.6));
+}
+
+.brand-title {
+    margin: 0;
+    font-size: 1.8em;
     color: var(--accent-green);
     letter-spacing: 2px;
-    font-size: 2.5em;
-    margin-bottom: 0;
     text-shadow: 0 0 5px rgba(212, 255, 0, 0.3);
+}
+
+.nav-links {
+    display: flex;
+    gap: 25px;
+    align-items: center;
+}
+
+.nav-link {
+    color: var(--text-main);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    transition: 0.3s;
+}
+
+.nav-link:hover {
+    color: var(--accent-green);
+    text-shadow: 0 0 8px rgba(212, 255, 0, 0.4);
+}
+
+.menu-toggle {
+    display: none;
+    color: var(--accent-green);
+    font-size: 26px;
+    cursor: pointer;
+    user-select: none;
 }
 
 .logout-btn { 
     background: var(--danger-red); 
     color: #000; 
     border: none; 
-    padding: 10px 15px; 
+    padding: 8px 15px; 
     font-weight: bold; 
     cursor: pointer; 
     text-transform: uppercase; 
     font-family: inherit; 
+    transition: 0.3s;
 }
 
 .logout-btn:hover { 
     background: #000; 
     color: var(--danger-red); 
     border: 1px solid var(--danger-red); 
+}
+
+/* =========================================
+   Main Content Layout
+========================================= */
+.content-wrapper {
+    padding: 30px;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 h3 {
@@ -65,28 +127,22 @@ h3 {
     letter-spacing: 1.5px;
 }
 
-h3::before {
-    content: '> ';
-    color: var(--accent-green);
-}
+h3::before { content: '> '; color: var(--accent-green); }
 
 .card {
     background: var(--card-bg);
     padding: 25px;
     border: 1px solid var(--border-color);
-    border-radius: 0; /* Sharp edges */
+    border-radius: 0;
     margin-bottom: 25px;
     position: relative;
 }
 
-/* Cyber corner accents */
 .card::before {
     content: '';
     position: absolute;
-    top: -1px;
-    left: -1px;
-    width: 15px;
-    height: 15px;
+    top: -1px; left: -1px;
+    width: 15px; height: 15px;
     border-top: 2px solid var(--accent-green);
     border-left: 2px solid var(--accent-green);
 }
@@ -111,25 +167,7 @@ h3::before {
     box-shadow: 0 0 8px rgba(212, 255, 0, 0.2);
 }
 
-.input-box::placeholder {
-    color: #444;
-}
-
-.consent-box {
-    display: block;
-    margin-bottom: 20px;
-    color: var(--text-main);
-    background: #000;
-    padding: 15px;
-    border: 1px dashed var(--border-color);
-    cursor: pointer;
-}
-
-.consent-box:hover {
-    border-color: var(--accent-green);
-}
-
-button {
+button:not(.logout-btn, .github-btn) {
     background: var(--accent-green);
     color: #000;
     border: 1px solid var(--accent-green);
@@ -144,51 +182,11 @@ button {
     transition: all 0.2s ease;
 }
 
-button:disabled {
-    background: #111;
-    color: #555;
-    border-color: #333;
-    cursor: not-allowed;
-}
-
-button:hover:not(:disabled) {
+button:not(.logout-btn, .github-btn):hover {
     background: #000;
     color: var(--accent-green);
     box-shadow: inset 0 0 10px rgba(212, 255, 0, 0.3);
 }
-
-/* Custom Table Styles for JS injection */
-.cyber-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: #000;
-    border: 1px solid var(--border-color);
-    margin-top: 15px;
-}
-
-.cyber-table th {
-    padding: 15px;
-    background: #111;
-    color: var(--accent-green);
-    border: 1px solid var(--border-color);
-    font-weight: normal;
-}
-
-.cyber-table td {
-    padding: 15px;
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-}
-
-.status-badge {
-    padding: 5px 10px;
-    font-weight: bold;
-    display: inline-block;
-}
-
-.status-secure { color: #000; background: var(--accent-green); }
-.status-danger { color: #000; background: var(--danger-red); }
-.status-missing { color: var(--danger-red); border: 1px solid var(--danger-red); }
 
 .cyber-alert {
     padding: 15px;
@@ -198,72 +196,46 @@ button:hover:not(:disabled) {
     margin-bottom: 20px;
 }
 
-.cyber-success {
-    padding: 15px;
-    background: rgba(212, 255, 0, 0.1);
-    border-left: 4px solid var(--accent-green);
-    color: var(--accent-green);
-}
-
 /* =========================================
-   GitHub Auth Button Styles (Added)
+   Mobile Responsiveness & Hamburger Menu
 ========================================= */
-.github-container {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    margin-bottom: 10px;
-}
-
-.github-btn {
-    background: transparent;
-    color: var(--text-main);
-    border: 2px solid var(--border-color);
-    width: 75px;  
-    height: 75px; 
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    padding: 0; 
-}
-
-.github-btn svg {
-    width: 40px !important;  
-    height: 40px !important; 
-    fill: currentColor;
-}
-
-.github-btn:hover {
-    background: var(--text-main);
-    color: #000;
-    border-color: var(--text-main);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-}
-
-/* =========================================
-   Mobile Responsiveness Fixes
-========================================= */
-@media (max-width: 480px) {
-    body {
-        padding: 15px;
-    }
+@media (max-width: 768px) {
+    .cyber-navbar { padding: 15px 20px; }
+    .brand-title { font-size: 1.5em; }
+    .menu-toggle { display: block; }
     
-    .header-container {
+    .nav-links {
+        display: none; /* By default hidden on mobile */
         flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: rgba(10, 10, 10, 0.95);
+        backdrop-filter: blur(15px);
+        padding: 20px 0;
+        border-bottom: 1px solid var(--accent-green);
+        text-align: center;
+        gap: 20px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
     }
     
-    h1 {
-        font-size: 1.8em;
+    .nav-links.active {
+        display: flex;
     }
     
     .logout-btn {
-        width: 100%;
+        width: 80%;
+        margin: 0 auto;
         padding: 12px;
     }
-    }
-        
+    
+    .content-wrapper { padding: 20px 15px; }
+}
+
+/* GitHub Button */
+.github-container { display: flex; justify-content: center; width: 100%; margin-bottom: 10px; }
+.github-btn { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); width: 75px; height: 75px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; padding: 0; }
+.github-btn svg { width: 40px !important; height: 40px !important; fill: currentColor; }
+.github-btn:hover { background: var(--text-main); color: #000; border-color: var(--text-main); box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
+    
