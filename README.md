@@ -8,8 +8,6 @@
   A fast, modular cybersecurity framework for network reconnaissance built with <strong>Go</strong>, <strong>Python</strong>, and <strong>Node.js</strong>.
 </p>
 
-A fast, modular cybersecurity framework for network reconnaissance built with **Go**, **Python**, and **Node.js**.
-
 ## 🚀 Features
 
 - **⚡ Fast Port Scanning:** Concurrent scanning with Go goroutines
