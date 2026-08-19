@@ -8,18 +8,44 @@
     --danger-red: #ff3333;
 }
 
+/* =========================================
+   Animated Cyber Background
+========================================= */
+@keyframes moveGrid {
+    0% { background-position: 0px 0px; }
+    100% { background-position: 50px 50px; }
+}
+
 body {
     font-family: 'Courier New', Courier, monospace;
     background-color: var(--bg-color);
     color: var(--text-main);
     margin: 0;
-    padding: 0; /* মেনুবারের জন্য প্যাডিং সরানো হয়েছে */
+    padding: 0;
     line-height: 1.6;
     text-transform: uppercase;
+    /* Grid Background */
     background-image: linear-gradient(var(--border-color) 1px, transparent 1px),
     linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
     background-size: 50px 50px;
-    background-position: -1px -1px;
+    /* Animation Applied */
+    animation: moveGrid 4s linear infinite;
+    position: relative;
+}
+
+/* CRT Monitor Scanline Overlay */
+body::after {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+    background-size: 100% 4px;
+    z-index: 9999;
+    pointer-events: none; /* যাতে ক্লিকে সমস্যা না হয় */
 }
 
 /* =========================================
@@ -102,6 +128,8 @@ body {
     text-transform: uppercase; 
     font-family: inherit; 
     transition: 0.3s;
+    position: relative;
+    z-index: 10;
 }
 
 .logout-btn:hover { 
@@ -117,6 +145,8 @@ body {
     padding: 30px;
     max-width: 1200px;
     margin: 0 auto;
+    position: relative;
+    z-index: 10; /* Scanline এর ওপরে থাকার জন্য */
 }
 
 h3 {
@@ -136,6 +166,7 @@ h3::before { content: '> '; color: var(--accent-green); }
     border-radius: 0;
     margin-bottom: 25px;
     position: relative;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .card::before {
@@ -160,6 +191,8 @@ h3::before { content: '> '; color: var(--accent-green); }
     font-size: 16px;
     outline: none;
     transition: border 0.3s ease;
+    position: relative;
+    z-index: 10;
 }
 
 .input-box:focus {
@@ -180,6 +213,8 @@ button:not(.logout-btn, .github-btn) {
     text-transform: uppercase;
     letter-spacing: 1px;
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 10;
 }
 
 button:not(.logout-btn, .github-btn):hover {
@@ -196,6 +231,25 @@ button:not(.logout-btn, .github-btn):hover {
     margin-bottom: 20px;
 }
 
+.cyber-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #000;
+    border: 1px solid var(--border-color);
+    margin-top: 15px;
+}
+
+.cyber-table th, .cyber-table td {
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.cyber-table th {
+    background: #111;
+    color: var(--accent-green);
+}
+
 /* =========================================
    Mobile Responsiveness & Hamburger Menu
 ========================================= */
@@ -205,7 +259,7 @@ button:not(.logout-btn, .github-btn):hover {
     .menu-toggle { display: block; }
     
     .nav-links {
-        display: none; /* By default hidden on mobile */
+        display: none; 
         flex-direction: column;
         position: absolute;
         top: 100%;
@@ -220,9 +274,7 @@ button:not(.logout-btn, .github-btn):hover {
         box-shadow: 0 10px 20px rgba(0,0,0,0.5);
     }
     
-    .nav-links.active {
-        display: flex;
-    }
+    .nav-links.active { display: flex; }
     
     .logout-btn {
         width: 80%;
@@ -234,7 +286,7 @@ button:not(.logout-btn, .github-btn):hover {
 }
 
 /* GitHub Button */
-.github-container { display: flex; justify-content: center; width: 100%; margin-bottom: 10px; }
+.github-container { display: flex; justify-content: center; width: 100%; margin-bottom: 10px; position: relative; z-index: 10; }
 .github-btn { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); width: 75px; height: 75px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; padding: 0; }
 .github-btn svg { width: 40px !important; height: 40px !important; fill: currentColor; }
 .github-btn:hover { background: var(--text-main); color: #000; border-color: var(--text-main); box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
