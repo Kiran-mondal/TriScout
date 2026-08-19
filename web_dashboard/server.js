@@ -62,7 +62,11 @@ app.get('/dashboard', (req, res) => {
         </head>
         <body>
             <div class="header-container">
-                <h1>TRISCOUT <span style="font-size: 14px; color: var(--text-muted);">// ADVANCED DEFENSIVE ASSESSMENT</span></h1>
+                <!-- লোগো এবং টাইটেল একসাথে রাখার জন্য Flexbox -->
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <img src="/logo.svg" alt="TriScout Logo" style="width: 45px; height: 45px; filter: drop-shadow(0 0 8px rgba(212, 255, 0, 0.4));">
+                    <h1>TRISCOUT <span style="font-size: 14px; color: var(--text-muted);">// ADVANCED DEFENSIVE ASSESSMENT</span></h1>
+                </div>
                 <button class="logout-btn" onclick="localStorage.removeItem('token'); window.location.href='/'">LOGOUT</button>
             </div>
 
@@ -307,4 +311,4 @@ app.get('/api/auth/github/callback', async (req, res) => {
 });
 
 module.exports = app;
-            
+        
