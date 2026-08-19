@@ -26,7 +26,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // ==========================================
-// ২. মাল্টি-পেজ লেআউট ফাংশন (Reusable UI)
+// ২. মাল্টি-পেজ লেআউট ফাংশন (Navbar Updated)
 // ==========================================
 function generateLayout(pageTitle, content) {
     return `
@@ -50,6 +50,8 @@ function generateLayout(pageTitle, content) {
             <div class="nav-links" id="navMenu">
                 <a href="/dashboard" class="nav-link">> SCANNER</a>
                 <a href="/reports" class="nav-link">> REPORTS</a>
+                <a href="/cli" class="nav-link">> CLI</a>
+                <a href="/project" class="nav-link">> MY PROJECT</a>
                 <button class="logout-btn" onclick="localStorage.removeItem('token'); window.location.href='/'">LOGOUT</button>
             </div>
         </nav>
@@ -59,7 +61,6 @@ function generateLayout(pageTitle, content) {
         </div>
 
         <script>
-            // মেনুবার টগল ফাংশন
             function toggleMenu() {
                 document.getElementById('navMenu').classList.toggle('active');
             }
@@ -122,7 +123,6 @@ app.get('/dashboard', (req, res) => {
                         const formattedReport = data.report.replace(/\\n/g, '<br>');
                         terminal.innerHTML += formattedReport;
                         
-                        // ডেটা লোকাল স্টোরেজে সেভ করে রাখা হচ্ছে যাতে Reports পেজ ব্যবহার করতে পারে
                         localStorage.setItem('triscout_target', target);
                         localStorage.setItem('triscout_report', data.report);
                         
@@ -158,7 +158,6 @@ app.get('/reports', (req, res) => {
         </div>
 
         <script>
-            // পেজ লোড হলে আগের স্ক্যান করা ডেটা খুঁজে বের করবে
             document.addEventListener("DOMContentLoaded", () => {
                 const savedReport = localStorage.getItem('triscout_report');
                 const savedTarget = localStorage.getItem('triscout_target');
@@ -190,8 +189,6 @@ app.get('/reports', (req, res) => {
                     const result = await response.json();
                     if(result.success) {
                         alert('SUCCESS: Assessment report securely sent to the client!');
-                        // পাঠানোর পর চাইলে স্টোরেজ ক্লিয়ার করতে পারেন
-                        // localStorage.removeItem('triscout_report');
                     } else {
                         alert('FAILED: ' + result.error);
                     }
@@ -205,7 +202,74 @@ app.get('/reports', (req, res) => {
 });
 
 // ==========================================
-// ৬. উন্নত প্যাসিভ স্ক্যানার API
+// ৬. পেজ রাউট: CLI DOWNLOAD (নতুন পেজ)
+// ==========================================
+app.get('/cli', (req, res) => {
+    const cliContent = `
+        <div class="card">
+            <h3 style="color: var(--accent-green);">TRISCOUT CLI EDITION</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Take the power of TriScout to your terminal. Integrate passive security scans directly into your CI/CD pipelines or run them locally using our Command Line Interface.</p>
+            
+            <div style="background: #050505; padding: 20px; border: 1px dashed var(--border-color); font-family: monospace; color: var(--text-main); margin-bottom: 25px;">
+                <span style="color: var(--text-muted);"># Install via NPM</span><br>
+                <span style="color: var(--accent-green);">$</span> npm install -g triscout-cli<br><br>
+                <span style="color: var(--text-muted);"># Run a quick scan</span><br>
+                <span style="color: var(--accent-green);">$</span> triscout scan example.com
+            </div>
+            
+            <button style="width: 100%;" onclick="alert('CLI Package download will be available in the next release!')">DOWNLOAD CLI BINARY (v1.0.0)</button>
+        </div>
+    `;
+    res.send(generateLayout('CLI TOOL', cliContent));
+});
+
+// ==========================================
+// ৭. পেজ রাউট: MY PROJECT (নতুন পেজ)
+// ==========================================
+app.get('/project', (req, res) => {
+    const projectContent = `
+        <div class="card">
+            <h3 style="color: var(--accent-green);">ABOUT TRISCOUT</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads.</p>
+            
+            <table class="cyber-table">
+                <tr>
+                    <th>MODULE</th>
+                    <th>SPECIFICATION</th>
+                </tr>
+                <tr>
+                    <td>Project Name</td>
+                    <td style="color: var(--accent-green); font-weight: bold;">TRISCOUT</td>
+                </tr>
+                <tr>
+                    <td>Version</td>
+                    <td>1.0.0-Beta</td>
+                </tr>
+                <tr>
+                    <td>Architecture</td>
+                    <td>Node.js / Express / Axios</td>
+                </tr>
+                <tr>
+                    <td>Core Capabilities</td>
+                    <td>
+                        - Passive Security Header Check<br>
+                        - Source Code Leakage Detection<br>
+                        - Secrets & API Key Exposure Alert<br>
+                        - Automated Email Reporting
+                    </td>
+                </tr>
+                <tr>
+                    <td>Developer</td>
+                    <td>TriScout Admin</td>
+                </tr>
+            </table>
+        </div>
+    `;
+    res.send(generateLayout('PROJECT DETAILS', projectContent));
+});
+
+// ==========================================
+// ৮. উন্নত প্যাসিভ স্ক্যানার API
 // ==========================================
 app.post('/api/scan-headers', async (req, res) => {
     let { target } = req.body;
@@ -257,7 +321,7 @@ app.post('/api/scan-headers', async (req, res) => {
 });
 
 // ==========================================
-// ৭. ইমেইল পাঠানোর API
+// ৯. ইমেইল পাঠানোর API
 // ==========================================
 app.post('/api/send-report', async (req, res) => {
     const { target, reportData, emailTo } = req.body;
@@ -276,7 +340,7 @@ app.post('/api/send-report', async (req, res) => {
 });
 
 // ==========================================
-// ৮. গিটহাব লগইন লজিক
+// ১০. গিটহাব লগইন লজিক
 // ==========================================
 app.get('/api/auth/github', (req, res) => {
     const redirectUri = \`https://\${req.headers.host}/api/auth/github/callback\`;
@@ -303,4 +367,3 @@ app.get('/api/auth/github/callback', async (req, res) => {
 });
 
 module.exports = app;
-                                              
