@@ -26,7 +26,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // ==========================================
-// ২. মাল্টি-পেজ লেআউট ফাংশন (Navbar Updated)
+// ২. মাল্টি-পেজ লেআউট ফাংশন
 // ==========================================
 function generateLayout(pageTitle, content) {
     return `
@@ -212,19 +212,19 @@ app.get('/cli', (req, res) => {
             
             <div style="background: #050505; padding: 20px; border: 1px dashed var(--border-color); font-family: monospace; color: var(--text-main); margin-bottom: 25px;">
                 <span style="color: var(--text-muted);"># Install via NPM</span><br>
-                <span style="color: var(--accent-green);">$</span> npm install -g triscout-cli<br><br>
+                <span style="color: var(--accent-green);">$</span> npm install -g @kiran-mondal/triscout<br><br>
                 <span style="color: var(--text-muted);"># Run a quick scan</span><br>
-                <span style="color: var(--accent-green);">$</span> triscout scan example.com
+                <span style="color: var(--accent-green);">$</span> triscout example.com
             </div>
             
-            <button style="width: 100%;" onclick="alert('CLI Package download will be available in the next release!')">DOWNLOAD CLI BINARY (v1.0.0)</button>
+            <button style="width: 100%;" onclick="window.open('https://github.com/Kiran-mondal/triscout/packages', '_blank')">VIEW PACKAGE ON GITHUB</button>
         </div>
     `;
     res.send(generateLayout('CLI TOOL', cliContent));
 });
 
 // ==========================================
-// ৭. পেজ রাউট: ABOUT (নতুন পেজ)
+// ৭. পেজ রাউট: ABOUT 
 // ==========================================
 app.get('/about', (req, res) => {
     const aboutContent = `
@@ -260,7 +260,7 @@ app.get('/about', (req, res) => {
                 </tr>
                 <tr>
                     <td>Developer</td>
-                    <td>TriScout Admin</td>
+                    <td>Kiran Mondal</td>
                 </tr>
             </table>
         </div>
@@ -269,20 +269,151 @@ app.get('/about', (req, res) => {
 });
 
 // ==========================================
-// ৮. পেজ রাউট: MY PROJECT (খালি করা হলো)
+// ৮. পেজ রাউট: MY PROJECT
 // ==========================================
 app.get('/project', (req, res) => {
     const projectContent = `
-        <div class="card">
-            <h3 style="color: var(--accent-green);">MY PROJECT</h3>
-            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">This space has been cleared and reserved for your upcoming work. You can add your own custom tools, scripts, or features here.</p>
+        <style>
+            .github-profile { text-align: center; margin-bottom: 35px; }
+            .github-profile img { width: 110px; border-radius: 50%; border: 3px solid var(--accent-green); box-shadow: 0 0 15px rgba(212, 255, 0, 0.4); margin-bottom: 10px; }
+            .github-profile h2 { margin: 0; color: var(--accent-green); letter-spacing: 2px; }
+            .github-profile p { color: var(--text-muted); font-size: 14px; margin-bottom: 15px; }
             
-            <div style="background: #000; color: var(--accent-green); padding: 20px; border: 1px dashed var(--border-color); text-align: center; font-family: monospace;">
-                > WAITING FOR NEW MODULE INTEGRATION...
+            .btn-github-main { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 20px; text-decoration: none; font-size: 14px; display: inline-block; transition: 0.3s; font-weight: bold; }
+            .btn-github-main:hover { border-color: var(--accent-green); color: var(--accent-green); box-shadow: inset 0 0 8px rgba(212, 255, 0, 0.2); }
+
+            .section-header { border-bottom: 1px dashed var(--border-color); padding-bottom: 10px; margin-bottom: 25px; }
+            .section-header h3 { color: #fff; margin: 0; border: none; padding: 0; font-size: 1.2em; }
+            .section-header h3::before { content: '> '; color: var(--accent-green); }
+            
+            .repo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+            .repo-card { background: #0a0a0a; border: 1px solid var(--border-color); padding: 25px; display: flex; flex-direction: column; transition: 0.3s; position: relative; }
+            .repo-card:hover { border-color: var(--accent-green); transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+            
+            .card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+            .card-header h3 { margin: 0; font-size: 1.1em; color: var(--text-main); border: none; padding: 0; }
+            .card-header h3::before { content: ''; } 
+            
+            .repo-card p { color: var(--text-muted); font-size: 13px; line-height: 1.6; flex-grow: 1; margin-bottom: 20px; text-transform: none; }
+            
+            .card-buttons { display: flex; gap: 10px; }
+            .card-buttons a { flex: 1; text-align: center; padding: 12px; text-decoration: none; font-size: 12px; font-weight: bold; transition: 0.3s; text-transform: uppercase; }
+            .live-btn { background: var(--accent-green); color: #000; border: 1px solid var(--accent-green); }
+            .live-btn:hover { background: #000; color: var(--accent-green); }
+            .code-btn { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); }
+            .code-btn:hover { border-color: var(--text-main); background: var(--text-main); color: #000; }
+        </style>
+
+        <div class="github-profile">
+            <img src="https://github.com/Kiran-mondal.png" alt="Kiran Mondal">
+            <h2>KIRAN MONDAL</h2>
+            <p>Full-Stack Developer & Cyber Security Enthusiast</p>
+            <a href="https://github.com/Kiran-mondal" target="_blank" class="btn-github-main">
+                View Full GitHub Profile
+            </a>
+        </div>
+
+        <div class="section-header">
+            <h3>My Live Web Projects</h3>
+        </div>
+        
+        <div class="repo-grid">
+            <!-- Project 1: Password Guard -->
+            <div class="repo-card">
+                <div class="card-header">
+                    <svg width="34" height="34" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="512" height="512" rx="120" fill="#0D4FF0"/>
+                        <path d="M256 80L120 140V240C120 330 176 407 256 432C336 407 392 330 392 240V140L256 80Z" fill="white"/>
+                        <circle cx="256" cy="255" r="70" fill="#0D4FF0"/>
+                        <rect x="235" y="240" width="42" height="75" rx="8" fill="white"/>
+                    </svg>
+                    <h3>Password Guard</h3>
+                </div>
+                <p>Advanced AI-powered password protection & vault management tool with 3D Cyber UI.</p>
+                <div class="card-buttons">
+                    <a href="https://passwordguard.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
+                    <a href="https://github.com/Kiran-mondal/Password-Guard" target="_blank" class="code-btn">Source Code</a>
+                </div>
+            </div>
+            
+            <!-- Project 2: ZenDrift -->
+            <div class="repo-card">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="34" height="34">
+                        <path d="M 120 390 C 120 270, 392 350, 392 210 C 392 130, 310 90, 256 90" fill="none" stroke="#58a6ff" stroke-width="45" stroke-linecap="round" />
+                        <circle cx="256" cy="90" r="45" fill="#58a6ff" />
+                    </svg>
+                    <h3>ZenDrift</h3>
+                </div>
+                <p>Dynamic performance tracking system built for an engaging and smooth web experience.</p>
+                <div class="card-buttons">
+                    <a href="https://zendrift.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
+                    <a href="https://github.com/Kiran-mondal" target="_blank" class="code-btn">Source Code</a>
+                </div>
+            </div>
+            
+            <!-- Project 3: Omlang -->
+            <div class="repo-card">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="34" height="34">
+                        <path d="M 280 250 C 420 250, 420 380, 350 400 C 450 420, 450 580, 280 580" stroke="#00f2fe" stroke-width="45" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="450" cy="120" r="30" fill="#00f2fe" />
+                    </svg>
+                    <h3>Omlang</h3>
+                </div>
+                <p>A modern language and communication-focused platform with an intuitive user interface.</p>
+                <div class="card-buttons">
+                    <a href="https://omlang.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
+                    <a href="https://github.com/Kiran-mondal" target="_blank" class="code-btn">Source Code</a>
+                </div>
+            </div>
+            
+            <!-- Project 4: Chaturanga -->
+            <div class="repo-card">
+                <div class="card-header">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="34" height="34">
+                        <circle cx="50" cy="50" r="48" fill="#d97706" stroke="#ffffff" stroke-width="2"/>
+                        <path d="M50 20 L75 55 L50 80 L25 55 Z" fill="#ffffff" />
+                    </svg>
+                    <h3>Chaturanga</h3>
+                </div>
+                <p>Interactive web-based application focused on deep logic, planning, and strategy.</p>
+                <div class="card-buttons">
+                    <a href="https://chaturanga.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
+                    <a href="https://github.com/Kiran-mondal" target="_blank" class="code-btn">Source Code</a>
+                </div>
+            </div>
+
+            <!-- Project 5: Pachisi -->
+            <div class="repo-card">
+                <div class="card-header">
+                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="34" height="34">
+                        <defs>
+                            <mask id="pasha-hole">
+                                <rect width="512" height="512" fill="white" />
+                                <circle cx="256" cy="256" r="32" fill="black" />
+                            </mask>
+                        </defs>
+                        <g mask="url(#pasha-hole)" fill="#dc2626">
+                            <rect x="232" y="16" width="48" height="480" rx="12" />
+                            <rect x="232" y="16" width="48" height="480" rx="12" transform="rotate(45 256 256)" />
+                            <rect x="232" y="16" width="48" height="480" rx="12" transform="rotate(90 256 256)" />
+                            <rect x="232" y="16" width="48" height="480" rx="12" transform="rotate(135 256 256)" />
+                            <circle cx="256" cy="256" r="168" fill="none" stroke="#dc2626" stroke-width="48" />
+                            <circle cx="256" cy="256" r="56" fill="none" stroke="#dc2626" stroke-width="48" />
+                        </g>
+                    </svg>
+                    <h3>Pachisi</h3>
+                </div>
+                <p>Play the ancient Indian epic board game of strategy, heritage, and royal culture.</p>
+                <div class="card-buttons">
+                    <a href="https://pachisi.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
+                    <a href="https://github.com/Kiran-mondal" target="_blank" class="code-btn">Source Code</a>
+                </div>
             </div>
         </div>
     `;
-    res.send(generateLayout('MY PROJECT', projectContent));
+    res.send(generateLayout('MY PROJECTS', projectContent));
 });
 
 // ==========================================
@@ -385,4 +516,3 @@ app.get('/api/auth/github/callback', async (req, res) => {
 });
 
 module.exports = app;
-        
