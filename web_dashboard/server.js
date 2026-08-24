@@ -453,10 +453,24 @@ app.get('/project', (req, res) => {
 // ==========================================
 // ৯. উন্নত প্যাসিভ স্ক্যানার API
 // ==========================================
+const scanCache = new Map();
+const CACHE_TTL = 60 * 1000; // 1 minute
+const MAX_CACHE_SIZE = 1000;
+
 app.post('/api/scan-headers', async (req, res) => {
     let { target } = req.body;
     if (!target) return res.status(400).json({ success: false, error: 'Target URL is required' });
     if (!target.startsWith('http://') && !target.startsWith('https://')) target = 'https://' + target;
+
+    // ⚡ Bolt: Check in-memory cache to avoid redundant external network requests and expensive regex parsing
+    if (scanCache.has(target)) {
+        const cached = scanCache.get(target);
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+            return res.json({ success: true, report: cached.report, _bolt_cached: true });
+        } else {
+            scanCache.delete(target);
+        }
+    }
 
     try {
         const response = await axios.get(target, { timeout: 10000, validateStatus: () => true });
@@ -500,6 +514,13 @@ app.post('/api/scan-headers', async (req, res) => {
         else { report += `[!] X-Frame-Options: MISSING\n`; score -= 10; }
 
         report += `\nOVERALL SECURITY SCORE: ${score}/100`;
+
+        // ⚡ Bolt: Cache the final report, evicting if too large
+        if (scanCache.size >= MAX_CACHE_SIZE) {
+            scanCache.clear();
+        }
+        scanCache.set(target, { report, timestamp: Date.now() });
+
         res.json({ success: true, report: report });
     } catch (error) { res.status(500).json({ success: false, error: 'Target unreachable.' }); }
 });
