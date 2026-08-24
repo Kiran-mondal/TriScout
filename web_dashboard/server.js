@@ -4,11 +4,12 @@ const path = require('path');
 const nodemailer = require('nodemailer');
 const axios = require('axios'); 
 const { neon } = require('@neondatabase/serverless');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
-const sql = neon(process.env.DATABASE_URL || 'postgres://placeholder');
-const JWT_SECRET = process.env.JWT_SECRET || 'triscout_super_secret_key_2026';
+const sql = neon(process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost/placeholder');
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
@@ -80,8 +81,10 @@ app.get('/login', (req, res) => {
 
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    if (username === 'Admin' && password === 'Admin') {
-        const token = jwt.sign({ user: 'Admin' }, JWT_SECRET, { expiresIn: '1h' });
+    const adminUser = process.env.ADMIN_USERNAME || crypto.randomBytes(16).toString('hex');
+    const adminPass = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
+    if (username === adminUser && password === adminPass) {
+        const token = jwt.sign({ user: adminUser }, JWT_SECRET, { expiresIn: '1h' });
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
     } else {
         res.send(`<script>alert("ACCESS DENIED"); window.location.href="/";</script>`);
