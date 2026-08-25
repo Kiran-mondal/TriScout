@@ -1,3 +1,6 @@
 ## 2026-08-24 - Login Form Accessibility
 **Learning:** Found common anti-patterns on the login form including invalid nested interactive elements (<button> inside <a>) and form inputs relying solely on placeholders without accessible names. Also lacked focus-visible states for keyboard navigation.
 **Action:** Always ensure interactive elements are semantic (use <a> for links that look like buttons, not nested buttons) and add aria-labels to all form inputs that don't have visible labels. Provide explicit :focus-visible styles for custom UI controls.
+## 2024-05-18 - Keyboard Navigation and Async Loading States
+**Learning:** Custom interactive elements (like the `.menu-toggle` div) require explicit `role="button"`, `tabindex="0"`, and `onkeydown` handlers to be accessible to keyboard users. Without these, screen readers and keyboard users cannot interact with the menu. Additionally, async operations without explicit UI feedback (like disabling buttons and changing text) lead to confusion about whether an action was successful.
+**Action:** Always add keyboard accessibility attributes to non-button interactive elements and ensure all async actions have clear, immediate visual loading states (e.g., button disable/text change).

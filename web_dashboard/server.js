@@ -45,7 +45,7 @@ function generateLayout(pageTitle, content) {
                 <h1 class="brand-title">TRISCOUT</h1>
             </div>
             
-            <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+            <div class="menu-toggle" role="button" tabindex="0" aria-label="Toggle Navigation Menu" onclick="toggleMenu()" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleMenu(); }">☰</div>
             
             <div class="nav-links" id="navMenu">
                 <a href="/dashboard" class="nav-link">> SCANNER</a>
@@ -102,8 +102,8 @@ app.get('/dashboard', (req, res) => {
 
         <div class="card">
             <h3>TARGET SCANNER</h3>
-            <input type="text" id="targetInput" class="input-box" placeholder="ENTER DOMAIN (e.g. example.com)">
-            <button onclick="startScan()" style="width: 100%;">INITIATE ADVANCED SCAN</button>
+            <input type="text" id="targetInput" class="input-box" placeholder="ENTER DOMAIN (e.g. example.com)" aria-label="Enter target domain">
+            <button id="scanBtn" onclick="startScan()" style="width: 100%;">INITIATE ADVANCED SCAN</button>
 
             <div style="background: #000; color: var(--accent-green); padding: 15px; border: 1px solid var(--border-color); height: 250px; overflow-y: auto; font-family: monospace; margin-top: 20px; font-size: 14px;" id="terminalOutput">
                 > Awaiting target input...
@@ -114,8 +114,12 @@ app.get('/dashboard', (req, res) => {
             async function startScan() {
                 const target = document.getElementById('targetInput').value;
                 const terminal = document.getElementById('terminalOutput');
+                const btn = document.getElementById('scanBtn');
+
                 if(!target) return alert('Enter a valid target domain!');
                 
+                btn.disabled = true;
+                btn.innerText = 'SCANNING...';
                 terminal.innerHTML = "> Initializing advanced security analysis for: " + target + "...<br>> Fetching HTTP headers and source code...<br><br>";
                 
                 try {
@@ -141,6 +145,9 @@ app.get('/dashboard', (req, res) => {
                     }
                 } catch (error) {
                     terminal.innerHTML += "<span style='color: var(--danger-red);'>[!] CRITICAL ERROR: Could not reach the scanning API.</span>";
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = 'INITIATE ADVANCED SCAN';
                 }
             }
         </script>
@@ -161,8 +168,8 @@ app.get('/reports', (req, res) => {
                 Checking for saved reports...
             </div>
 
-            <input type="email" id="emailInput" class="input-box" placeholder="ENTER CLIENT EMAIL ADDRESS">
-            <button onclick="sendReport()" style="width: 100%; background: #fff; color: #000; border-color: #fff;">SEND REPORT VIA GMAIL</button>
+            <input type="email" id="emailInput" class="input-box" placeholder="ENTER CLIENT EMAIL ADDRESS" aria-label="Enter client email address">
+            <button id="reportBtn" onclick="sendReport()" style="width: 100%; background: #fff; color: #000; border-color: #fff;">SEND REPORT VIA GMAIL</button>
         </div>
 
         <script>
@@ -182,11 +189,14 @@ app.get('/reports', (req, res) => {
                 const email = document.getElementById('emailInput').value;
                 const target = localStorage.getItem('triscout_target');
                 const reportData = localStorage.getItem('triscout_report');
+                const btn = document.getElementById('reportBtn');
 
                 if(!email) return alert('Enter client email address!');
                 if(!reportData || !target) return alert('No report found! Please run a scan first.');
 
                 alert('Dispatching report to ' + email + '...');
+                btn.disabled = true;
+                btn.innerText = 'SENDING...';
 
                 try {
                     const response = await fetch('/api/send-report', {
@@ -202,6 +212,9 @@ app.get('/reports', (req, res) => {
                     }
                 } catch(err) {
                     alert('ERROR sending email. Check server configuration.');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = 'SEND REPORT VIA GMAIL';
                 }
             }
         </script>
