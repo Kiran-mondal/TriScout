@@ -1,5 +1,8 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = 'triscout_super_secret_key_2026';
+const crypto = require('crypto');
+require('dotenv').config();
+
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
 /**
  * Express Middleware to protect HTTP routes.
