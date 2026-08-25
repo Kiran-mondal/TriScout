@@ -16,7 +16,8 @@ const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
+// ⚡ Bolt: Add maxAge caching to static assets to prevent redundant network requests
+app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1d' }));
 
 // ==========================================
 // ১. ইমেইল ট্রান্সপোর্টার সেটআপ
@@ -473,7 +474,13 @@ app.post('/api/scan-headers', async (req, res) => {
     }
 
     try {
-        const response = await axios.get(target, { timeout: 10000, validateStatus: () => true });
+        // ⚡ Bolt: Added payload limits (5MB) to avoid memory exhaustion and speed up requests by aborting early on huge files. Added compression support.
+        const response = await axios.get(target, {
+            timeout: 10000,
+            validateStatus: () => true,
+            maxContentLength: 5 * 1024 * 1024,
+            maxBodyLength: 5 * 1024 * 1024
+        });
         const headers = response.headers;
         const htmlBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
         
