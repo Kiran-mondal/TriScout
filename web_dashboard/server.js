@@ -25,7 +25,7 @@ app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1d' }));
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-});        </div>
+}); 
 
 // ==========================================
 // ২. মাল্টি-পেজ লেআউট ফাংশন (Updated with New UI)
