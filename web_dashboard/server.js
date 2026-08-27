@@ -25,48 +25,128 @@ app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1d' }));
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-});
+});        </div>
 
 // ==========================================
-// ২. মাল্টি-পেজ লেআউট ফাংশন
+// ২. মাল্টি-পেজ লেআউট ফাংশন (Updated with New UI)
 // ==========================================
 function generateLayout(pageTitle, content) {
     return `
     <!DOCTYPE html>
-    <html>
+    <html class="dark" lang="en">
     <head>
-        <title>TRISCOUT // ${pageTitle}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="/style.css">
+        <meta charset="utf-8"/>
+        <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+        <title>TriScout - ${pageTitle}</title>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+        <script id="tailwind-config">
+            tailwind.config = {
+              darkMode: "class",
+              theme: {
+                extend: {
+                  colors: {
+                      "primary": "#adc6ff",
+                      "primary-container": "#4d8eff",
+                      "on-primary-container": "#00285d",
+                      "on-primary": "#002e6a",
+                      "surface-container-low": "#191b23",
+                      "surface-container-highest": "#32353c",
+                      "surface-container": "#1d2027",
+                      "surface-container-high": "#272a31",
+                      "surface": "#10131a",
+                      "surface-variant": "#32353c",
+                      "on-surface": "#e1e2ec",
+                      "on-surface-variant": "#c2c6d6",
+                      "background": "#10131a",
+                      "outline-variant": "#424754",
+                      "error": "#ffb4ab",
+                      "tertiary": "#bec6e0"
+                  },
+                  fontFamily: {
+                      "headline-sm": ["Inter"],
+                      "data-mono": ["JetBrains Mono"],
+                      "body-md": ["Inter"]
+                  }
+                }
+              }
+            }
+        </script>
+        <style>
+            .shadow-ambient { box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(173, 198, 255, 0.05); }
+            .glass-card { background-color: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+            .hide-scrollbar::-webkit-scrollbar { display: none; }
+            .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        </style>
     </head>
-    <body>
-        <nav class="cyber-navbar">
-            <div class="nav-brand">
-                <img src="/logo.svg" alt="TriScout Logo" class="brand-logo">
-                <h1 class="brand-title">TRISCOUT</h1>
+    <body class="bg-background text-on-surface font-body-md min-h-screen overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+        
+        <!-- SideNavBar -->
+        <nav class="bg-surface-container h-screen w-64 flex flex-col border-r border-outline-variant/10 shadow-sm fixed left-0 top-0 z-50 hidden md:flex">
+            <div class="p-6 pb-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">security</span>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-primary font-headline-sm">TriScout</div>
+                        <div class="text-xs text-on-surface-variant opacity-80 mt-1 uppercase font-data-mono">Enterprise Security</div>
+                    </div>
+                </div>
             </div>
-            
-            <div class="menu-toggle" role="button" tabindex="0" aria-label="Toggle Navigation Menu" onclick="toggleMenu()" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleMenu(); }">☰</div>
-            
-            <div class="nav-links" id="navMenu">
-                <a href="/dashboard" class="nav-link">> SCANNER</a>
-                <a href="/reports" class="nav-link">> REPORTS</a>
-                <a href="/cli" class="nav-link">> CLI</a>
-                <a href="/about" class="nav-link">> ABOUT</a>
-                <a href="/project" class="nav-link">> MY PROJECT</a>
-                <button class="logout-btn" onclick="localStorage.removeItem('token'); window.location.href='/'">LOGOUT</button>
+            <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-2 px-3 mt-4">
+                <a href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-variant/20 group">
+                    <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">policy</span><span>Scanner</span>
+                </a>
+                <a href="/reports" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors group">
+                    <span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant">list_alt</span><span>Reports</span>
+                </a>
+                <a href="/cli" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors group">
+                    <span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant">terminal</span><span>CLI</span>
+                </a>
+                <a href="/about" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors group">
+                    <span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant">info</span><span>About</span>
+                </a>
+                <a href="/project" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors group">
+                    <span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant">work</span><span>My Projects</span>
+                </a>
+                <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="flex items-center gap-3 px-3 py-2 rounded-lg text-error font-medium hover:bg-error/10 transition-colors group mt-auto mb-2 w-full text-left">
+                    <span class="material-symbols-outlined text-error">logout</span><span>Logout</span>
+                </button>
             </div>
         </nav>
 
-        <div class="content-wrapper">
-            ${content}
+        <!-- TopNavBar -->
+        <header class="bg-surface/80 backdrop-blur-xl h-16 flex items-center justify-between px-6 z-40 border-b border-outline-variant/10 fixed top-0 right-0 left-0 md:left-64">
+            <div class="flex-1 max-w-md relative hidden sm:block">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant text-sm">search</span>
+                <input class="w-full bg-surface-container-high border-none text-on-surface placeholder:text-outline-variant rounded-md pl-9 pr-4 py-1.5 text-sm h-9 focus:ring-1 focus:ring-primary" placeholder="Search resources..." type="text"/>
+            </div>
+            <div class="flex items-center gap-4 ml-auto">
+                <button class="flex items-center gap-2 hover:bg-surface-variant/30 py-1 px-2 rounded-lg group">
+                    <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">A</div>
+                    <span class="hidden sm:block text-on-surface font-medium capitalize">Admin</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Secondary Navbar (System Status) -->
+        <div class="bg-surface-container-low/50 backdrop-blur-md border-b border-outline-variant/5 fixed top-16 right-0 left-0 md:left-64 h-10 flex items-center px-6 z-30 justify-between overflow-x-auto whitespace-nowrap hide-scrollbar">
+            <div class="flex items-center gap-6 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-on-surface-variant font-medium uppercase tracking-wider">System Status</span>
+                </div>
+                <div class="w-px h-4 bg-outline-variant/30"></div>
+                <span class="text-emerald-400 font-medium"><span class="material-symbols-outlined text-sm align-middle">shield</span> SECURE</span>
+            </div>
         </div>
 
-        <script>
-            function toggleMenu() {
-                document.getElementById('navMenu').classList.toggle('active');
-            }
-        </script>
+        <!-- Main Content -->
+        <main class="pt-[104px] md:ml-64 p-6 min-h-screen pb-20">
+            ${content}
+        </main>
     </body>
     </html>
     `;
@@ -75,7 +155,6 @@ function generateLayout(pageTitle, content) {
 // ==========================================
 // ৩. লগইন রাউট (404 Error Fix)
 // ==========================================
-// কেউ সরাসরি /login-এ গেলে তাকে হোমপেজে রিডাইরেক্ট করবে
 app.get('/login', (req, res) => {
     res.redirect('/');
 });
@@ -93,25 +172,85 @@ app.post('/login', (req, res) => {
 });
 
 // ==========================================
-// ৪. পেজ রাউট: SCANNER
+// ৪. পেজ রাউট: SCANNER (Updated with New UI)
 // ==========================================
 app.get('/dashboard', (req, res) => {
     const scannerContent = `
-        <div class="cyber-alert" style="border-left-color: var(--accent-green); background: rgba(212, 255, 0, 0.1); color: var(--accent-green);">
-            SYSTEM STATUS: SECURE. ADVANCED PASSIVE SCANNER ONLINE.
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-on-surface">Vulnerability Scanner</h1>
+                <p class="text-on-surface-variant mt-1 text-sm">Detect, classify, and remediate security weaknesses.</p>
+            </div>
         </div>
 
-        <div class="card">
-            <h3>TARGET SCANNER</h3>
-            <input type="text" id="targetInput" class="input-box" placeholder="ENTER DOMAIN (e.g. example.com)" aria-label="Enter target domain">
-            <button id="scanBtn" onclick="startScan()" style="width: 100%;">INITIATE ADVANCED SCAN</button>
+        <!-- Main Scanner Card (Integrated your Terminal logic here) -->
+        <div class="glass-card rounded-xl p-5 mb-8 border border-primary/20">
+            <h2 class="text-lg font-semibold text-primary flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined text-lg">radar</span> TARGET SCANNER
+            </h2>
+            
+            <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <input type="text" id="targetInput" class="flex-1 bg-surface-container border border-outline-variant/30 text-on-surface placeholder:text-outline-variant rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" placeholder="ENTER DOMAIN (e.g. example.com)" aria-label="Enter target domain">
+                <button id="scanBtn" onclick="startScan()" class="bg-primary hover:bg-primary-container text-on-primary font-bold px-6 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm text-sm">
+                    <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">play_arrow</span> INITIATE SCAN
+                </button>
+            </div>
 
-            <div style="background: #000; color: var(--accent-green); padding: 15px; border: 1px solid var(--border-color); height: 250px; overflow-y: auto; font-family: monospace; margin-top: 20px; font-size: 14px;" id="terminalOutput">
+            <!-- Terminal Output -->
+            <div id="terminalOutput" class="bg-black/80 text-emerald-400 p-4 rounded-lg border border-outline-variant/20 h-64 overflow-y-auto font-data-mono text-sm shadow-inner hide-scrollbar leading-relaxed">
                 > Awaiting target input...
             </div>
         </div>
 
+        <!-- Bento Grid Layout for Visuals -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div class="glass-card rounded-xl p-5 md:col-span-8 flex flex-col relative overflow-hidden">
+                <div class="flex items-center justify-between border-b border-outline-variant/20 pb-3 mb-4 z-10">
+                    <h2 class="text-lg font-semibold text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-lg">bug_report</span> CVEs Detected
+                    </h2>
+                </div>
+                <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4 z-10 content-center">
+                    <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col items-center justify-center text-center">
+                        <span class="text-error font-data-mono text-3xl font-light mb-1">12</span>
+                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase tracking-wider"><span class="w-2 h-2 rounded-full bg-error"></span> Critical</div>
+                    </div>
+                    <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col items-center justify-center text-center">
+                        <span class="text-orange-400 font-data-mono text-3xl font-light mb-1">45</span>
+                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase tracking-wider"><span class="w-2 h-2 rounded-full bg-orange-500"></span> High</div>
+                    </div>
+                    <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col items-center justify-center text-center">
+                        <span class="text-amber-400 font-data-mono text-3xl font-light mb-1">128</span>
+                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase tracking-wider"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Medium</div>
+                    </div>
+                    <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col items-center justify-center text-center">
+                        <span class="text-emerald-400 font-data-mono text-3xl font-light mb-1">342</span>
+                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase tracking-wider"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Low</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-xl p-5 md:col-span-4 flex flex-col">
+                <div class="flex items-center justify-between border-b border-outline-variant/20 pb-3 mb-4">
+                    <h2 class="text-lg font-semibold text-on-surface flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-lg">dns</span> Assets at Risk
+                    </h2>
+                </div>
+                <div class="flex-1 flex flex-col gap-3">
+                    <div class="flex items-center justify-between p-2 bg-surface-variant/30 rounded-lg">
+                        <span class="text-on-surface-variant text-sm">Web Servers</span>
+                        <span class="text-error font-data-mono text-sm bg-error/10 px-2 py-0.5 rounded">24</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2 bg-surface-variant/30 rounded-lg">
+                        <span class="text-on-surface-variant text-sm">Databases</span>
+                        <span class="text-orange-400 font-data-mono text-sm bg-orange-400/10 px-2 py-0.5 rounded">18</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script>
+            // Your exact original JavaScript logic
             async function startScan() {
                 const target = document.getElementById('targetInput').value;
                 const terminal = document.getElementById('terminalOutput');
@@ -120,7 +259,7 @@ app.get('/dashboard', (req, res) => {
                 if(!target) return alert('Enter a valid target domain!');
                 
                 btn.disabled = true;
-                btn.innerText = 'SCANNING...';
+                btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> SCANNING...';
                 terminal.innerHTML = "> Initializing advanced security analysis for: " + target + "...<br>> Fetching HTTP headers and source code...<br><br>";
                 
                 try {
@@ -139,16 +278,16 @@ app.get('/dashboard', (req, res) => {
                         localStorage.setItem('triscout_target', target);
                         localStorage.setItem('triscout_report', data.report);
                         
-                        terminal.innerHTML += "<br><br><span style='color: #fff;'>> Analysis complete. <a href='/reports' style='color: var(--danger-red); font-weight: bold;'>GO TO REPORTS TO DISPATCH</a></span>";
-                        window.scrollTo(0, document.body.scrollHeight);
+                        terminal.innerHTML += "<br><br><span style='color: #fff;'>> Analysis complete. <a href='/reports' class='text-primary underline font-bold'>GO TO REPORTS TO DISPATCH</a></span>";
+                        terminal.scrollTop = terminal.scrollHeight;
                     } else {
-                        terminal.innerHTML += "<span style='color: var(--danger-red);'>[!] ERROR: " + data.error + "</span>";
+                        terminal.innerHTML += "<span class='text-error'>[!] ERROR: " + data.error + "</span>";
                     }
                 } catch (error) {
-                    terminal.innerHTML += "<span style='color: var(--danger-red);'>[!] CRITICAL ERROR: Could not reach the scanning API.</span>";
+                    terminal.innerHTML += "<span class='text-error'>[!] CRITICAL ERROR: Could not reach the scanning API.</span>";
                 } finally {
                     btn.disabled = false;
-                    btn.innerText = 'INITIATE ADVANCED SCAN';
+                    btn.innerHTML = '<span class="material-symbols-outlined text-sm" style="font-variation-settings: \\'FILL\\' 1;">play_arrow</span> INITIATE SCAN';
                 }
             }
         </script>
@@ -157,32 +296,39 @@ app.get('/dashboard', (req, res) => {
 });
 
 // ==========================================
-// ৫. পেজ রাউট: REPORTS
+// ৫. পেজ রাউট: REPORTS (Updated with New UI)
 // ==========================================
 app.get('/reports', (req, res) => {
     const reportContent = `
-        <div class="card" style="border-color: var(--accent-green);">
-            <h3 style="color: var(--accent-green);">DISPATCH REPORT</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Send the last generated security assessment report directly to the site owner.</p>
+        <div class="glass-card rounded-xl p-6 max-w-4xl mx-auto mt-8 border border-primary/20">
+            <h3 class="text-2xl font-bold text-primary mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined">send</span> DISPATCH REPORT
+            </h3>
+            <p class="text-sm text-on-surface-variant mb-6">Send the last generated security assessment report directly to the site owner.</p>
             
-            <div id="reportPreview" style="background: #000; color: #888; padding: 15px; margin-bottom: 20px; font-family: monospace; font-size: 13px; border: 1px dashed #333; height: 150px; overflow-y: auto;">
+            <div id="reportPreview" class="bg-black/80 text-on-surface p-4 mb-6 font-data-mono text-sm border border-outline-variant/30 h-64 overflow-y-auto rounded-lg shadow-inner hide-scrollbar leading-relaxed">
                 Checking for saved reports...
             </div>
 
-            <input type="email" id="emailInput" class="input-box" placeholder="ENTER CLIENT EMAIL ADDRESS" aria-label="Enter client email address">
-            <button id="reportBtn" onclick="sendReport()" style="width: 100%; background: #fff; color: #000; border-color: #fff;">SEND REPORT VIA GMAIL</button>
+            <div class="flex flex-col sm:flex-row gap-3">
+                <input type="email" id="emailInput" class="flex-1 bg-surface-container border border-outline-variant/30 text-on-surface placeholder:text-outline-variant rounded-lg px-4 py-2 focus:outline-none focus:border-primary" placeholder="ENTER CLIENT EMAIL ADDRESS" aria-label="Enter client email address">
+                <button id="reportBtn" onclick="sendReport()" class="bg-on-surface text-background font-bold px-6 py-2 rounded-lg transition-colors hover:bg-primary flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-sm">mail</span> SEND VIA GMAIL
+                </button>
+            </div>
         </div>
 
         <script>
+            // Your exact original JavaScript logic for Reports
             document.addEventListener("DOMContentLoaded", () => {
                 const savedReport = localStorage.getItem('triscout_report');
                 const savedTarget = localStorage.getItem('triscout_target');
                 const preview = document.getElementById('reportPreview');
 
                 if(savedReport && savedTarget) {
-                    preview.innerHTML = "<span style='color: var(--accent-green);'>TARGET: " + savedTarget + "</span><br><br>" + savedReport.replace(/\\n/g, '<br>');
+                    preview.innerHTML = "<span class='text-primary font-bold'>TARGET: " + savedTarget + "</span><br><br>" + savedReport.replace(/\\n/g, '<br>');
                 } else {
-                    preview.innerHTML = "<span style='color: var(--danger-red);'>NO RECENT SCAN DATA FOUND. GO TO SCANNER FIRST.</span>";
+                    preview.innerHTML = "<span class='text-error'>NO RECENT SCAN DATA FOUND. GO TO SCANNER FIRST.</span>";
                 }
             });
 
@@ -197,7 +343,7 @@ app.get('/reports', (req, res) => {
 
                 alert('Dispatching report to ' + email + '...');
                 btn.disabled = true;
-                btn.innerText = 'SENDING...';
+                btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> SENDING...';
 
                 try {
                     const response = await fetch('/api/send-report', {
@@ -215,7 +361,7 @@ app.get('/reports', (req, res) => {
                     alert('ERROR sending email. Check server configuration.');
                 } finally {
                     btn.disabled = false;
-                    btn.innerText = 'SEND REPORT VIA GMAIL';
+                    btn.innerHTML = '<span class="material-symbols-outlined text-sm">mail</span> SEND VIA GMAIL';
                 }
             }
         </script>
