@@ -92,25 +92,41 @@ function generateLayout(pageTitle, content) {
         <!-- Overlay for Mobile Sidebar -->
         <div id="sidebarOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
-        <!-- Profile Dropdown Toggle -->
-<button onclick="toggleDropdown()" aria-label="Toggle user menu" aria-haspopup="true" aria-expanded="false" class="flex items-center gap-2 hover:bg-surface-variant/50 py-1 px-2 rounded-lg transition-colors group focus:outline-none">
-    <div id="navProfileAvatar" class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold overflow-hidden">
-        <span class="material-symbols-outlined">person</span>
-    </div>
-    <span id="navProfileName" class="hidden sm:block text-on-surface font-medium capitalize group-hover:text-primary">Loading...</span>
-    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">arrow_drop_down</span>
-</button>
-
-<!-- Dropdown Menu Popup -->
-<div id="profileDropdown" class="hidden absolute top-full right-0 mt-2 w-48 bg-surface-container-highest border border-outline-variant/20 rounded-lg shadow-xl overflow-hidden z-50">
-    <a href="/profile" class="flex items-center gap-2 px-4 py-3 text-sm text-on-surface hover:bg-surface-variant/50 border-b border-outline-variant/10 transition-colors">
-        <span class="material-symbols-outlined text-sm">manage_accounts</span> Profile & Settings
-    </a>
-    <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="w-full text-left flex items-center gap-2 px-4 py-3 text-sm text-error hover:bg-error/10 transition-colors">
-        <span class="material-symbols-outlined text-sm">logout</span> Logout Session
-    </button>
-</div>
-
+        <!-- TopNavBar (Fixed Mobile Layout & Dropdown Position) -->
+        <header class="bg-surface/90 backdrop-blur-xl h-16 w-full flex items-center justify-between px-4 md:px-6 z-40 border-b border-outline-variant/10 fixed top-0 right-0 left-0 md:left-64">
+            
+            <!-- Left Side: Mobile Menu Button & Page Title -->
+            <div class="flex items-center gap-2">
+                <button onclick="toggleMenu()" aria-label="Open menu" class="md:hidden text-on-surface p-2 -ml-2 hover:bg-surface-variant/50 rounded-lg transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">menu</span>
+                </button>
+                <div class="text-lg font-bold text-on-surface uppercase tracking-wide truncate max-w-[150px] sm:max-w-xs">${pageTitle}</div>
+            </div>
+            
+            <!-- Right Side: Profile Section -->
+            <div class="relative flex-shrink-0"> 
+                <!-- Profile Toggle Button -->
+                <button onclick="toggleDropdown()" aria-label="Toggle user menu" aria-haspopup="true" aria-expanded="false" class="flex items-center gap-2 hover:bg-surface-variant/50 py-1.5 px-2 rounded-lg transition-colors group focus:outline-none">
+                    <div id="navProfileAvatar" class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold overflow-hidden shadow-sm">
+                        <span class="material-symbols-outlined text-sm">person</span>
+                    </div>
+                    <span id="navProfileName" class="hidden sm:block text-on-surface font-medium capitalize group-hover:text-primary transition-colors">Loading...</span>
+                    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">arrow_drop_down</span>
+                </button>
+                
+                <!-- Dropdown Menu Popup (Anchored exactly below the profile button) -->
+                <div id="profileDropdown" class="hidden absolute right-0 top-[calc(100%+8px)] w-56 bg-surface-container-highest border border-outline-variant/20 rounded-xl shadow-2xl overflow-hidden z-50">
+                    <div class="px-4 py-3 border-b border-outline-variant/10 bg-surface-variant/20">
+                        <p class="text-xs text-on-surface-variant">Signed in as</p>
+                        <p class="text-sm font-bold text-on-surface truncate" id="dropdownUserName">Authorized User</p>
+                    </div>
+                    <a href="/profile" class="flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-variant/50 border-b border-outline-variant/10 transition-colors">
+                        <span class="material-symbols-outlined text-[18px] text-primary">manage_accounts</span> Account Settings
+                    </a>
+                    <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="w-full text-left flex items-center gap-3 px-4 py-3 text-sm text-error hover:bg-error/10 transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">logout</span> Secure Logout
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -155,6 +171,18 @@ function generateLayout(pageTitle, content) {
                     }
                 }
             }
+            
+            // On Load: Populate Dropdown Username
+            document.addEventListener("DOMContentLoaded", () => {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    try {
+                        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                        const dropName = document.getElementById('dropdownUserName');
+                        if(dropName && payload.user) dropName.innerText = payload.user;
+                    } catch(e) {}
+                }
+            });
         </script>
     </body>
     </html>
@@ -282,7 +310,7 @@ app.get('/dashboard', (req, res) => {
                         localStorage.setItem('triscout_target', target);
                         localStorage.setItem('triscout_report', data.report);
                         
-                        // Parse score from your backend response[span_0](start_span)[span_0](end_span)
+                        // Parse score from your backend response
                         const scoreMatch = data.report.match(/OVERALL SECURITY SCORE: (\\d+)/);
                         if(scoreMatch && scoreMatch[1]) {
                             const score = parseInt(scoreMatch[1]);
@@ -388,7 +416,6 @@ app.get('/reports', (req, res) => {
     `;
     res.send(generateLayout('REPORTS', reportContent));
 });
-
 // ==========================================
 // ৬. পেজ রাউট: CLI DOWNLOAD
 // ==========================================
@@ -472,42 +499,42 @@ app.get('/project', (req, res) => {
 
             .section-header { border-bottom: 1px dashed var(--border-color); padding-bottom: 10px; margin-bottom: 25px; }
             .section-header h3 { color: #fff; margin: 0; border: none; padding: 0; font-size: 1.2em; }
-            .section-header h3::before { content: '> '; color: var(--accent-green); }
             
             .repo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-            .repo-card { background: #0a0a0a; border: 1px solid var(--border-color); padding: 25px; display: flex; flex-direction: column; transition: 0.3s; position: relative; }
-            .repo-card:hover { border-color: var(--accent-green); transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+            .repo-card { background: #0a0a0a; border: 1px solid var(--border-color); padding: 25px; display: flex; flex-direction: column; transition: 0.3s; position: relative; border-radius: 12px; }
+            .repo-card:hover { border-color: #adc6ff; transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
             
             .card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
-            .card-header h3 { margin: 0; font-size: 1.1em; color: var(--text-main); border: none; padding: 0; }
-            .card-header h3::before { content: ''; } 
+            .card-header h3 { margin: 0; font-size: 1.1em; color: #fff; border: none; padding: 0; }
             
-            .repo-card p { color: var(--text-muted); font-size: 13px; line-height: 1.6; flex-grow: 1; margin-bottom: 20px; text-transform: none; }
+            .repo-card p { color: #c2c6d6; font-size: 13px; line-height: 1.6; flex-grow: 1; margin-bottom: 20px; text-transform: none; }
             
             .card-buttons { display: flex; gap: 10px; }
-            .card-buttons a { flex: 1; text-align: center; padding: 12px; text-decoration: none; font-size: 12px; font-weight: bold; transition: 0.3s; text-transform: uppercase; }
-            .live-btn { background: var(--accent-green); color: #000; border: 1px solid var(--accent-green); }
-            .live-btn:hover { background: #000; color: var(--accent-green); }
-            .code-btn { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); }
-            .code-btn:hover { border-color: var(--text-main); background: var(--text-main); color: #000; }
+            .card-buttons a { flex: 1; text-align: center; padding: 12px; text-decoration: none; font-size: 12px; font-weight: bold; transition: 0.3s; text-transform: uppercase; border-radius: 8px; }
+            .live-btn { background: #adc6ff; color: #002e6a; border: 1px solid #adc6ff; }
+            .live-btn:hover { background: #4d8eff; color: #fff; }
+            .code-btn { background: transparent; color: #adc6ff; border: 1px solid var(--border-color); }
+            .code-btn:hover { border-color: #adc6ff; background: rgba(173, 198, 255, 0.1); }
         </style>
 
-        <div class="github-profile">
+        <div class="github-profile mt-4">
             <img src="https://github.com/Kiran-mondal.png" alt="Kiran Mondal">
-            <h2>KIRAN MONDAL</h2>
-            <p>Full-Stack Developer & Cyber Security Enthusiast</p>
-            <a href="https://github.com/Kiran-mondal" target="_blank" class="btn-github-main">
+            <h2 class="text-primary font-bold text-2xl mt-2">KIRAN MONDAL</h2>
+            <p class="text-on-surface-variant">Full-Stack Developer & Cyber Security Enthusiast</p>
+            <a href="https://github.com/Kiran-mondal" target="_blank" class="bg-surface-variant hover:bg-surface-variant/80 text-on-surface px-6 py-2 rounded-lg border border-outline-variant/30 transition-colors inline-block mt-2">
                 View Full GitHub Profile
             </a>
         </div>
 
-        <div class="section-header">
-            <h3>My Live Web Projects</h3>
+        <div class="section-header mt-8">
+            <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">public</span> My Live Web Projects
+            </h3>
         </div>
         
         <div class="repo-grid">
             <!-- Project 1: Password Guard -->
-            <div class="repo-card">
+            <div class="repo-card glass-card">
                 <div class="card-header">
                     <svg width="34" height="34" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="512" height="512" rx="120" fill="#0D4FF0"/>
@@ -525,7 +552,7 @@ app.get('/project', (req, res) => {
             </div>
             
             <!-- Project 2: ZenDrift -->
-            <div class="repo-card">
+            <div class="repo-card glass-card">
                 <div class="card-header">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="34" height="34">
                         <path d="M 120 390 C 120 270, 392 350, 392 210 C 392 130, 310 90, 256 90" fill="none" stroke="#58a6ff" stroke-width="45" stroke-linecap="round" />
@@ -541,7 +568,7 @@ app.get('/project', (req, res) => {
             </div>
             
             <!-- Project 3: Omlang -->
-            <div class="repo-card">
+            <div class="repo-card glass-card">
                 <div class="card-header">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="34" height="34">
                         <path d="M 280 250 C 420 250, 420 380, 350 400 C 450 420, 450 580, 280 580" stroke="#00f2fe" stroke-width="45" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -557,7 +584,7 @@ app.get('/project', (req, res) => {
             </div>
             
             <!-- Project 4: Chaturanga -->
-            <div class="repo-card">
+            <div class="repo-card glass-card">
                 <div class="card-header">
                     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="34" height="34">
                         <circle cx="50" cy="50" r="48" fill="#d97706" stroke="#ffffff" stroke-width="2"/>
@@ -573,7 +600,7 @@ app.get('/project', (req, res) => {
              </div>
 
             <!-- Project 5: Pachisi -->
-            <div class="repo-card">
+            <div class="repo-card glass-card">
                 <div class="card-header">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="34" height="34">
                         <defs>
@@ -599,32 +626,6 @@ app.get('/project', (req, res) => {
                     <a href="https://github.com/Kiran-mondal" target="_blank" class="code-btn">Source Code</a>
                 </div>
             </div>
-
-            <!-- Project 6: TriScout -->
-            <div class="repo-card">
-                <div class="card-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="34" height="34">
-                        <g fill="none" stroke="#66ED1E" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="50,2 91.6,26 91.6,74 50,98 8.4,74 8.4,26" stroke-width="1.5" />
-                            <polygon points="50,10 84.6,30 84.6,70 50,90 15.4,70 15.4,30" stroke-width="3" />
-                            <g stroke-width="2.5">
-                                <line x1="15.4" y1="30" x2="84.6" y2="70" />
-                                <line x1="32.7" y1="20" x2="84.6" y2="50" />
-                                <line x1="15.4" y1="50" x2="67.3" y2="80" />
-                                <line x1="15.4" y1="50" x2="67.3" y2="20" />
-                                <line x1="32.7" y1="80" x2="84.6" y2="50" />
-                            </g>
-                        </g>
-                    </svg>
-                    <h3>TriScout</h3>
-                </div>
-                <p>An advanced defensive cybersecurity tool designed for passive vulnerability assessments.</p>
-                <div class="card-buttons">
-                    <a href="https://triscout.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
-                    <a href="https://github.com/Kiran-mondal/tri-scout" target="_blank" class="code-btn">Source Code</a>
-                </div>
-            </div>
-
         </div>
     `;
     res.send(generateLayout('MY PROJECTS', projectContent));
@@ -735,6 +736,7 @@ app.post('/api/scan-headers', async (req, res) => {
         res.json({ success: true, report: report });
     } catch (error) { res.status(500).json({ success: false, error: 'Target unreachable.' }); }
 });
+
 // ==========================================
 // ১০. ইমেইল পাঠানোর API
 // ==========================================
@@ -820,7 +822,6 @@ app.get('/api/auth/github/callback', async (req, res) => {
         res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>'); 
     }
 });
-
 
 // ==========================================
 // ১২. পেজ রাউট: PROFILE SETTINGS
