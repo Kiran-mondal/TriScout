@@ -66,7 +66,7 @@ function generateLayout(pageTitle, content) {
                     </div>
                 </div>
                 <!-- Close Button for Mobile -->
-                <button onclick="toggleMenu()" class="md:hidden text-on-surface-variant p-1">
+                <button onclick="toggleMenu()" aria-label="Close menu" class="md:hidden text-on-surface-variant p-1">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
@@ -92,8 +92,14 @@ function generateLayout(pageTitle, content) {
         <!-- Overlay for Mobile Sidebar -->
         <div id="sidebarOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
-        <!-- Profile Dropdown Toggle -->
-<button onclick="toggleDropdown()" class="flex items-center gap-2 hover:bg-surface-variant/50 py-1 px-2 rounded-lg transition-colors group focus:outline-none">
+        <header class="fixed top-0 left-0 md:left-64 right-0 h-16 bg-surface-container/80 backdrop-blur-md border-b border-outline-variant/10 flex items-center justify-between md:justify-end px-4 md:px-6 z-30">
+            <!-- Mobile Menu Toggle -->
+            <button onclick="toggleMenu()" aria-label="Open menu" class="md:hidden text-on-surface hover:bg-surface-variant/50 p-2 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+
+            <!-- Profile Dropdown Toggle -->
+<button onclick="toggleDropdown()" aria-label="Toggle user menu" aria-haspopup="true" aria-expanded="false" class="flex items-center gap-2 hover:bg-surface-variant/50 py-1 px-2 rounded-lg transition-colors group focus:outline-none">
     <div id="navProfileAvatar" class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold overflow-hidden">
         <span class="material-symbols-outlined">person</span>
     </div>
@@ -111,7 +117,6 @@ function generateLayout(pageTitle, content) {
     </button>
 </div>
 
-            </div>
         </header>
 
         <!-- System Status Bar -->
@@ -139,7 +144,9 @@ function generateLayout(pageTitle, content) {
             // Profile Dropdown Script
             function toggleDropdown() {
                 const dropdown = document.getElementById('profileDropdown');
-                dropdown.classList.toggle('hidden');
+                const btn = document.querySelector('button[onclick="toggleDropdown()"]');
+                const isHidden = dropdown.classList.toggle('hidden');
+                if (btn) btn.setAttribute('aria-expanded', !isHidden);
             }
             
             // Close dropdown if clicked outside
@@ -148,6 +155,8 @@ function generateLayout(pageTitle, content) {
                     const dropdown = document.getElementById('profileDropdown');
                     if (dropdown && !dropdown.classList.contains('hidden')) {
                         dropdown.classList.add('hidden');
+                        const btn = document.querySelector('button[onclick="toggleDropdown()"]');
+                        if (btn) btn.setAttribute('aria-expanded', 'false');
                     }
                 }
             }
