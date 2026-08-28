@@ -638,6 +638,31 @@ app.post('/api/scan-headers', async (req, res) => {
     if (!target) return res.status(400).json({ success: false, error: 'Target URL is required' });
     if (!target.startsWith('http://') && !target.startsWith('https://')) target = 'https://' + target;
 
+    try {
+        const parsedUrl = new URL(target);
+        const hostname = parsedUrl.hostname;
+
+        // Advanced SSRF protection: resolve hostname to IP to prevent DNS rebinding/nip.io bypasses
+        const lookupResult = await require('dns').promises.lookup(hostname);
+        const ip = lookupResult.address;
+
+        const isPrivateIp = (ipStr) => {
+            if (ipStr === '::1' || ipStr === '0.0.0.0' || ipStr === '::' || ipStr.startsWith('127.') || ipStr.startsWith('10.') || ipStr.startsWith('192.168.') || ipStr.startsWith('169.254.')) return true;
+            if (ipStr.startsWith('172.')) {
+                const secondOctet = parseInt(ipStr.split('.')[1], 10);
+                if (secondOctet >= 16 && secondOctet <= 31) return true;
+            }
+            const ipv6 = ipStr.toLowerCase();
+            return ipv6.startsWith('fc') || ipv6.startsWith('fd') || ipv6.startsWith('fe8');
+        };
+
+        if (isPrivateIp(ip)) {
+            return res.status(403).json({ success: false, error: 'Access to internal network resources is prohibited' });
+        }
+    } catch (e) {
+        return res.status(400).json({ success: false, error: 'Invalid URL format or host resolution failed' });
+    }
+
     // ⚡ Bolt: Check in-memory cache to avoid redundant external network requests and expensive regex parsing
     if (scanCache.has(target)) {
         const cached = scanCache.get(target);
