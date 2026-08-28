@@ -164,14 +164,15 @@ app.get('/login', (req, res) => {
     res.redirect('/');
 });
 
+const DEFAULT_ADMIN_USER = process.env.ADMIN_USERNAME || crypto.randomBytes(16).toString('hex');
+const DEFAULT_ADMIN_PASS = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
+
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    const adminUser = process.env.ADMIN_USERNAME || crypto.randomBytes(16).toString('hex');
-    const adminPass = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
     
-    if (username === adminUser && password === adminPass) {
+    if (username === DEFAULT_ADMIN_USER && password === DEFAULT_ADMIN_PASS) {
         // 'provider: local' যুক্ত করা হলো ডাটাবেজ ফিল্টারিংয়ের জন্য
-        const token = jwt.sign({ user: adminUser, provider: 'local' }, JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ user: DEFAULT_ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '1h' });
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
     } else {
         res.send(`<script>alert("ACCESS DENIED"); window.location.href="/";</script>`);
