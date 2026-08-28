@@ -8,6 +8,8 @@
 
 const https = require('https');
 
+const VALID_TYPES = ['general', 'programming', 'knock-knock', 'misc'];
+
 /**
  * Fetches a random joke from JokeAPI
  * @param {string} type - Type of joke (general, programming, knock-knock, misc)
@@ -15,9 +17,7 @@ const https = require('https');
  */
 function fetchJoke(type = 'general') {
   return new Promise((resolve, reject) => {
-    const validTypes = ['general', 'programming', 'knock-knock', 'misc'];
-    
-    if (!validTypes.includes(type)) {
+    if (!VALID_TYPES.includes(type)) {
       type = 'general';
     }
 
