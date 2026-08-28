@@ -28,7 +28,7 @@ const transporter = nodemailer.createTransport({
 }); 
 
 // ==========================================
-// ২. মাল্টি-পেজ লেআউট ফাংশন (Updated with New UI)
+// ২. মাল্টি-পেজ লেআউট ফাংশন (Dropdown & Mobile Menu Fixed)
 // ==========================================
 function generateLayout(pageTitle, content) {
     return `
@@ -42,111 +42,124 @@ function generateLayout(pageTitle, content) {
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
         <script id="tailwind-config">
-            tailwind.config = {
-              darkMode: "class",
-              theme: {
-                extend: {
-                  colors: {
-                      "primary": "#adc6ff",
-                      "primary-container": "#4d8eff",
-                      "on-primary-container": "#00285d",
-                      "on-primary": "#002e6a",
-                      "surface-container-low": "#191b23",
-                      "surface-container-highest": "#32353c",
-                      "surface-container": "#1d2027",
-                      "surface-container-high": "#272a31",
-                      "surface": "#10131a",
-                      "surface-variant": "#32353c",
-                      "on-surface": "#e1e2ec",
-                      "on-surface-variant": "#c2c6d6",
-                      "background": "#10131a",
-                      "outline-variant": "#424754",
-                      "error": "#ffb4ab",
-                      "tertiary": "#bec6e0"
-                  },
-                  fontFamily: {
-                      "headline-sm": ["Inter"],
-                      "data-mono": ["JetBrains Mono"],
-                      "body-md": ["Inter"]
-                  }
-                }
-              }
-            }
+            tailwind.config = { darkMode: "class", theme: { extend: { colors: { "primary": "#adc6ff", "primary-container": "#4d8eff", "on-primary-container": "#00285d", "on-primary": "#002e6a", "surface-container-low": "#191b23", "surface-container-highest": "#32353c", "surface-container": "#1d2027", "surface-container-high": "#272a31", "surface": "#10131a", "surface-variant": "#32353c", "on-surface": "#e1e2ec", "on-surface-variant": "#c2c6d6", "background": "#10131a", "outline-variant": "#424754", "error": "#ffb4ab", "tertiary": "#bec6e0" }, fontFamily: { "data-mono": ["JetBrains Mono"], "body-md": ["Inter"] } } } }
         </script>
         <style>
-            .shadow-ambient { box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(173, 198, 255, 0.05); }
             .glass-card { background-color: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
             .hide-scrollbar::-webkit-scrollbar { display: none; }
             .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            /* Mobile menu transition */
+            #mobileSidebar { transition: transform 0.3s ease-in-out; }
         </style>
     </head>
-    <body class="bg-background text-on-surface font-body-md min-h-screen overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+    <body class="bg-background text-on-surface font-body-md min-h-screen overflow-x-hidden">
         
-        <!-- SideNavBar -->
-        <nav class="bg-surface-container h-screen w-64 flex flex-col border-r border-outline-variant/10 shadow-sm fixed left-0 top-0 z-50 hidden md:flex">
-            <div class="p-6 pb-2">
+        <!-- SideNavBar (Mobile Friendly) -->
+        <nav id="mobileSidebar" class="bg-surface-container h-screen w-64 flex flex-col border-r border-outline-variant/10 shadow-sm fixed left-0 top-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+            <div class="p-6 pb-2 flex justify-between items-center">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center shrink-0">
                         <span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">security</span>
                     </div>
                     <div>
-                        <div class="text-2xl font-bold text-primary font-headline-sm">TriScout</div>
-                        <div class="text-xs text-on-surface-variant opacity-80 mt-1 uppercase font-data-mono">Enterprise Security</div>
+                        <div class="text-2xl font-bold text-primary">TriScout</div>
                     </div>
                 </div>
+                <!-- Close Button for Mobile -->
+                <button onclick="toggleMenu()" class="md:hidden text-on-surface-variant p-1">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
             </div>
             <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-2 px-3 mt-4">
-                <a href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-variant/20 group">
+                <a href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-variant/20 hover:bg-surface-variant/40">
                     <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">policy</span><span>Scanner</span>
                 </a>
-                <a href="/reports" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors group">
-                    <span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant">list_alt</span><span>Reports</span>
+                <a href="/reports" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors">
+                    <span class="material-symbols-outlined text-outline-variant">list_alt</span><span>Reports</span>
                 </a>
-                <a href="/cli" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors group">
-                    <span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant">terminal</span><span>CLI</span>
+                <a href="/cli" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors">
+                    <span class="material-symbols-outlined text-outline-variant">terminal</span><span>CLI</span>
                 </a>
-                <a href="/about" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors group">
-                    <span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant">info</span><span>About</span>
+                <a href="/project" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors">
+                    <span class="material-symbols-outlined text-outline-variant">work</span><span>My Projects</span>
                 </a>
-                <a href="/project" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors group">
-                    <span class="material-symbols-outlined text-outline-variant group-hover:text-on-surface-variant">work</span><span>My Projects</span>
-                </a>
-                <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="flex items-center gap-3 px-3 py-2 rounded-lg text-error font-medium hover:bg-error/10 transition-colors group mt-auto mb-2 w-full text-left">
+                <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="flex items-center gap-3 px-3 py-2 rounded-lg text-error font-medium hover:bg-error/10 transition-colors mt-auto mb-2 w-full text-left">
                     <span class="material-symbols-outlined text-error">logout</span><span>Logout</span>
                 </button>
             </div>
         </nav>
 
-        <!-- TopNavBar -->
-        <header class="bg-surface/80 backdrop-blur-xl h-16 flex items-center justify-between px-6 z-40 border-b border-outline-variant/10 fixed top-0 right-0 left-0 md:left-64">
-            <div class="flex-1 max-w-md relative hidden sm:block">
-                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant text-sm">search</span>
-                <input class="w-full bg-surface-container-high border-none text-on-surface placeholder:text-outline-variant rounded-md pl-9 pr-4 py-1.5 text-sm h-9 focus:ring-1 focus:ring-primary" placeholder="Search resources..." type="text"/>
-            </div>
-            <div class="flex items-center gap-4 ml-auto">
-                <button class="flex items-center gap-2 hover:bg-surface-variant/30 py-1 px-2 rounded-lg group">
-                    <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">A</div>
-                    <span class="hidden sm:block text-on-surface font-medium capitalize">Admin</span>
+        <!-- Overlay for Mobile Sidebar -->
+        <div id="sidebarOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+
+        <!-- TopNavBar (Dropdown Fixed) -->
+        <header class="bg-surface/90 backdrop-blur-xl h-16 flex items-center justify-between px-4 md:px-6 z-30 border-b border-outline-variant/10 fixed top-0 right-0 left-0 md:left-64">
+            <div class="flex items-center gap-4">
+                <!-- Hamburger Menu for Mobile -->
+                <button onclick="toggleMenu()" class="md:hidden text-on-surface p-2 hover:bg-surface-variant/50 rounded-lg">
+                    <span class="material-symbols-outlined">menu</span>
                 </button>
+                <div class="hidden sm:block text-lg font-bold text-on-surface">${pageTitle}</div>
+            </div>
+            
+            <div class="flex items-center gap-4 ml-auto relative">
+                <!-- Profile Dropdown Toggle -->
+                <button onclick="toggleDropdown()" class="flex items-center gap-2 hover:bg-surface-variant/50 py-1 px-2 rounded-lg transition-colors group focus:outline-none focus:ring-2 focus:ring-primary">
+                    <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">A</div>
+                    <span class="hidden sm:block text-on-surface font-medium capitalize group-hover:text-primary">Admin</span>
+                    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">arrow_drop_down</span>
+                </button>
+                
+                <!-- Dropdown Menu Popup -->
+                <div id="profileDropdown" class="hidden absolute top-full right-0 mt-2 w-48 bg-surface-container-highest border border-outline-variant/20 rounded-lg shadow-xl overflow-hidden z-50">
+                    <a href="/project" class="flex items-center gap-2 px-4 py-3 text-sm text-on-surface hover:bg-surface-variant/50 border-b border-outline-variant/10">
+                        <span class="material-symbols-outlined text-sm">person</span> Profile
+                    </a>
+                    <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="w-full text-left flex items-center gap-2 px-4 py-3 text-sm text-error hover:bg-error/10">
+                        <span class="material-symbols-outlined text-sm">logout</span> Logout Session
+                    </button>
+                </div>
             </div>
         </header>
 
-        <!-- Secondary Navbar (System Status) -->
-        <div class="bg-surface-container-low/50 backdrop-blur-md border-b border-outline-variant/5 fixed top-16 right-0 left-0 md:left-64 h-10 flex items-center px-6 z-30 justify-between overflow-x-auto whitespace-nowrap hide-scrollbar">
-            <div class="flex items-center gap-6 text-xs">
-                <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span class="text-on-surface-variant font-medium uppercase tracking-wider">System Status</span>
-                </div>
-                <div class="w-px h-4 bg-outline-variant/30"></div>
-                <span class="text-emerald-400 font-medium"><span class="material-symbols-outlined text-sm align-middle">shield</span> SECURE</span>
+        <!-- System Status Bar -->
+        <div class="bg-surface-container-low/50 backdrop-blur-md border-b border-outline-variant/5 fixed top-16 right-0 left-0 md:left-64 h-8 flex items-center px-4 md:px-6 z-20 overflow-x-auto">
+            <div class="flex items-center gap-2 text-xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-on-surface-variant uppercase tracking-wider">System Status: <span class="text-emerald-400 font-medium">ONLINE</span></span>
             </div>
         </div>
 
         <!-- Main Content -->
-        <main class="pt-[104px] md:ml-64 p-6 min-h-screen pb-20">
+        <main class="pt-[110px] md:ml-64 p-4 md:p-6 min-h-screen pb-20">
             ${content}
         </main>
+
+        <script>
+            // Mobile Menu Toggle Script
+            function toggleMenu() {
+                const sidebar = document.getElementById('mobileSidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            }
+            
+            // Profile Dropdown Script
+            function toggleDropdown() {
+                const dropdown = document.getElementById('profileDropdown');
+                dropdown.classList.toggle('hidden');
+            }
+            
+            // Close dropdown if clicked outside
+            window.onclick = function(event) {
+                if (!event.target.closest('button[onclick="toggleDropdown()"]')) {
+                    const dropdown = document.getElementById('profileDropdown');
+                    if (dropdown && !dropdown.classList.contains('hidden')) {
+                        dropdown.classList.add('hidden');
+                    }
+                }
+            }
+        </script>
     </body>
     </html>
     `;
@@ -172,85 +185,72 @@ app.post('/login', (req, res) => {
 });
 
 // ==========================================
-// ৪. পেজ রাউট: SCANNER (Updated with New UI)
+// ৪. পেজ রাউট: SCANNER (Dummy Data Removed)
 // ==========================================
 app.get('/dashboard', (req, res) => {
     const scannerContent = `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div>
-                <h1 class="text-3xl font-bold text-on-surface">Vulnerability Scanner</h1>
-                <p class="text-on-surface-variant mt-1 text-sm">Detect, classify, and remediate security weaknesses.</p>
-            </div>
-        </div>
-
-        <!-- Main Scanner Card (Integrated your Terminal logic here) -->
-        <div class="glass-card rounded-xl p-5 mb-8 border border-primary/20">
-            <h2 class="text-lg font-semibold text-primary flex items-center gap-2 mb-4">
-                <span class="material-symbols-outlined text-lg">radar</span> TARGET SCANNER
+        <!-- Main Scanner Card -->
+        <div class="glass-card rounded-xl p-4 md:p-6 mb-6 border border-primary/20 shadow-lg">
+            <h2 class="text-xl font-bold text-primary flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined text-2xl">radar</span> TARGET SCANNER
             </h2>
             
-            <div class="flex flex-col sm:flex-row gap-3 mb-4">
-                <input type="text" id="targetInput" class="flex-1 bg-surface-container border border-outline-variant/30 text-on-surface placeholder:text-outline-variant rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary" placeholder="ENTER DOMAIN (e.g. example.com)" aria-label="Enter target domain">
-                <button id="scanBtn" onclick="startScan()" class="bg-primary hover:bg-primary-container text-on-primary font-bold px-6 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm text-sm">
+            <div class="flex flex-col sm:flex-row gap-3 mb-6">
+                <input type="text" id="targetInput" class="flex-1 bg-surface-container-highest border border-outline-variant/30 text-on-surface placeholder:text-outline-variant rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Enter target domain (e.g. example.com)" aria-label="Enter target domain">
+                <button id="scanBtn" onclick="startScan()" class="bg-primary hover:bg-primary-container text-on-primary font-bold px-8 py-3 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm whitespace-nowrap">
                     <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">play_arrow</span> INITIATE SCAN
                 </button>
             </div>
 
             <!-- Terminal Output -->
-            <div id="terminalOutput" class="bg-black/80 text-emerald-400 p-4 rounded-lg border border-outline-variant/20 h-64 overflow-y-auto font-data-mono text-sm shadow-inner hide-scrollbar leading-relaxed">
-                > Awaiting target input...
+            <div id="terminalOutput" class="bg-black/90 text-emerald-400 p-5 rounded-lg border border-outline-variant/30 h-80 overflow-y-auto font-data-mono text-sm shadow-inner hide-scrollbar leading-relaxed">
+                > System ready.<br>> Awaiting target input for advanced security analysis...
             </div>
         </div>
 
-        <!-- Bento Grid Layout for Visuals -->
+        <!-- Dynamic Security Score & Empty Data Placeholders -->
         <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
             <div class="glass-card rounded-xl p-5 md:col-span-8 flex flex-col relative overflow-hidden">
-                <div class="flex items-center justify-between border-b border-outline-variant/20 pb-3 mb-4 z-10">
+                <div class="flex items-center justify-between border-b border-outline-variant/20 pb-3 mb-4">
                     <h2 class="text-lg font-semibold text-on-surface flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary text-lg">bug_report</span> CVEs Detected
+                        <span class="material-symbols-outlined text-primary">bug_report</span> Active Threats
                     </h2>
+                    <span class="text-xs text-on-surface-variant" id="scanTargetLabel">No Target Scanned</span>
                 </div>
-                <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4 z-10 content-center">
+                
+                <!-- Zeroed Data (No confusing dummy numbers) -->
+                <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4 content-center">
                     <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col items-center justify-center text-center">
-                        <span class="text-error font-data-mono text-3xl font-light mb-1">12</span>
-                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase tracking-wider"><span class="w-2 h-2 rounded-full bg-error"></span> Critical</div>
+                        <span class="text-error font-data-mono text-3xl font-light mb-1" id="countCrit">0</span>
+                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase"><span class="w-2 h-2 rounded-full bg-error"></span> Critical</div>
                     </div>
                     <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col items-center justify-center text-center">
-                        <span class="text-orange-400 font-data-mono text-3xl font-light mb-1">45</span>
-                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase tracking-wider"><span class="w-2 h-2 rounded-full bg-orange-500"></span> High</div>
+                        <span class="text-orange-400 font-data-mono text-3xl font-light mb-1" id="countHigh">0</span>
+                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase"><span class="w-2 h-2 rounded-full bg-orange-500"></span> High</div>
                     </div>
                     <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col items-center justify-center text-center">
-                        <span class="text-amber-400 font-data-mono text-3xl font-light mb-1">128</span>
-                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase tracking-wider"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Medium</div>
+                        <span class="text-amber-400 font-data-mono text-3xl font-light mb-1" id="countMed">0</span>
+                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Medium</div>
                     </div>
                     <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col items-center justify-center text-center">
-                        <span class="text-emerald-400 font-data-mono text-3xl font-light mb-1">342</span>
-                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase tracking-wider"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Low</div>
+                        <span class="text-emerald-400 font-data-mono text-3xl font-light mb-1" id="countLow">0</span>
+                        <div class="flex items-center gap-1 text-xs text-on-surface-variant uppercase"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Low</div>
                     </div>
                 </div>
             </div>
 
-            <div class="glass-card rounded-xl p-5 md:col-span-4 flex flex-col">
-                <div class="flex items-center justify-between border-b border-outline-variant/20 pb-3 mb-4">
-                    <h2 class="text-lg font-semibold text-on-surface flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary text-lg">dns</span> Assets at Risk
-                    </h2>
-                </div>
-                <div class="flex-1 flex flex-col gap-3">
-                    <div class="flex items-center justify-between p-2 bg-surface-variant/30 rounded-lg">
-                        <span class="text-on-surface-variant text-sm">Web Servers</span>
-                        <span class="text-error font-data-mono text-sm bg-error/10 px-2 py-0.5 rounded">24</span>
-                    </div>
-                    <div class="flex items-center justify-between p-2 bg-surface-variant/30 rounded-lg">
-                        <span class="text-on-surface-variant text-sm">Databases</span>
-                        <span class="text-orange-400 font-data-mono text-sm bg-orange-400/10 px-2 py-0.5 rounded">18</span>
-                    </div>
+            <div class="glass-card rounded-xl p-5 md:col-span-4 flex flex-col justify-center items-center text-center">
+                <span class="material-symbols-outlined text-4xl text-outline-variant mb-2">shield_lock</span>
+                <h3 class="text-lg font-bold text-on-surface mb-1">Asset Security Score</h3>
+                <p class="text-sm text-on-surface-variant mb-4">Run a scan to calculate score.</p>
+                <!-- Dynamic Score Circle -->
+                <div class="w-24 h-24 rounded-full border-4 border-outline-variant/30 flex items-center justify-center text-2xl font-bold font-data-mono" id="scoreCircle">
+                    --
                 </div>
             </div>
         </div>
 
         <script>
-            // Your exact original JavaScript logic
             async function startScan() {
                 const target = document.getElementById('targetInput').value;
                 const terminal = document.getElementById('terminalOutput');
@@ -262,6 +262,11 @@ app.get('/dashboard', (req, res) => {
                 btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> SCANNING...';
                 terminal.innerHTML = "> Initializing advanced security analysis for: " + target + "...<br>> Fetching HTTP headers and source code...<br><br>";
                 
+                // Reset visual data
+                document.getElementById('scanTargetLabel').innerText = 'Scanning: ' + target;
+                document.getElementById('scoreCircle').innerText = '--';
+                document.getElementById('scoreCircle').className = "w-24 h-24 rounded-full border-4 border-outline-variant/30 flex items-center justify-center text-2xl font-bold font-data-mono text-on-surface-variant";
+
                 try {
                     const response = await fetch('/api/scan-headers', {
                         method: 'POST',
@@ -278,6 +283,22 @@ app.get('/dashboard', (req, res) => {
                         localStorage.setItem('triscout_target', target);
                         localStorage.setItem('triscout_report', data.report);
                         
+                        // Parse score from your backend response[span_0](start_span)[span_0](end_span)
+                        const scoreMatch = data.report.match(/OVERALL SECURITY SCORE: (\\d+)/);
+                        if(scoreMatch && scoreMatch[1]) {
+                            const score = parseInt(scoreMatch[1]);
+                            const circle = document.getElementById('scoreCircle');
+                            circle.innerText = score;
+                            if(score >= 80) circle.classList.replace('border-outline-variant/30', 'border-emerald-500');
+                            else if(score >= 50) circle.classList.replace('border-outline-variant/30', 'border-amber-500');
+                            else circle.classList.replace('border-outline-variant/30', 'border-error');
+                        }
+
+                        // Add small visual indication of found issues based on report text
+                        if(data.report.includes('CRITICAL')) document.getElementById('countCrit').innerText = '1';
+                        if(data.report.includes('WARNING')) document.getElementById('countHigh').innerText = '2';
+                        if(data.report.includes('MISSING')) document.getElementById('countMed').innerText = '3';
+
                         terminal.innerHTML += "<br><br><span style='color: #fff;'>> Analysis complete. <a href='/reports' class='text-primary underline font-bold'>GO TO REPORTS TO DISPATCH</a></span>";
                         terminal.scrollTop = terminal.scrollHeight;
                     } else {
