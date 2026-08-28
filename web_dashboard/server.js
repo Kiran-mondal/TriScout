@@ -484,7 +484,7 @@ app.get('/about', (req, res) => {
 });
 
 // ==========================================
-// ৮. পেজ রাউট: MY PROJECT (Updated Modern UI)
+// ৮. পেজ রাউট: MY PROJECT (Original SVGs Restored)
 // ==========================================
 app.get('/project', (req, res) => {
     const projectContent = `
@@ -522,14 +522,19 @@ app.get('/project', (req, res) => {
                 </div>
             </div>
             
-            <!-- Projects Grid (Fully Tailwind) -->
+            <!-- Projects Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 
                 <!-- Project 1: Password Guard -->
                 <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
                     <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 shrink-0 border border-blue-500/20">
-                            <span class="material-symbols-outlined text-2xl">vpn_key</span>
+                        <div class="shrink-0 flex items-center justify-center w-10 h-10">
+                            <svg width="34" height="34" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="512" height="512" rx="120" fill="#0D4FF0"/>
+                                <path d="M256 80L120 140V240C120 330 176 407 256 432C336 407 392 330 392 240V140L256 80Z" fill="white"/>
+                                <circle cx="256" cy="255" r="70" fill="#0D4FF0"/>
+                                <rect x="235" y="240" width="42" height="75" rx="8" fill="white"/>
+                            </svg>
                         </div>
                         <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">Password Guard</h3>
                     </div>
@@ -543,8 +548,11 @@ app.get('/project', (req, res) => {
                 <!-- Project 2: ZenDrift -->
                 <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
                     <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400 shrink-0 border border-sky-500/20">
-                            <span class="material-symbols-outlined text-2xl">speed</span>
+                        <div class="shrink-0 flex items-center justify-center w-10 h-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="34" height="34">
+                                <path d="M 120 390 C 120 270, 392 350, 392 210 C 392 130, 310 90, 256 90" fill="none" stroke="#58a6ff" stroke-width="45" stroke-linecap="round" />
+                                <circle cx="256" cy="90" r="45" fill="#58a6ff" />
+                            </svg>
                         </div>
                         <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">ZenDrift</h3>
                     </div>
@@ -558,8 +566,11 @@ app.get('/project', (req, res) => {
                 <!-- Project 3: Omlang -->
                 <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
                     <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 shrink-0 border border-cyan-500/20">
-                            <span class="material-symbols-outlined text-2xl">forum</span>
+                        <div class="shrink-0 flex items-center justify-center w-10 h-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="34" height="34">
+                                <path d="M 280 250 C 420 250, 420 380, 350 400 C 450 420, 450 580, 280 580" stroke="#00f2fe" stroke-width="45" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="450" cy="120" r="30" fill="#00f2fe" />
+                            </svg>
                         </div>
                         <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">Omlang</h3>
                     </div>
@@ -573,8 +584,11 @@ app.get('/project', (req, res) => {
                 <!-- Project 4: Chaturanga -->
                 <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
                     <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0 border border-amber-500/20">
-                            <span class="material-symbols-outlined text-2xl">extension</span>
+                        <div class="shrink-0 flex items-center justify-center w-10 h-10">
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="34" height="34">
+                                <circle cx="50" cy="50" r="48" fill="#d97706" stroke="#ffffff" stroke-width="2"/>
+                                <path d="M50 20 L75 55 L50 80 L25 55 Z" fill="#ffffff" />
+                            </svg>
                         </div>
                         <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">Chaturanga</h3>
                     </div>
@@ -588,8 +602,23 @@ app.get('/project', (req, res) => {
                 <!-- Project 5: Pachisi -->
                 <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
                     <div class="flex items-center gap-4 mb-4">
-                        <div class="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 shrink-0 border border-red-500/20">
-                            <span class="material-symbols-outlined text-2xl">casino</span>
+                        <div class="shrink-0 flex items-center justify-center w-10 h-10">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="34" height="34">
+                                <defs>
+                                    <mask id="pasha-hole">
+                                        <rect width="512" height="512" fill="white" />
+                                        <circle cx="256" cy="256" r="32" fill="black" />
+                                    </mask>
+                                </defs>
+                                <g mask="url(#pasha-hole)" fill="#dc2626">
+                                    <rect x="232" y="16" width="48" height="480" rx="12" />
+                                    <rect x="232" y="16" width="48" height="480" rx="12" transform="rotate(45 256 256)" />
+                                    <rect x="232" y="16" width="48" height="480" rx="12" transform="rotate(90 256 256)" />
+                                    <rect x="232" y="16" width="48" height="480" rx="12" transform="rotate(135 256 256)" />
+                                    <circle cx="256" cy="256" r="168" fill="none" stroke="#dc2626" stroke-width="48" />
+                                    <circle cx="256" cy="256" r="56" fill="none" stroke="#dc2626" stroke-width="48" />
+                                </g>
+                            </svg>
                         </div>
                         <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">Pachisi</h3>
                     </div>
@@ -604,6 +633,7 @@ app.get('/project', (req, res) => {
     `;
     res.send(generateLayout('MY PROJECTS', projectContent));
 });
+
 
 // ==========================================
 // ৯. উন্নত প্যাসিভ স্ক্যানার API
