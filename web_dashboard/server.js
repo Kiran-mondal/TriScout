@@ -92,33 +92,25 @@ function generateLayout(pageTitle, content) {
         <!-- Overlay for Mobile Sidebar -->
         <div id="sidebarOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
-        <!-- TopNavBar (Dropdown Fixed) -->
-        <header class="bg-surface/90 backdrop-blur-xl h-16 flex items-center justify-between px-4 md:px-6 z-30 border-b border-outline-variant/10 fixed top-0 right-0 left-0 md:left-64">
-            <div class="flex items-center gap-4">
-                <!-- Hamburger Menu for Mobile -->
-                <button onclick="toggleMenu()" class="md:hidden text-on-surface p-2 hover:bg-surface-variant/50 rounded-lg">
-                    <span class="material-symbols-outlined">menu</span>
-                </button>
-                <div class="hidden sm:block text-lg font-bold text-on-surface">${pageTitle}</div>
-            </div>
-            
-            <div class="flex items-center gap-4 ml-auto relative">
-                <!-- Profile Dropdown Toggle -->
-                <button onclick="toggleDropdown()" class="flex items-center gap-2 hover:bg-surface-variant/50 py-1 px-2 rounded-lg transition-colors group focus:outline-none focus:ring-2 focus:ring-primary">
-                    <div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">A</div>
-                    <span class="hidden sm:block text-on-surface font-medium capitalize group-hover:text-primary">Admin</span>
-                    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">arrow_drop_down</span>
-                </button>
-                
-                <!-- Dropdown Menu Popup -->
-                <div id="profileDropdown" class="hidden absolute top-full right-0 mt-2 w-48 bg-surface-container-highest border border-outline-variant/20 rounded-lg shadow-xl overflow-hidden z-50">
-                    <a href="/project" class="flex items-center gap-2 px-4 py-3 text-sm text-on-surface hover:bg-surface-variant/50 border-b border-outline-variant/10">
-                        <span class="material-symbols-outlined text-sm">person</span> Profile
-                    </a>
-                    <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="w-full text-left flex items-center gap-2 px-4 py-3 text-sm text-error hover:bg-error/10">
-                        <span class="material-symbols-outlined text-sm">logout</span> Logout Session
-                    </button>
-                </div>
+        <!-- Profile Dropdown Toggle -->
+<button onclick="toggleDropdown()" class="flex items-center gap-2 hover:bg-surface-variant/50 py-1 px-2 rounded-lg transition-colors group focus:outline-none">
+    <div id="navProfileAvatar" class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold overflow-hidden">
+        <span class="material-symbols-outlined">person</span>
+    </div>
+    <span id="navProfileName" class="hidden sm:block text-on-surface font-medium capitalize group-hover:text-primary">Loading...</span>
+    <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary">arrow_drop_down</span>
+</button>
+
+<!-- Dropdown Menu Popup -->
+<div id="profileDropdown" class="hidden absolute top-full right-0 mt-2 w-48 bg-surface-container-highest border border-outline-variant/20 rounded-lg shadow-xl overflow-hidden z-50">
+    <a href="/profile" class="flex items-center gap-2 px-4 py-3 text-sm text-on-surface hover:bg-surface-variant/50 border-b border-outline-variant/10 transition-colors">
+        <span class="material-symbols-outlined text-sm">manage_accounts</span> Profile & Settings
+    </a>
+    <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="w-full text-left flex items-center gap-2 px-4 py-3 text-sm text-error hover:bg-error/10 transition-colors">
+        <span class="material-symbols-outlined text-sm">logout</span> Logout Session
+    </button>
+</div>
+
             </div>
         </header>
 
@@ -176,8 +168,10 @@ app.post('/login', (req, res) => {
     const { username, password } = req.body;
     const adminUser = process.env.ADMIN_USERNAME || crypto.randomBytes(16).toString('hex');
     const adminPass = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
+    
     if (username === adminUser && password === adminPass) {
-        const token = jwt.sign({ user: adminUser }, JWT_SECRET, { expiresIn: '1h' });
+        // 'provider: local' যুক্ত করা হলো ডাটাবেজ ফিল্টারিংয়ের জন্য
+        const token = jwt.sign({ user: adminUser, provider: 'local' }, JWT_SECRET, { expiresIn: '1h' });
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
     } else {
         res.send(`<script>alert("ACCESS DENIED"); window.location.href="/";</script>`);
@@ -759,6 +753,110 @@ app.get('/api/auth/github/callback', async (req, res) => {
         // Error Fix: Removed backslash escape from template literals
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
     } catch (error) { res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>'); }
+});
+
+// ==========================================
+// ১২. পেজ রাউট: PROFILE SETTINGS
+// ==========================================
+app.get('/profile', (req, res) => {
+    const profileContent = `
+        <div class="max-w-3xl mx-auto">
+            <h2 class="text-2xl font-bold text-primary mb-6 flex items-center gap-2">
+                <span class="material-symbols-outlined">manage_accounts</span> Account Profile
+            </h2>
+
+            <div class="glass-card rounded-xl p-6 md:p-8 mb-6 border border-primary/20 shadow-lg relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                
+                <div class="flex flex-col md:flex-row items-center md:items-start gap-6 relative z-10">
+                    <div class="w-24 h-24 rounded-full bg-surface-variant flex items-center justify-center border-4 border-outline-variant/30 overflow-hidden shadow-xl" id="profileAvatar">
+                        <span class="material-symbols-outlined text-4xl text-on-surface-variant">person</span>
+                    </div>
+                    
+                    <div class="flex-1 text-center md:text-left">
+                        <h3 class="text-3xl font-bold text-on-surface mb-1" id="profileName">Loading...</h3>
+                        <div class="flex items-center justify-center md:justify-start gap-2 text-sm text-on-surface-variant mb-4 font-data-mono uppercase">
+                            <span class="material-symbols-outlined text-sm">shield_person</span>
+                            <span id="profileRole">Checking access level...</span>
+                        </div>
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-variant/50 border border-outline-variant/20 text-xs text-on-surface">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Account Status: Secured & Active
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-outline-variant/20 my-6">
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="profileActions">
+                    <!-- Actions will be loaded dynamically via JS below -->
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const token = localStorage.getItem('token');
+                if (!token) return window.location.href = '/';
+
+                try {
+                    // JWT Token Decode করা হচ্ছে
+                    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                    
+                    document.getElementById('profileName').innerText = payload.user || "Unknown User";
+                    document.getElementById('navProfileName').innerText = payload.user || "Admin";
+
+                    const avatarEl = document.getElementById('profileAvatar');
+                    const navAvatarEl = document.getElementById('navProfileAvatar');
+                    const actionsEl = document.getElementById('profileActions');
+
+                    if (payload.provider === 'github') {
+                        document.getElementById('profileRole').innerText = "GitHub Authorized User";
+                        if (payload.avatar) {
+                            const imgHtml = '<img src="' + payload.avatar + '" alt="Avatar" class="w-full h-full object-cover">';
+                            avatarEl.innerHTML = imgHtml;
+                            navAvatarEl.innerHTML = imgHtml;
+                        }
+                        
+                        actionsEl.innerHTML = \`
+                            <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex items-center justify-between">
+                                <div>
+                                    <div class="font-medium text-on-surface text-sm">Database Sync</div>
+                                    <div class="text-xs text-on-surface-variant mt-1">GitHub data synced to Neon DB.</div>
+                                </div>
+                                <span class="material-symbols-outlined text-emerald-400">cloud_done</span>
+                            </div>
+                            <button onclick="localStorage.removeItem('token'); window.location.href='/';" class="bg-surface-container hover:bg-error/10 border border-outline-variant/10 hover:border-error/30 text-error rounded-lg p-4 transition-colors flex items-center justify-center gap-2 text-sm font-bold w-full">
+                                <span class="material-symbols-outlined text-sm">logout</span> SIGN OUT
+                            </button>
+                        \`;
+                    } else {
+                        // Local Admin Logic
+                        document.getElementById('profileRole').innerText = "System Administrator (Local)";
+                        const initial = payload.user.charAt(0).toUpperCase();
+                        const initialHtml = '<div class="w-full h-full flex items-center justify-center text-3xl font-bold bg-primary-container text-on-primary-container">' + initial + '</div>';
+                        avatarEl.innerHTML = initialHtml;
+                        navAvatarEl.innerHTML = '<div class="w-full h-full flex items-center justify-center text-lg font-bold bg-primary-container text-on-primary-container">' + initial + '</div>';
+                        
+                        actionsEl.innerHTML = \`
+                            <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col justify-center">
+                                <div class="font-medium text-on-surface text-sm flex items-center gap-2 mb-1">
+                                    <span class="material-symbols-outlined text-sm">key</span> Local Account
+                                </div>
+                                <div class="text-xs text-on-surface-variant">Update password via .env file. Data not saved to cloud DB.</div>
+                            </div>
+                            <button onclick="localStorage.removeItem('token'); window.location.href='/';" class="bg-surface-container hover:bg-error/10 border border-outline-variant/10 hover:border-error/30 text-error rounded-lg p-4 transition-colors flex items-center justify-center gap-2 text-sm font-bold w-full">
+                                <span class="material-symbols-outlined text-sm">logout</span> SIGN OUT
+                            </button>
+                        \`;
+                    }
+                } catch(e) {
+                    console.error("Profile rendering error", e);
+                }
+            });
+        </script>
+    `;
+    res.send(generateLayout('USER PROFILE', profileContent));
 });
 
 module.exports = app;
