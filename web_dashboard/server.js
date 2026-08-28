@@ -484,146 +484,120 @@ app.get('/about', (req, res) => {
 });
 
 // ==========================================
-// ৮. পেজ রাউট: MY PROJECT
+// ৮. পেজ রাউট: MY PROJECT (Updated Modern UI)
 // ==========================================
 app.get('/project', (req, res) => {
     const projectContent = `
-        <style>
-            .github-profile { text-align: center; margin-bottom: 35px; }
-            .github-profile img { width: 110px; border-radius: 50%; border: 3px solid var(--accent-green); box-shadow: 0 0 15px rgba(212, 255, 0, 0.4); margin-bottom: 10px; }
-            .github-profile h2 { margin: 0; color: var(--accent-green); letter-spacing: 2px; }
-            .github-profile p { color: var(--text-muted); font-size: 14px; margin-bottom: 15px; }
+        <div class="max-w-6xl mx-auto">
             
-            .btn-github-main { background: transparent; color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 20px; text-decoration: none; font-size: 14px; display: inline-block; transition: 0.3s; font-weight: bold; }
-            .btn-github-main:hover { border-color: var(--accent-green); color: var(--accent-green); box-shadow: inset 0 0 8px rgba(212, 255, 0, 0.2); }
-
-            .section-header { border-bottom: 1px dashed var(--border-color); padding-bottom: 10px; margin-bottom: 25px; }
-            .section-header h3 { color: #fff; margin: 0; border: none; padding: 0; font-size: 1.2em; }
-            
-            .repo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-            .repo-card { background: #0a0a0a; border: 1px solid var(--border-color); padding: 25px; display: flex; flex-direction: column; transition: 0.3s; position: relative; border-radius: 12px; }
-            .repo-card:hover { border-color: #adc6ff; transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
-            
-            .card-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
-            .card-header h3 { margin: 0; font-size: 1.1em; color: #fff; border: none; padding: 0; }
-            
-            .repo-card p { color: #c2c6d6; font-size: 13px; line-height: 1.6; flex-grow: 1; margin-bottom: 20px; text-transform: none; }
-            
-            .card-buttons { display: flex; gap: 10px; }
-            .card-buttons a { flex: 1; text-align: center; padding: 12px; text-decoration: none; font-size: 12px; font-weight: bold; transition: 0.3s; text-transform: uppercase; border-radius: 8px; }
-            .live-btn { background: #adc6ff; color: #002e6a; border: 1px solid #adc6ff; }
-            .live-btn:hover { background: #4d8eff; color: #fff; }
-            .code-btn { background: transparent; color: #adc6ff; border: 1px solid var(--border-color); }
-            .code-btn:hover { border-color: #adc6ff; background: rgba(173, 198, 255, 0.1); }
-        </style>
-
-        <div class="github-profile mt-4">
-            <img src="https://github.com/Kiran-mondal.png" alt="Kiran Mondal">
-            <h2 class="text-primary font-bold text-2xl mt-2">KIRAN MONDAL</h2>
-            <p class="text-on-surface-variant">Full-Stack Developer & Cyber Security Enthusiast</p>
-            <a href="https://github.com/Kiran-mondal" target="_blank" class="bg-surface-variant hover:bg-surface-variant/80 text-on-surface px-6 py-2 rounded-lg border border-outline-variant/30 transition-colors inline-block mt-2">
-                View Full GitHub Profile
-            </a>
-        </div>
-
-        <div class="section-header mt-8">
-            <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary">public</span> My Live Web Projects
-            </h3>
-        </div>
-        
-        <div class="repo-grid">
-            <!-- Project 1: Password Guard -->
-            <div class="repo-card glass-card">
-                <div class="card-header">
-                    <svg width="34" height="34" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="512" height="512" rx="120" fill="#0D4FF0"/>
-                        <path d="M256 80L120 140V240C120 330 176 407 256 432C336 407 392 330 392 240V140L256 80Z" fill="white"/>
-                        <circle cx="256" cy="255" r="70" fill="#0D4FF0"/>
-                        <rect x="235" y="240" width="42" height="75" rx="8" fill="white"/>
-                    </svg>
-                    <h3>Password Guard</h3>
+            <!-- GitHub Profile Header -->
+            <div class="glass-card rounded-2xl p-8 mb-10 flex flex-col items-center justify-center text-center relative overflow-hidden border border-primary/20 shadow-lg">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none"></div>
+                
+                <div class="relative z-10 flex flex-col items-center">
+                    <div class="p-1.5 rounded-full bg-gradient-to-tr from-primary to-emerald-400 mb-4 shadow-[0_0_20px_rgba(173,198,255,0.3)]">
+                        <img src="https://github.com/Kiran-mondal.png" alt="Kiran Mondal" class="w-24 h-24 rounded-full border-4 border-background object-cover">
+                    </div>
+                    <h2 class="text-3xl font-bold text-on-surface tracking-wide uppercase mb-1">Kiran Mondal</h2>
+                    <p class="text-on-surface-variant font-data-mono text-sm mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm text-emerald-400">code</span>
+                        Full-Stack Developer & Cyber Security Enthusiast
+                    </p>
+                    <a href="https://github.com/Kiran-mondal" target="_blank" class="bg-surface-container-high hover:bg-primary/20 text-on-surface hover:text-primary px-6 py-2.5 rounded-lg border border-outline-variant/30 hover:border-primary/50 transition-all duration-300 flex items-center gap-2 font-medium text-sm shadow-sm group">
+                        <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">open_in_new</span>
+                        View GitHub Profile
+                    </a>
                 </div>
-                <p>Advanced AI-powered password protection & vault management tool with 3D Cyber UI.</p>
-                <div class="card-buttons">
-                    <a href="https://passwordguard.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
-                    <a href="https://github.com/Kiran-mondal/Password-Guard" target="_blank" class="code-btn">Source Code</a>
+            </div>
+
+            <!-- Projects Section Header -->
+            <div class="flex items-center gap-3 mb-6 border-b border-outline-variant/20 pb-4">
+                <div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined">public</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-on-surface">Live Web Projects</h3>
+                    <p class="text-xs text-on-surface-variant uppercase tracking-wider mt-1">Portfolio & Applications</p>
                 </div>
             </div>
             
-            <!-- Project 2: ZenDrift -->
-            <div class="repo-card glass-card">
-                <div class="card-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="34" height="34">
-                        <path d="M 120 390 C 120 270, 392 350, 392 210 C 392 130, 310 90, 256 90" fill="none" stroke="#58a6ff" stroke-width="45" stroke-linecap="round" />
-                        <circle cx="256" cy="90" r="45" fill="#58a6ff" />
-                    </svg>
-                    <h3>ZenDrift</h3>
+            <!-- Projects Grid (Fully Tailwind) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Project 1: Password Guard -->
+                <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400 shrink-0 border border-blue-500/20">
+                            <span class="material-symbols-outlined text-2xl">vpn_key</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">Password Guard</h3>
+                    </div>
+                    <p class="text-sm text-on-surface-variant flex-grow mb-6 leading-relaxed">Advanced AI-powered password protection & vault management tool with 3D Cyber UI.</p>
+                    <div class="flex gap-3 mt-auto">
+                        <a href="https://passwordguard.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary text-on-primary text-center py-2 rounded-lg text-sm font-bold hover:bg-primary-container transition-colors shadow-sm">Live App</a>
+                        <a href="https://github.com/Kiran-mondal/Password-Guard" target="_blank" class="flex-1 border border-outline-variant text-on-surface text-center py-2 rounded-lg text-sm font-bold hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors">Code</a>
+                    </div>
                 </div>
-                <p>Dynamic performance tracking system built for an engaging and smooth web experience.</p>
-                <div class="card-buttons">
-                    <a href="https://zendrift.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
-                    <a href="https://github.com/Kiran-mondal" target="_blank" class="code-btn">Source Code</a>
+                
+                <!-- Project 2: ZenDrift -->
+                <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg bg-sky-500/10 flex items-center justify-center text-sky-400 shrink-0 border border-sky-500/20">
+                            <span class="material-symbols-outlined text-2xl">speed</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">ZenDrift</h3>
+                    </div>
+                    <p class="text-sm text-on-surface-variant flex-grow mb-6 leading-relaxed">Dynamic performance tracking system built for an engaging and smooth web experience.</p>
+                    <div class="flex gap-3 mt-auto">
+                        <a href="https://zendrift.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary text-on-primary text-center py-2 rounded-lg text-sm font-bold hover:bg-primary-container transition-colors shadow-sm">Live App</a>
+                        <a href="https://github.com/Kiran-mondal" target="_blank" class="flex-1 border border-outline-variant text-on-surface text-center py-2 rounded-lg text-sm font-bold hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors">Code</a>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Project 3: Omlang -->
-            <div class="repo-card glass-card">
-                <div class="card-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="34" height="34">
-                        <path d="M 280 250 C 420 250, 420 380, 350 400 C 450 420, 450 580, 280 580" stroke="#00f2fe" stroke-width="45" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                        <circle cx="450" cy="120" r="30" fill="#00f2fe" />
-                    </svg>
-                    <h3>Omlang</h3>
+                
+                <!-- Project 3: Omlang -->
+                <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 shrink-0 border border-cyan-500/20">
+                            <span class="material-symbols-outlined text-2xl">forum</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">Omlang</h3>
+                    </div>
+                    <p class="text-sm text-on-surface-variant flex-grow mb-6 leading-relaxed">A modern language and communication-focused platform with an intuitive user interface.</p>
+                    <div class="flex gap-3 mt-auto">
+                        <a href="https://omlang.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary text-on-primary text-center py-2 rounded-lg text-sm font-bold hover:bg-primary-container transition-colors shadow-sm">Live App</a>
+                        <a href="https://github.com/Kiran-mondal" target="_blank" class="flex-1 border border-outline-variant text-on-surface text-center py-2 rounded-lg text-sm font-bold hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors">Code</a>
+                    </div>
                 </div>
-                <p>A modern language and communication-focused platform with an intuitive user interface.</p>
-                <div class="card-buttons">
-                    <a href="https://omlang.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
-                    <a href="https://github.com/Kiran-mondal" target="_blank" class="code-btn">Source Code</a>
+                
+                <!-- Project 4: Chaturanga -->
+                <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0 border border-amber-500/20">
+                            <span class="material-symbols-outlined text-2xl">extension</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">Chaturanga</h3>
+                    </div>
+                    <p class="text-sm text-on-surface-variant flex-grow mb-6 leading-relaxed">Interactive web-based application focused on deep logic, planning, and strategy.</p>
+                    <div class="flex gap-3 mt-auto">
+                        <a href="https://chaturanga.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary text-on-primary text-center py-2 rounded-lg text-sm font-bold hover:bg-primary-container transition-colors shadow-sm">Live App</a>
+                        <a href="https://github.com/Kiran-mondal" target="_blank" class="flex-1 border border-outline-variant text-on-surface text-center py-2 rounded-lg text-sm font-bold hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors">Code</a>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Project 4: Chaturanga -->
-            <div class="repo-card glass-card">
-                <div class="card-header">
-                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="34" height="34">
-                        <circle cx="50" cy="50" r="48" fill="#d97706" stroke="#ffffff" stroke-width="2"/>
-                        <path d="M50 20 L75 55 L50 80 L25 55 Z" fill="#ffffff" />
-                    </svg>
-                    <h3>Chaturanga</h3>
-                </div>
-                <p>Interactive web-based application focused on deep logic, planning, and strategy.</p>
-                <div class="card-buttons">
-                    <a href="https://chaturanga.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
-                    <a href="https://github.com/Kiran-mondal" target="_blank" class="code-btn">Source Code</a>
-                </div>
-             </div>
 
-            <!-- Project 5: Pachisi -->
-            <div class="repo-card glass-card">
-                <div class="card-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="34" height="34">
-                        <defs>
-                            <mask id="pasha-hole">
-                                <rect width="512" height="512" fill="white" />
-                                <circle cx="256" cy="256" r="32" fill="black" />
-                            </mask>
-                        </defs>
-                        <g mask="url(#pasha-hole)" fill="#dc2626">
-                            <rect x="232" y="16" width="48" height="480" rx="12" />
-                            <rect x="232" y="16" width="48" height="480" rx="12" transform="rotate(45 256 256)" />
-                            <rect x="232" y="16" width="48" height="480" rx="12" transform="rotate(90 256 256)" />
-                            <rect x="232" y="16" width="48" height="480" rx="12" transform="rotate(135 256 256)" />
-                            <circle cx="256" cy="256" r="168" fill="none" stroke="#dc2626" stroke-width="48" />
-                            <circle cx="256" cy="256" r="56" fill="none" stroke="#dc2626" stroke-width="48" />
-                        </g>
-                    </svg>
-                    <h3>Pachisi</h3>
-                </div>
-                <p>Play the ancient Indian epic board game of strategy, heritage, and royal culture.</p>
-                <div class="card-buttons">
-                    <a href="https://pachisi.quarry.dpdns.org" target="_blank" class="live-btn">Live App</a>
-                    <a href="https://github.com/Kiran-mondal" target="_blank" class="code-btn">Source Code</a>
+                <!-- Project 5: Pachisi -->
+                <div class="glass-card rounded-xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-ambient hover:border-primary/40 transition-all duration-300">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 shrink-0 border border-red-500/20">
+                            <span class="material-symbols-outlined text-2xl">casino</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-on-surface group-hover:text-primary transition-colors line-clamp-1">Pachisi</h3>
+                    </div>
+                    <p class="text-sm text-on-surface-variant flex-grow mb-6 leading-relaxed">Play the ancient Indian epic board game of strategy, heritage, and royal culture.</p>
+                    <div class="flex gap-3 mt-auto">
+                        <a href="https://pachisi.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary text-on-primary text-center py-2 rounded-lg text-sm font-bold hover:bg-primary-container transition-colors shadow-sm">Live App</a>
+                        <a href="https://github.com/Kiran-mondal" target="_blank" class="flex-1 border border-outline-variant text-on-surface text-center py-2 rounded-lg text-sm font-bold hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors">Code</a>
+                    </div>
                 </div>
             </div>
         </div>
