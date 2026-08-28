@@ -744,16 +744,47 @@ app.get('/api/auth/github/callback', async (req, res) => {
             body: JSON.stringify({ client_id: GITHUB_CLIENT_ID, client_secret: GITHUB_CLIENT_SECRET, code: code })
         });
         const tokenData = await tokenResponse.json();
+        
         const userResponse = await fetch('https://api.github.com/user', {
-            // Error Fix: Removed backslash escape from template literals
             headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'User-Agent': 'TriScout-App' }
         });
         const userData = await userResponse.json();
-        const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url }, JWT_SECRET, { expiresIn: '1h' });
-        // Error Fix: Removed backslash escape from template literals
+
+        // ----------------------------------------------------
+        // NEON DATABASE SAVE LOGIC (Only for GitHub Users)
+        // ----------------------------------------------------
+        try {
+            // ১. টেবিল না থাকলে অটোমেটিক তৈরি করে নেবে
+            await sql`
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(255) UNIQUE NOT NULL,
+                    avatar_url TEXT,
+                    provider VARCHAR(50),
+                    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `;
+            // ২. ইউজারের ডাটা সেভ বা আপডেট করবে
+            await sql`
+                INSERT INTO users (username, avatar_url, provider, last_login)
+                VALUES (${userData.login}, ${userData.avatar_url}, 'github', NOW())
+                ON CONFLICT (username) DO UPDATE 
+                SET avatar_url = EXCLUDED.avatar_url, last_login = NOW()
+            `;
+            console.log(`[+] Saved GitHub user: ${userData.login} to Database`);
+        } catch (dbError) {
+            console.error("[-] Neon Database save failed:", dbError);
+            // ডাটাবেজ ফেল করলেও যেন লগইন আটকে না যায়
+        }
+
+        // টোকেনে provider: 'github' যুক্ত করা হলো
+        const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url, provider: 'github' }, JWT_SECRET, { expiresIn: '1h' });
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
-    } catch (error) { res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>'); }
+    } catch (error) { 
+        res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>'); 
+    }
 });
+
 
 // ==========================================
 // ১২. পেজ রাউট: PROFILE SETTINGS
