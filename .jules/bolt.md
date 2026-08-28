@@ -9,3 +9,7 @@
 ## 2024-05-18 - Hoisting Cryptographic Operations
 **Learning:** Performing expensive operations like `crypto.randomBytes` per-request in a route handler creates unnecessary CPU overhead and slows down request processing.
 **Action:** Extract static/fallback credential generation logic to the module level so it's only executed once during server initialization.
+
+## 2024-05-18 - Caching Database Initialization (DDL)
+**Learning:** The `/api/auth/github/callback` route executed a `CREATE TABLE IF NOT EXISTS` DDL query on every successful login. Executing DDL operations in a hot request path is a significant bottleneck due to DDL lock acquisition and unnecessary database roundtrips.
+**Action:** Always wrap application-level DDL queries (like table initialization) in an in-memory boolean flag (e.g., `isDbInitialized`) to ensure they only execute once per server lifecycle, reducing DB load and latency on subsequent requests.

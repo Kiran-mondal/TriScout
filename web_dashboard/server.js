@@ -729,6 +729,8 @@ app.post('/api/send-report', async (req, res) => {
 // ==========================================
 // ১১. গিটহাব লগইন লজিক
 // ==========================================
+let isDbInitialized = false;
+
 app.get('/api/auth/github', (req, res) => {
     const redirectUri = `https://${req.headers.host}/api/auth/github/callback`;
     // Error Fix: Removed backslash escape from template literals
@@ -755,16 +757,20 @@ app.get('/api/auth/github/callback', async (req, res) => {
         // NEON DATABASE SAVE LOGIC (Only for GitHub Users)
         // ----------------------------------------------------
         try {
+            // ⚡ Bolt: Cache DB table creation to avoid redundant DDL statements in the critical request path
             // ১. টেবিল না থাকলে অটোমেটিক তৈরি করে নেবে
-            await sql`
-                CREATE TABLE IF NOT EXISTS users (
-                    id SERIAL PRIMARY KEY,
-                    username VARCHAR(255) UNIQUE NOT NULL,
-                    avatar_url TEXT,
-                    provider VARCHAR(50),
-                    last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            `;
+            if (!isDbInitialized) {
+                await sql`
+                    CREATE TABLE IF NOT EXISTS users (
+                        id SERIAL PRIMARY KEY,
+                        username VARCHAR(255) UNIQUE NOT NULL,
+                        avatar_url TEXT,
+                        provider VARCHAR(50),
+                        last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `;
+                isDbInitialized = true;
+            }
             // ২. ইউজারের ডাটা সেভ বা আপডেট করবে
             await sql`
                 INSERT INTO users (username, avatar_url, provider, last_login)
