@@ -27,7 +27,7 @@ const transporter = nodemailer.createTransport({
     auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
 }); 
 
-   // ==========================================
+// ==========================================
 // ২. মাল্টি-পেজ লেআউট ফাংশন (Dropdown, Mobile Menu & Active Tab Fixed)
 // ==========================================
 function generateLayout(pageTitle, content) {
@@ -62,7 +62,6 @@ function generateLayout(pageTitle, content) {
             #mobileSidebar { transition: transform 0.3s ease-in-out; }
         </style>
     </head>
-    <!-- overflow-x-hidden রিমুভ করা হয়েছে -->
     <body class="bg-background text-on-surface font-body-md min-h-screen">
         
         <!-- SideNavBar (Mobile Friendly & Dynamic Active State) -->
@@ -82,19 +81,19 @@ function generateLayout(pageTitle, content) {
                 </button>
             </div>
             
-            <!-- ডাইনামিক মেনু হাইলাইট -->
+            <!-- Dynamic Menu Highlight Section -->
             <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-2 px-3 mt-4">
-                <a href="/dashboard" class="\${pageTitle === 'COMMAND CENTER' ? activeLink : normalLink}">
-                    <span class="\${pageTitle === 'COMMAND CENTER' ? activeIcon : normalIcon}" \${pageTitle === 'COMMAND CENTER' ? activeIconStyle : normalIconStyle}>policy</span><span>Scanner</span>
+                <a href="/dashboard" class="${pageTitle === 'COMMAND CENTER' ? activeLink : normalLink}">
+                    <span class="${pageTitle === 'COMMAND CENTER' ? activeIcon : normalIcon}" ${pageTitle === 'COMMAND CENTER' ? activeIconStyle : normalIconStyle}>policy</span><span>Scanner</span>
                 </a>
-                <a href="/reports" class="\${pageTitle === 'REPORTS' ? activeLink : normalLink}">
-                    <span class="\${pageTitle === 'REPORTS' ? activeIcon : normalIcon}" \${pageTitle === 'REPORTS' ? activeIconStyle : normalIconStyle}>list_alt</span><span>Reports</span>
+                <a href="/reports" class="${pageTitle === 'REPORTS' ? activeLink : normalLink}">
+                    <span class="${pageTitle === 'REPORTS' ? activeIcon : normalIcon}" ${pageTitle === 'REPORTS' ? activeIconStyle : normalIconStyle}>list_alt</span><span>Reports</span>
                 </a>
-                <a href="/cli" class="\${pageTitle === 'CLI TOOL' ? activeLink : normalLink}">
-                    <span class="\${pageTitle === 'CLI TOOL' ? activeIcon : normalIcon}" \${pageTitle === 'CLI TOOL' ? activeIconStyle : normalIconStyle}>terminal</span><span>CLI</span>
+                <a href="/cli" class="${pageTitle === 'CLI TOOL' ? activeLink : normalLink}">
+                    <span class="${pageTitle === 'CLI TOOL' ? activeIcon : normalIcon}" ${pageTitle === 'CLI TOOL' ? activeIconStyle : normalIconStyle}>terminal</span><span>CLI</span>
                 </a>
-                <a href="/project" class="\${pageTitle === 'MY PROJECTS' ? activeLink : normalLink}">
-                    <span class="\${pageTitle === 'MY PROJECTS' ? activeIcon : normalIcon}" \${pageTitle === 'MY PROJECTS' ? activeIconStyle : normalIconStyle}>work</span><span>My Projects</span>
+                <a href="/project" class="${pageTitle === 'MY PROJECTS' ? activeLink : normalLink}">
+                    <span class="${pageTitle === 'MY PROJECTS' ? activeIcon : normalIcon}" ${pageTitle === 'MY PROJECTS' ? activeIconStyle : normalIconStyle}>work</span><span>My Projects</span>
                 </a>
                 
                 <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="flex items-center gap-3 px-3 py-2 rounded-lg text-error font-medium hover:bg-error/10 transition-colors mt-auto mb-2 w-full text-left">
@@ -114,7 +113,7 @@ function generateLayout(pageTitle, content) {
                 <button onclick="toggleMenu()" aria-label="Open menu" class="md:hidden text-on-surface p-2 -ml-2 hover:bg-surface-variant/50 rounded-lg transition-colors flex items-center justify-center">
                     <span class="material-symbols-outlined text-2xl">menu</span>
                 </button>
-                <div class="text-lg font-bold text-on-surface uppercase tracking-wide truncate max-w-[150px] sm:max-w-xs">\${pageTitle}</div>
+                <div class="text-lg font-bold text-on-surface uppercase tracking-wide truncate max-w-[150px] sm:max-w-xs">${pageTitle}</div>
             </div>
             
             <!-- Right Side: Profile Section -->
@@ -128,7 +127,7 @@ function generateLayout(pageTitle, content) {
                     <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">arrow_drop_down</span>
                 </button>
                 
-                <!-- Dropdown Menu Popup (Anchored exactly below the profile button) -->
+                <!-- Dropdown Menu Popup -->
                 <div id="profileDropdown" class="hidden absolute right-0 top-[calc(100%+8px)] w-56 bg-surface-container-highest border border-outline-variant/20 rounded-xl shadow-2xl overflow-hidden z-50">
                     <div class="px-4 py-3 border-b border-outline-variant/10 bg-surface-variant/20">
                         <p class="text-xs text-on-surface-variant">Signed in as</p>
@@ -154,7 +153,7 @@ function generateLayout(pageTitle, content) {
 
         <!-- Main Content -->
         <main class="pt-[110px] md:ml-64 p-4 md:p-6 min-h-screen pb-20">
-            \${content}
+            ${content}
         </main>
 
         <script>
@@ -200,7 +199,7 @@ function generateLayout(pageTitle, content) {
         </script>
     </body>
     </html>
-    \`;
+    `;
 }
 
 // ==========================================
