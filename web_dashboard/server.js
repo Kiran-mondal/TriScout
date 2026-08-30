@@ -27,10 +27,20 @@ const transporter = nodemailer.createTransport({
     auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
 }); 
 
-// ==========================================
-// ২. মাল্টি-পেজ লেআউট ফাংশন (Dropdown & Mobile Menu Fixed)
+   // ==========================================
+// ২. মাল্টি-পেজ লেআউট ফাংশন (Dropdown, Mobile Menu & Active Tab Fixed)
 // ==========================================
 function generateLayout(pageTitle, content) {
+    // CSS classes for Active and Normal states
+    const activeLink = "flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-variant/20 hover:bg-surface-variant/40";
+    const normalLink = "flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors";
+    
+    const activeIcon = "material-symbols-outlined text-primary";
+    const normalIcon = "material-symbols-outlined text-outline-variant";
+    
+    const activeIconStyle = "style=\"font-variation-settings: 'FILL' 1;\"";
+    const normalIconStyle = "";
+
     return `
     <!DOCTYPE html>
     <html class="dark" lang="en">
@@ -52,9 +62,10 @@ function generateLayout(pageTitle, content) {
             #mobileSidebar { transition: transform 0.3s ease-in-out; }
         </style>
     </head>
-    <body class="bg-background text-on-surface font-body-md min-h-screen overflow-x-hidden">
+    <!-- overflow-x-hidden রিমুভ করা হয়েছে -->
+    <body class="bg-background text-on-surface font-body-md min-h-screen">
         
-        <!-- SideNavBar (Mobile Friendly) -->
+        <!-- SideNavBar (Mobile Friendly & Dynamic Active State) -->
         <nav id="mobileSidebar" class="bg-surface-container h-screen w-64 flex flex-col border-r border-outline-variant/10 shadow-sm fixed left-0 top-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="p-6 pb-2 flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -70,19 +81,22 @@ function generateLayout(pageTitle, content) {
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
+            
+            <!-- ডাইনামিক মেনু হাইলাইট -->
             <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-2 px-3 mt-4">
-                <a href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-variant/20 hover:bg-surface-variant/40">
-                    <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">policy</span><span>Scanner</span>
+                <a href="/dashboard" class="\${pageTitle === 'COMMAND CENTER' ? activeLink : normalLink}">
+                    <span class="\${pageTitle === 'COMMAND CENTER' ? activeIcon : normalIcon}" \${pageTitle === 'COMMAND CENTER' ? activeIconStyle : normalIconStyle}>policy</span><span>Scanner</span>
                 </a>
-                <a href="/reports" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors">
-                    <span class="material-symbols-outlined text-outline-variant">list_alt</span><span>Reports</span>
+                <a href="/reports" class="\${pageTitle === 'REPORTS' ? activeLink : normalLink}">
+                    <span class="\${pageTitle === 'REPORTS' ? activeIcon : normalIcon}" \${pageTitle === 'REPORTS' ? activeIconStyle : normalIconStyle}>list_alt</span><span>Reports</span>
                 </a>
-                <a href="/cli" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors">
-                    <span class="material-symbols-outlined text-outline-variant">terminal</span><span>CLI</span>
+                <a href="/cli" class="\${pageTitle === 'CLI TOOL' ? activeLink : normalLink}">
+                    <span class="\${pageTitle === 'CLI TOOL' ? activeIcon : normalIcon}" \${pageTitle === 'CLI TOOL' ? activeIconStyle : normalIconStyle}>terminal</span><span>CLI</span>
                 </a>
-                <a href="/project" class="flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors">
-                    <span class="material-symbols-outlined text-outline-variant">work</span><span>My Projects</span>
+                <a href="/project" class="\${pageTitle === 'MY PROJECTS' ? activeLink : normalLink}">
+                    <span class="\${pageTitle === 'MY PROJECTS' ? activeIcon : normalIcon}" \${pageTitle === 'MY PROJECTS' ? activeIconStyle : normalIconStyle}>work</span><span>My Projects</span>
                 </a>
+                
                 <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="flex items-center gap-3 px-3 py-2 rounded-lg text-error font-medium hover:bg-error/10 transition-colors mt-auto mb-2 w-full text-left">
                     <span class="material-symbols-outlined text-error">logout</span><span>Logout</span>
                 </button>
@@ -100,7 +114,7 @@ function generateLayout(pageTitle, content) {
                 <button onclick="toggleMenu()" aria-label="Open menu" class="md:hidden text-on-surface p-2 -ml-2 hover:bg-surface-variant/50 rounded-lg transition-colors flex items-center justify-center">
                     <span class="material-symbols-outlined text-2xl">menu</span>
                 </button>
-                <div class="text-lg font-bold text-on-surface uppercase tracking-wide truncate max-w-[150px] sm:max-w-xs">${pageTitle}</div>
+                <div class="text-lg font-bold text-on-surface uppercase tracking-wide truncate max-w-[150px] sm:max-w-xs">\${pageTitle}</div>
             </div>
             
             <!-- Right Side: Profile Section -->
@@ -140,7 +154,7 @@ function generateLayout(pageTitle, content) {
 
         <!-- Main Content -->
         <main class="pt-[110px] md:ml-64 p-4 md:p-6 min-h-screen pb-20">
-            ${content}
+            \${content}
         </main>
 
         <script>
@@ -186,7 +200,7 @@ function generateLayout(pageTitle, content) {
         </script>
     </body>
     </html>
-    `;
+    \`;
 }
 
 // ==========================================
