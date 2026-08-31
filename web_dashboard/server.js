@@ -6,6 +6,7 @@ const axios = require('axios');
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
 require('dotenv').config();
+const { requireHTTPAuth } = require('./middleware/auth.js');
 
 const app = express();
 const sql = neon(process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost/placeholder');
@@ -310,7 +311,10 @@ app.get('/dashboard', (req, res) => {
                 try {
                     const response = await fetch('/api/scan-headers', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        },
                         body: JSON.stringify({ target: target })
                     });
                     
@@ -409,7 +413,10 @@ app.get('/reports', (req, res) => {
                 try {
                     const response = await fetch('/api/send-report', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        },
                         body: JSON.stringify({ target: target, reportData: reportData, emailTo: email })
                     });
                     const result = await response.json();
@@ -760,7 +767,7 @@ app.post('/api/scan-headers', async (req, res) => {
 // ==========================================
 // ১০. ইমেইল পাঠানোর API
 // ==========================================
-app.post('/api/send-report', async (req, res) => {
+app.post('/api/send-report', requireHTTPAuth, async (req, res) => {
     const { target, reportData, emailTo } = req.body;
     if(!target || !reportData || !emailTo) return res.status(400).json({ success: false, error: "Missing information." });
 
