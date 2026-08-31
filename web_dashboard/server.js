@@ -662,7 +662,20 @@ const scanCache = new Map();
 const CACHE_TTL = 60 * 1000; // 1 minute
 const MAX_CACHE_SIZE = 1000;
 
-app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
+// ⚡ Bolt: Hoist static IP validation logic and expensive regex to module scope
+// to prevent reallocation and recompilation on every request
+const isPrivateIp = (ipStr) => {
+    if (ipStr === '::1' || ipStr === '0.0.0.0' || ipStr === '::' || ipStr.startsWith('127.') || ipStr.startsWith('10.') || ipStr.startsWith('192.168.') || ipStr.startsWith('169.254.')) return true;
+    if (ipStr.startsWith('172.')) {
+        const secondOctet = parseInt(ipStr.split('.')[1], 10);
+        if (secondOctet >= 16 && secondOctet <= 31) return true;
+    }
+    const ipv6 = ipStr.toLowerCase();
+    return ipv6.startsWith('fc') || ipv6.startsWith('fd') || ipv6.startsWith('fe8');
+};
+const secretRegex = /(?:AIza[0-9A-Za-z-_]{35}|sk-[a-zA-Z0-9]{48}|[A-Za-z0-9_]{40,})/;
+
+app.post('/api/scan-headers', async (req, res) => {
     let { target } = req.body;
     if (!target) return res.status(400).json({ success: false, error: 'Target URL is required' });
     if (!target.startsWith('http://') && !target.startsWith('https://')) target = 'https://' + target;
@@ -674,16 +687,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         // Advanced SSRF protection: resolve hostname to IP to prevent DNS rebinding/nip.io bypasses
         const lookupResult = await require('dns').promises.lookup(hostname);
         const ip = lookupResult.address;
-
-        const isPrivateIp = (ipStr) => {
-            if (ipStr === '::1' || ipStr === '0.0.0.0' || ipStr === '::' || ipStr.startsWith('127.') || ipStr.startsWith('10.') || ipStr.startsWith('192.168.') || ipStr.startsWith('169.254.')) return true;
-            if (ipStr.startsWith('172.')) {
-                const secondOctet = parseInt(ipStr.split('.')[1], 10);
-                if (secondOctet >= 16 && secondOctet <= 31) return true;
-            }
-            const ipv6 = ipStr.toLowerCase();
-            return ipv6.startsWith('fc') || ipv6.startsWith('fd') || ipv6.startsWith('fe8');
-        };
 
         if (isPrivateIp(ip)) {
             return res.status(403).json({ success: false, error: 'Access to internal network resources is prohibited' });
@@ -721,8 +724,8 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             report += `[!] Error Handling: CRITICAL (Stack trace exposed!)\n`; score -= 20;
         } else { report += `[+] Error Handling: SECURE\n`; }
 
-        const secretRegex = /(?:AIza[0-9A-Za-z-_]{35}|sk-[a-zA-Z0-9]{48}|[A-Za-z0-9_]{40,})/; 
-        if (secretRegex.test(htmlBody) || htmlBody.includes('api_key')) {
+        // ⚡ Bolt: Fast path short-circuiting (.includes) first before executing expensive regex
+        if (htmlBody.includes('api_key') || secretRegex.test(htmlBody)) {
             report += `[!] Secrets Exposure: WARNING (Possible API Keys found)\n`; score -= 25;
         } else { report += `[+] Secrets Exposure: SECURE\n`; }
 
