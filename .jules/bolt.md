@@ -13,3 +13,7 @@
 ## 2024-05-18 - Caching Database Initialization (DDL)
 **Learning:** The `/api/auth/github/callback` route executed a `CREATE TABLE IF NOT EXISTS` DDL query on every successful login. Executing DDL operations in a hot request path is a significant bottleneck due to DDL lock acquisition and unnecessary database roundtrips.
 **Action:** Always wrap application-level DDL queries (like table initialization) in an in-memory boolean flag (e.g., `isDbInitialized`) to ensure they only execute once per server lifecycle, reducing DB load and latency on subsequent requests.
+
+## 2025-02-14 - Function & Regex Reallocation in Hot Paths
+**Learning:** Instantiating complex regex objects and defining logic functions inside hot request paths (like `/api/scan-headers`) causes unnecessary CPU and memory allocation on every request. Short-circuiting boolean conditionals with faster text checks (like `.includes()`) before expensive `.test()` checks improves text processing performance.
+**Action:** Hoist invariant static functions and regular expressions to the module scope to compile and load them only once. Reorder logic to prioritize short-circuiting fast path execution.
