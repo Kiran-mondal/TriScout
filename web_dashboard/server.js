@@ -49,6 +49,27 @@ function generateLayout(pageTitle, content) {
         <meta charset="utf-8"/>
         <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
         <title>TriScout - ${pageTitle}</title>
+                <!-- Primary Meta Tags -->
+        <meta name="title" content="TriScout - Advanced Defensive Cybersecurity Tool" />
+        <meta name="description" content="TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads." />
+        <meta name="keywords" content="cybersecurity, passive scanner, vulnerability assessment, TriScout, Kiran Mondal, web security, header check, nodejs" />
+        <meta name="author" content="Kiran Mondal" />
+        <meta name="theme-color" content="#10131a" />
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://triscout.quarry.dpdns.org/" />
+        <meta property="og:title" content="TriScout - Advanced Defensive Cybersecurity Tool" />
+        <meta property="og:description" content="TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads." />
+        <meta property="og:image" content="https://github.com/Kiran-mondal.png" />
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://triscout.quarry.dpdns.org/" />
+        <meta property="twitter:title" content="TriScout - Advanced Defensive Cybersecurity Tool" />
+        <meta property="twitter:description" content="TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads." />
+        <meta property="twitter:image" content="https://github.com/Kiran-mondal.png" />
+        
         <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
