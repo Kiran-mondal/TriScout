@@ -953,5 +953,76 @@ app.get('/profile', (req, res) => {
     `;
     res.send(generateLayout('USER PROFILE', profileContent));
 });
+// ==========================================
+// ১৩. Google SEO Sitemap (sitemap.xml)
+// ==========================================
+app.get('/sitemap.xml', (req, res) => {
+    // আপনার লাইভ ডোমেইন নাম এখানে দিন (যেমন: https://triscout.quarry.dpdns.org)
+    const domain = 'https://triscout.quarry.dpdns.org'; 
+    
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <!-- Home / Login Page -->
+    <url>
+        <loc>${domain}/</loc>
+        <changefreq>weekly</changefreq>
+        <priority>1.0</priority>
+    </url>
+    
+    <!-- About Page (Important for SEO) -->
+    <url>
+        <loc>${domain}/about</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.9</priority>
+    </url>
+    
+    <!-- CLI Tool Page -->
+    <url>
+        <loc>${domain}/cli</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- My Projects / Portfolio Page -->
+    <url>
+        <loc>${domain}/project</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    
+    <!-- Dashboard / Scanner Page -->
+    <url>
+        <loc>${domain}/dashboard</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+    
+    <!-- Reports Page -->
+    <url>
+        <loc>${domain}/reports</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+</urlset>`;
+
+    res.header('Content-Type', 'application/xml');
+    res.send(sitemap);
+});
+
+// ==========================================
+// ১৪. SEO Robots.txt (Optional but Recommended)
+// ==========================================
+app.get('/robots.txt', (req, res) => {
+    const domain = 'https://triscout.quarry.dpdns.org';
+    const robots = `User-agent: *
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
+Sitemap: ${domain}/sitemap.xml`;
+
+    res.header('Content-Type', 'text/plain');
+    res.send(robots);
+});
 
 module.exports = app;
