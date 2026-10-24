@@ -2,7 +2,14 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 require('dotenv').config();
 
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+// Vercel বা লোকাল এনভায়রনমেন্টের স্পেসজনিত সমস্যা এড়ানোর জন্য সেফ রিডার
+function getEnv(key) {
+    if (process.env[key]) return process.env[key].trim();
+    const foundKey = Object.keys(process.env).find(k => k.trim() === key);
+    return foundKey ? process.env[foundKey].trim() : undefined;
+}
+
+const JWT_SECRET = getEnv('JWT_SECRET') || crypto.randomBytes(32).toString('hex');
 
 /**
  * Express Middleware to protect HTTP routes.
