@@ -10,20 +10,33 @@ const { requireHTTPAuth } = require('./middleware/auth.js');
 
 const app = express();
 
-// SECURITY AUDIT FIX: Strict Environment Variables Check
-const JWT_SECRET = process.env.JWT_SECRET;
-const DATABASE_URL = process.env.DATABASE_URL;
-const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-const ADMIN_USER = process.env.ADMIN_USERNAME;
-const ADMIN_PASS = process.env.ADMIN_PASSWORD;
-
-if (!JWT_SECRET || !DATABASE_URL) {
-    console.error("FATAL ERROR: Essential security environment variables are missing.");
-    process.exit(1);
+// ==========================================
+// SMART ENV READER (স্পেস থাকলেও কাজ করবে এবং সার্ভার ক্র্যাশ করবে না)
+// ==========================================
+function getEnv(key) {
+    if (process.env[key]) return process.env[key].trim();
+    // যদি Vercel-এ নামের আগে বা পরে ভুলবশত স্পেস পড়ে গিয়ে থাকে, তবুও এটি খুঁজে বের করবে
+    const foundKey = Object.keys(process.env).find(k => k.trim() === key);
+    return foundKey ? process.env[foundKey].trim() : undefined;
 }
 
-const sql = neon(DATABASE_URL);
+const JWT_SECRET = getEnv('JWT_SECRET') || crypto.randomBytes(32).toString('hex');
+const DATABASE_URL = getEnv('DATABASE_URL');
+const GITHUB_CLIENT_ID = getEnv('GITHUB_CLIENT_ID');
+const GITHUB_CLIENT_SECRET = getEnv('GITHUB_CLIENT_SECRET');
+const ADMIN_USER = getEnv('ADMIN_USERNAME');
+const ADMIN_PASS = getEnv('ADMIN_PASSWORD');
+
+// ক্র্যাশ না করে লগে পরিষ্কারভাবে বলে দেবে কোন ভেরিয়েবলটি পাওয়া যাচ্ছে না
+if (!getEnv('JWT_SECRET') || !DATABASE_URL) {
+    console.warn("WARNING: Missing ENV variables ->", {
+        JWT_SECRET_FOUND: !!getEnv('JWT_SECRET'),
+        DATABASE_URL_FOUND: !!DATABASE_URL
+    });
+}
+
+// ডাটাবেজ কানেকশন সেফটি চেক
+const sql = DATABASE_URL ? neon(DATABASE_URL) : async () => { throw new Error("Database URL not configured"); };
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -34,8 +47,8 @@ app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1d' }));
 // ==========================================
 const transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS }
-}); 
+    auth: { user: getEnv('GMAIL_USER'), pass: getEnv('GMAIL_PASS') }
+});
 
 // ==========================================
 // ২. মাল্টি-পেজ লেআউট ফাংশন 
