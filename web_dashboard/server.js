@@ -9,15 +9,24 @@ require('dotenv').config();
 const { requireHTTPAuth } = require('./middleware/auth.js');
 
 const app = express();
-const sql = neon(process.env.DATABASE_URL || 'postgresql://placeholder:placeholder@localhost/placeholder');
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
+// SECURITY AUDIT FIX: Strict Environment Variables Check
+const JWT_SECRET = process.env.JWT_SECRET;
+const DATABASE_URL = process.env.DATABASE_URL;
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+const ADMIN_USER = process.env.ADMIN_USERNAME;
+const ADMIN_PASS = process.env.ADMIN_PASSWORD;
+
+if (!JWT_SECRET || !DATABASE_URL) {
+    console.error("FATAL ERROR: Essential security environment variables are missing.");
+    process.exit(1);
+}
+
+const sql = neon(DATABASE_URL);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// ⚡ Bolt: Add maxAge caching to static assets to prevent redundant network requests
 app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1d' }));
 
 // ==========================================
@@ -29,10 +38,9 @@ const transporter = nodemailer.createTransport({
 }); 
 
 // ==========================================
-// ২. মাল্টি-পেজ লেআউট ফাংশন (Dropdown, Mobile Menu & Active Tab Fixed)
+// ২. মাল্টি-পেজ লেআউট ফাংশন 
 // ==========================================
 function generateLayout(pageTitle, content) {
-    // CSS classes for Active and Normal states
     const activeLink = "flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-variant/20 hover:bg-surface-variant/40";
     const normalLink = "flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors";
     
@@ -49,27 +57,7 @@ function generateLayout(pageTitle, content) {
         <meta charset="utf-8"/>
         <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
         <title>TriScout - ${pageTitle}</title>
-                <!-- Primary Meta Tags -->
-        <meta name="title" content="TriScout - Advanced Defensive Cybersecurity Tool" />
         <meta name="description" content="TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads." />
-        <meta name="keywords" content="cybersecurity, passive scanner, vulnerability assessment, TriScout, Kiran Mondal, web security, header check, nodejs" />
-        <meta name="author" content="Kiran Mondal" />
-        <meta name="theme-color" content="#10131a" />
-
-        <!-- Open Graph / Facebook -->
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://triscout.quarry.dpdns.org/" />
-        <meta property="og:title" content="TriScout - Advanced Defensive Cybersecurity Tool" />
-        <meta property="og:description" content="TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads." />
-        <meta property="og:image" content="https://github.com/Kiran-mondal.png" />
-
-        <!-- Twitter -->
-        <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:url" content="https://triscout.quarry.dpdns.org/" />
-        <meta property="twitter:title" content="TriScout - Advanced Defensive Cybersecurity Tool" />
-        <meta property="twitter:description" content="TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads." />
-        <meta property="twitter:image" content="https://github.com/Kiran-mondal.png" />
-        
         <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -80,13 +68,11 @@ function generateLayout(pageTitle, content) {
             .glass-card { background-color: rgba(30, 41, 59, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
             .hide-scrollbar::-webkit-scrollbar { display: none; }
             .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-            /* Mobile menu transition */
             #mobileSidebar { transition: transform 0.3s ease-in-out; }
         </style>
     </head>
     <body class="bg-background text-on-surface font-body-md min-h-screen">
         
-        <!-- SideNavBar (Mobile Friendly & Dynamic Active State) -->
         <nav id="mobileSidebar" class="bg-surface-container h-screen w-64 flex flex-col border-r border-outline-variant/10 shadow-sm fixed left-0 top-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="p-6 pb-2 flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -97,13 +83,11 @@ function generateLayout(pageTitle, content) {
                         <div class="text-2xl font-bold text-primary">TriScout</div>
                     </div>
                 </div>
-                <!-- Close Button for Mobile -->
                 <button onclick="toggleMenu()" aria-label="Close menu" class="md:hidden text-on-surface-variant p-1">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
             
-            <!-- Dynamic Menu Highlight Section -->
             <div class="flex-1 overflow-y-auto py-4 flex flex-col gap-2 px-3 mt-4">
                 <a href="/dashboard" class="${pageTitle === 'COMMAND CENTER' ? activeLink : normalLink}">
                     <span class="${pageTitle === 'COMMAND CENTER' ? activeIcon : normalIcon}" ${pageTitle === 'COMMAND CENTER' ? activeIconStyle : normalIconStyle}>policy</span><span>Scanner</span>
@@ -124,13 +108,9 @@ function generateLayout(pageTitle, content) {
             </div>
         </nav>
 
-        <!-- Overlay for Mobile Sidebar -->
         <div id="sidebarOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
-        <!-- TopNavBar (Fixed Mobile Layout & Dropdown Position) -->
         <header class="bg-surface/90 backdrop-blur-xl h-16 w-full flex items-center justify-between px-4 md:px-6 z-40 border-b border-outline-variant/10 fixed top-0 right-0 left-0 md:left-64">
-            
-            <!-- Left Side: Mobile Menu Button & Page Title -->
             <div class="flex items-center gap-2">
                 <button onclick="toggleMenu()" aria-label="Open menu" class="md:hidden text-on-surface p-2 -ml-2 hover:bg-surface-variant/50 rounded-lg transition-colors flex items-center justify-center">
                     <span class="material-symbols-outlined text-2xl">menu</span>
@@ -138,9 +118,7 @@ function generateLayout(pageTitle, content) {
                 <div class="text-lg font-bold text-on-surface uppercase tracking-wide truncate max-w-[150px] sm:max-w-xs">${pageTitle}</div>
             </div>
             
-            <!-- Right Side: Profile Section -->
             <div class="relative flex-shrink-0"> 
-                <!-- Profile Toggle Button -->
                 <button onclick="toggleDropdown()" aria-label="Toggle user menu" aria-haspopup="true" aria-expanded="false" class="flex items-center gap-2 hover:bg-surface-variant/50 py-1.5 px-2 rounded-lg transition-colors group focus:outline-none">
                     <div id="navProfileAvatar" class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold overflow-hidden shadow-sm">
                         <span class="material-symbols-outlined text-sm">person</span>
@@ -149,7 +127,6 @@ function generateLayout(pageTitle, content) {
                     <span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">arrow_drop_down</span>
                 </button>
                 
-                <!-- Dropdown Menu Popup -->
                 <div id="profileDropdown" class="hidden absolute right-0 top-[calc(100%+8px)] w-56 bg-surface-container-highest border border-outline-variant/20 rounded-xl shadow-2xl overflow-hidden z-50">
                     <div class="px-4 py-3 border-b border-outline-variant/10 bg-surface-variant/20">
                         <p class="text-xs text-on-surface-variant">Signed in as</p>
@@ -165,7 +142,6 @@ function generateLayout(pageTitle, content) {
             </div>
         </header>
 
-        <!-- System Status Bar -->
         <div class="bg-surface-container-low/50 backdrop-blur-md border-b border-outline-variant/5 fixed top-16 right-0 left-0 md:left-64 h-8 flex items-center px-4 md:px-6 z-20 overflow-x-auto">
             <div class="flex items-center gap-2 text-xs">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -173,13 +149,11 @@ function generateLayout(pageTitle, content) {
             </div>
         </div>
 
-        <!-- Main Content -->
         <main class="pt-[110px] md:ml-64 p-4 md:p-6 min-h-screen pb-20">
             ${content}
         </main>
 
         <script>
-            // Mobile Menu Toggle Script
             function toggleMenu() {
                 const sidebar = document.getElementById('mobileSidebar');
                 const overlay = document.getElementById('sidebarOverlay');
@@ -187,7 +161,6 @@ function generateLayout(pageTitle, content) {
                 overlay.classList.toggle('hidden');
             }
             
-            // Profile Dropdown Script
             function toggleDropdown() {
                 const dropdown = document.getElementById('profileDropdown');
                 const btn = document.querySelector('button[onclick="toggleDropdown()"]');
@@ -195,7 +168,6 @@ function generateLayout(pageTitle, content) {
                 if (btn) btn.setAttribute('aria-expanded', !isHidden);
             }
             
-            // Close dropdown if clicked outside
             window.onclick = function(event) {
                 if (!event.target.closest('button[onclick="toggleDropdown()"]')) {
                     const dropdown = document.getElementById('profileDropdown');
@@ -207,7 +179,6 @@ function generateLayout(pageTitle, content) {
                 }
             }
             
-            // On Load: Populate Dropdown Username
             document.addEventListener("DOMContentLoaded", () => {
                 const token = localStorage.getItem('token');
                 if (token) {
@@ -225,21 +196,17 @@ function generateLayout(pageTitle, content) {
 }
 
 // ==========================================
-// ৩. লগইন রাউট (404 Error Fix)
+// ৩. লগইন রাউট (404 Error Fix & Env Credential Validation)
 // ==========================================
 app.get('/login', (req, res) => {
     res.redirect('/');
 });
 
-const DEFAULT_ADMIN_USER = process.env.ADMIN_USERNAME || crypto.randomBytes(16).toString('hex');
-const DEFAULT_ADMIN_PASS = process.env.ADMIN_PASSWORD || crypto.randomBytes(16).toString('hex');
-
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
     
-    if (username === DEFAULT_ADMIN_USER && password === DEFAULT_ADMIN_PASS) {
-        // 'provider: local' যুক্ত করা হলো ডাটাবেজ ফিল্টারিংয়ের জন্য
-        const token = jwt.sign({ user: DEFAULT_ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '1h' });
+    if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
+        const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '1h' });
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
     } else {
         res.send(`<script>alert("ACCESS DENIED"); window.location.href="/";</script>`);
@@ -247,7 +214,7 @@ app.post('/login', (req, res) => {
 });
 
 // ==========================================
-// ৪. পেজ রাউট: SCANNER (Dummy Data Removed)
+// ৪. পেজ রাউট: SCANNER (Command Center)
 // ==========================================
 app.get('/dashboard', (req, res) => {
     const scannerContent = `
@@ -280,7 +247,6 @@ app.get('/dashboard', (req, res) => {
                     <span class="text-xs text-on-surface-variant" id="scanTargetLabel">No Target Scanned</span>
                 </div>
                 
-                <!-- Zeroed Data (No confusing dummy numbers) -->
                 <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4 content-center">
                     <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col items-center justify-center text-center">
                         <span class="text-error font-data-mono text-3xl font-light mb-1" id="countCrit">0</span>
@@ -305,7 +271,6 @@ app.get('/dashboard', (req, res) => {
                 <span class="material-symbols-outlined text-4xl text-outline-variant mb-2">shield_lock</span>
                 <h3 class="text-lg font-bold text-on-surface mb-1">Asset Security Score</h3>
                 <p class="text-sm text-on-surface-variant mb-4">Run a scan to calculate score.</p>
-                <!-- Dynamic Score Circle -->
                 <div class="w-24 h-24 rounded-full border-4 border-outline-variant/30 flex items-center justify-center text-2xl font-bold font-data-mono" id="scoreCircle">
                     --
                 </div>
@@ -324,7 +289,6 @@ app.get('/dashboard', (req, res) => {
                 btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">sync</span> SCANNING...';
                 terminal.innerHTML = "> Initializing advanced security analysis for: " + target + "...<br>> Fetching HTTP headers and source code...<br><br>";
                 
-                // Reset visual data
                 document.getElementById('scanTargetLabel').innerText = 'Scanning: ' + target;
                 document.getElementById('scoreCircle').innerText = '--';
                 document.getElementById('scoreCircle').className = "w-24 h-24 rounded-full border-4 border-outline-variant/30 flex items-center justify-center text-2xl font-bold font-data-mono text-on-surface-variant";
@@ -348,7 +312,6 @@ app.get('/dashboard', (req, res) => {
                         localStorage.setItem('triscout_target', target);
                         localStorage.setItem('triscout_report', data.report);
                         
-                        // Parse score from your backend response
                         const scoreMatch = data.report.match(/OVERALL SECURITY SCORE: (\\d+)/);
                         if(scoreMatch && scoreMatch[1]) {
                             const score = parseInt(scoreMatch[1]);
@@ -359,7 +322,6 @@ app.get('/dashboard', (req, res) => {
                             else circle.classList.replace('border-outline-variant/30', 'border-error');
                         }
 
-                        // Add small visual indication of found issues based on report text
                         if(data.report.includes('CRITICAL')) document.getElementById('countCrit').innerText = '1';
                         if(data.report.includes('WARNING')) document.getElementById('countHigh').innerText = '2';
                         if(data.report.includes('MISSING')) document.getElementById('countMed').innerText = '3';
@@ -382,7 +344,7 @@ app.get('/dashboard', (req, res) => {
 });
 
 // ==========================================
-// ৫. পেজ রাউট: REPORTS (Updated with New UI)
+// ৫. পেজ রাউট: REPORTS
 // ==========================================
 app.get('/reports', (req, res) => {
     const reportContent = `
@@ -405,7 +367,6 @@ app.get('/reports', (req, res) => {
         </div>
 
         <script>
-            // Your exact original JavaScript logic for Reports
             document.addEventListener("DOMContentLoaded", () => {
                 const savedReport = localStorage.getItem('triscout_report');
                 const savedTarget = localStorage.getItem('triscout_target');
@@ -457,23 +418,30 @@ app.get('/reports', (req, res) => {
     `;
     res.send(generateLayout('REPORTS', reportContent));
 });
+
 // ==========================================
 // ৬. পেজ রাউট: CLI DOWNLOAD
 // ==========================================
 app.get('/cli', (req, res) => {
     const cliContent = `
-        <div class="card">
-            <h3 style="color: var(--accent-green);">TRISCOUT CLI EDITION</h3>
-            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Take the power of TriScout to your terminal. Integrate passive security scans directly into your CI/CD pipelines or run them locally using our Command Line Interface.</p>
+        <div class="glass-card rounded-xl p-6 md:p-8 max-w-4xl mx-auto border border-primary/20 shadow-lg">
+            <h3 class="text-2xl font-bold text-primary mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined">terminal</span> TRISCOUT CLI EDITION
+            </h3>
+            <p class="text-sm text-on-surface-variant mb-6 leading-relaxed">
+                Take the power of TriScout to your terminal. Integrate passive security scans directly into your CI/CD pipelines or run them locally using our Command Line Interface.
+            </p>
             
-            <div style="background: #050505; padding: 20px; border: 1px dashed var(--border-color); font-family: monospace; color: var(--text-main); margin-bottom: 25px;">
-                <span style="color: var(--text-muted);"># Install via NPM</span><br>
-                <span style="color: var(--accent-green);">$</span> npm install -g @kiran-mondal/triscout<br><br>
-                <span style="color: var(--text-muted);"># Run a quick scan</span><br>
-                <span style="color: var(--accent-green);">$</span> triscout example.com
+            <div class="bg-black/90 p-5 rounded-lg border border-outline-variant/30 font-data-mono text-sm text-on-surface mb-6 leading-relaxed">
+                <span class="text-on-surface-variant"># Install via NPM</span><br>
+                <span class="text-emerald-400 font-bold">$</span> npm install -g @kiran-mondal/triscout<br><br>
+                <span class="text-on-surface-variant"># Run a quick passive scan</span><br>
+                <span class="text-emerald-400 font-bold">$</span> triscout example.com
             </div>
             
-            <button style="width: 100%;" onclick="window.open('https://github.com/Kiran-mondal/triscout/packages', '_blank')">VIEW PACKAGE ON GITHUB</button>
+            <button class="w-full bg-primary hover:bg-primary-container text-on-primary font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2" onclick="window.open('https://github.com/Kiran-mondal/triscout/packages', '_blank')">
+                <span class="material-symbols-outlined text-sm">open_in_new</span> VIEW PACKAGE ON GITHUB
+            </button>
         </div>
     `;
     res.send(generateLayout('CLI TOOL', cliContent));
@@ -484,41 +452,52 @@ app.get('/cli', (req, res) => {
 // ==========================================
 app.get('/about', (req, res) => {
     const aboutContent = `
-        <div class="card">
-            <h3 style="color: var(--accent-green);">ABOUT TRISCOUT</h3>
-            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads.</p>
+        <div class="glass-card rounded-xl p-6 md:p-8 max-w-4xl mx-auto border border-primary/20 shadow-lg">
+            <h3 class="text-2xl font-bold text-primary mb-2 flex items-center gap-2">
+                <span class="material-symbols-outlined">info</span> ABOUT TRISCOUT
+            </h3>
+            <p class="text-sm text-on-surface-variant mb-6 leading-relaxed">
+                TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads.
+            </p>
             
-            <table class="cyber-table">
-                <tr>
-                    <th>MODULE</th>
-                    <th>SPECIFICATION</th>
-                </tr>
-                <tr>
-                    <td>Project Name</td>
-                    <td style="color: var(--accent-green); font-weight: bold;">TRISCOUT</td>
-                </tr>
-                <tr>
-                    <td>Version</td>
-                    <td>1.0.0-Beta</td>
-                </tr>
-                <tr>
-                    <td>Architecture</td>
-                    <td>Node.js / Express / Axios</td>
-                </tr>
-                <tr>
-                    <td>Core Capabilities</td>
-                    <td>
-                        - Passive Security Header Check<br>
-                        - Source Code Leakage Detection<br>
-                        - Secrets & API Key Exposure Alert<br>
-                        - Automated Email Reporting
-                    </td>
-                </tr>
-                <tr>
-                    <td>Developer</td>
-                    <td>Kiran Mondal</td>
-                </tr>
-            </table>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse font-body-md text-sm">
+                    <thead>
+                        <tr class="border-b border-outline-variant/30 text-primary uppercase font-data-mono text-xs">
+                            <th class="py-3 px-4">Module</th>
+                            <th class="py-3 px-4">Specification</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant/10">
+                        <tr>
+                            <td class="py-3 px-4 font-semibold text-on-surface-variant">Project Name</td>
+                            <td class="py-3 px-4 text-emerald-400 font-bold font-data-mono">TRISCOUT</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 font-semibold text-on-surface-variant">Version</td>
+                            <td class="py-3 px-4 font-data-mono">2.0.0-Secured</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 font-semibold text-on-surface-variant">Architecture</td>
+                            <td class="py-3 px-4">Node.js / Express / Axios / Neon PostgreSQL</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 font-semibold text-on-surface-variant">Core Capabilities</td>
+                            <td class="py-3 px-4 leading-relaxed">
+                                • Passive Security Header Check<br>
+                                • Source Code Leakage Detection<br>
+                                • Secrets & API Key Exposure Alert<br>
+                                • Automated Email Reporting<br>
+                                • Ethical SSRF & Network Guardrails
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 px-4 font-semibold text-on-surface-variant">Developer</td>
+                            <td class="py-3 px-4 font-bold text-on-surface">Kiran Mondal</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     `;
     res.send(generateLayout('ABOUT TRISCOUT', aboutContent));
@@ -530,7 +509,6 @@ app.get('/about', (req, res) => {
 app.get('/project', (req, res) => {
     const projectContent = `
         <div class="max-w-6xl mx-auto">
-            
             <!-- GitHub Profile Header -->
             <div class="glass-card rounded-2xl p-8 mb-10 flex flex-col items-center justify-center text-center relative overflow-hidden border border-primary/20 shadow-lg">
                 <div class="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
@@ -675,16 +653,13 @@ app.get('/project', (req, res) => {
     res.send(generateLayout('MY PROJECTS', projectContent));
 });
 
-
 // ==========================================
-// ৯. উন্নত প্যাসিভ স্ক্যানার API
+// ৯. উন্নত প্যাসিভ স্ক্যানার API (Protected with requireHTTPAuth & Ethical Guard)
 // ==========================================
 const scanCache = new Map();
 const CACHE_TTL = 60 * 1000; // 1 minute
 const MAX_CACHE_SIZE = 1000;
 
-// ⚡ Bolt: Hoist static IP validation logic and expensive regex to module scope
-// to prevent reallocation and recompilation on every request
 const isPrivateIp = (ipStr) => {
     if (ipStr === '::1' || ipStr === '0.0.0.0' || ipStr === '::' || ipStr.startsWith('127.') || ipStr.startsWith('10.') || ipStr.startsWith('192.168.') || ipStr.startsWith('169.254.')) return true;
     if (ipStr.startsWith('172.')) {
@@ -696,7 +671,8 @@ const isPrivateIp = (ipStr) => {
 };
 const secretRegex = /(?:AIza[0-9A-Za-z-_]{35}|sk-[a-zA-Z0-9]{48}|[A-Za-z0-9_]{40,})/;
 
-app.post('/api/scan-headers', async (req, res) => {
+// SECURITY FIX: Added requireHTTPAuth middleware so unauthenticated users cannot abuse the scanner
+app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
     let { target } = req.body;
     if (!target) return res.status(400).json({ success: false, error: 'Target URL is required' });
     if (!target.startsWith('http://') && !target.startsWith('https://')) target = 'https://' + target;
@@ -705,18 +681,17 @@ app.post('/api/scan-headers', async (req, res) => {
         const parsedUrl = new URL(target);
         const hostname = parsedUrl.hostname;
 
-        // Advanced SSRF protection: resolve hostname to IP to prevent DNS rebinding/nip.io bypasses
+        // Advanced SSRF & Ethical protection: resolve hostname to IP to block internal network scans
         const lookupResult = await require('dns').promises.lookup(hostname);
         const ip = lookupResult.address;
 
         if (isPrivateIp(ip)) {
-            return res.status(403).json({ success: false, error: 'Access to internal network resources is prohibited' });
+            return res.status(403).json({ success: false, error: 'Ethical Guardrail: Scanning internal or private network resources is strictly prohibited.' });
         }
     } catch (e) {
         return res.status(400).json({ success: false, error: 'Invalid URL format or host resolution failed' });
     }
 
-    // ⚡ Bolt: Check in-memory cache to avoid redundant external network requests and expensive regex parsing
     if (scanCache.has(target)) {
         const cached = scanCache.get(target);
         if (Date.now() - cached.timestamp < CACHE_TTL) {
@@ -727,25 +702,26 @@ app.post('/api/scan-headers', async (req, res) => {
     }
 
     try {
-        // ⚡ Bolt: Added payload limits (5MB) to avoid memory exhaustion and speed up requests by aborting early on huge files. Added compression support.
         const response = await axios.get(target, {
             timeout: 10000,
             validateStatus: () => true,
             maxContentLength: 5 * 1024 * 1024,
-            maxBodyLength: 5 * 1024 * 1024
+            maxBodyLength: 5 * 1024 * 1024,
+            headers: {
+                'User-Agent': 'TriScout-Ethical-Passive-Scanner/2.0 (+https://triscout.quarry.dpdns.org)'
+            }
         });
         const headers = response.headers;
         const htmlBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
         
-        // Error Fix: Removed backslash escape from template literals
-        let report = `--- ADVANCED SECURITY ANALYSIS FOR: ${target} ---\n\n`;
+        let report = `--- ETHICAL PASSIVE SECURITY ANALYSIS FOR: ${target} ---\n`;
+        report += `[Compliance: Authorized Passive Header & Source Evaluation Only]\n\n`;
         let score = 100;
 
         if (htmlBody.includes('Stack trace:') || htmlBody.includes('SyntaxError:') || htmlBody.includes('SQL syntax')) {
             report += `[!] Error Handling: CRITICAL (Stack trace exposed!)\n`; score -= 20;
         } else { report += `[+] Error Handling: SECURE\n`; }
 
-        // ⚡ Bolt: Fast path short-circuiting (.includes) first before executing expensive regex
         if (htmlBody.includes('api_key') || secretRegex.test(htmlBody)) {
             report += `[!] Secrets Exposure: WARNING (Possible API Keys found)\n`; score -= 25;
         } else { report += `[+] Secrets Exposure: SECURE\n`; }
@@ -775,18 +751,19 @@ app.post('/api/scan-headers', async (req, res) => {
 
         report += `\nOVERALL SECURITY SCORE: ${score}/100`;
 
-        // ⚡ Bolt: Cache the final report, evicting if too large
         if (scanCache.size >= MAX_CACHE_SIZE) {
             scanCache.clear();
         }
         scanCache.set(target, { report, timestamp: Date.now() });
 
         res.json({ success: true, report: report });
-    } catch (error) { res.status(500).json({ success: false, error: 'Target unreachable.' }); }
+    } catch (error) { 
+        res.status(500).json({ success: false, error: 'Target unreachable.' }); 
+    }
 });
 
 // ==========================================
-// ১০. ইমেইল পাঠানোর API
+// ১০. ইমেইল পাঠানোর API (Protected)
 // ==========================================
 app.post('/api/send-report', requireHTTPAuth, async (req, res) => {
     const { target, reportData, emailTo } = req.body;
@@ -796,23 +773,23 @@ app.post('/api/send-report', requireHTTPAuth, async (req, res) => {
         const mailOptions = {
             from: process.env.GMAIL_USER,
             to: emailTo,
-            // Error Fix: Removed backslash escape from template literals
             subject: `[ALERT] TriScout Security Assessment: ${target}`,
             text: `TriScout Defensive Cyber Security System\n\nTarget Analyzed: ${target}\n\n${reportData}\n\n--------------------\nConfidential Report Generated by TriScout.`
         };
         await transporter.sendMail(mailOptions);
         res.json({ success: true, message: 'Email sent successfully' });
-    } catch (error) { res.status(500).json({ success: false, error: 'Internal Email Service Error.' }); }
+    } catch (error) { 
+        res.status(500).json({ success: false, error: 'Internal Email Service Error.' }); 
+    }
 });
 
 // ==========================================
-// ১১. গিটহাব লগইন লজিক
+// ১১. গিটহাব লগইন লজিক (PII Sanitized Logs)
 // ==========================================
 let isDbInitialized = false;
 
 app.get('/api/auth/github', (req, res) => {
     const redirectUri = `https://${req.headers.host}/api/auth/github/callback`;
-    // Error Fix: Removed backslash escape from template literals
     res.redirect(`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=read:user`);
 });
 
@@ -836,8 +813,6 @@ app.get('/api/auth/github/callback', async (req, res) => {
         // NEON DATABASE SAVE LOGIC (Only for GitHub Users)
         // ----------------------------------------------------
         try {
-            // ⚡ Bolt: Cache DB table creation to avoid redundant DDL statements in the critical request path
-            // ১. টেবিল না থাকলে অটোমেটিক তৈরি করে নেবে
             if (!isDbInitialized) {
                 await sql`
                     CREATE TABLE IF NOT EXISTS users (
@@ -850,20 +825,18 @@ app.get('/api/auth/github/callback', async (req, res) => {
                 `;
                 isDbInitialized = true;
             }
-            // ২. ইউজারের ডাটা সেভ বা আপডেট করবে
             await sql`
                 INSERT INTO users (username, avatar_url, provider, last_login)
                 VALUES (${userData.login}, ${userData.avatar_url}, 'github', NOW())
                 ON CONFLICT (username) DO UPDATE 
                 SET avatar_url = EXCLUDED.avatar_url, last_login = NOW()
             `;
-            console.log(`[+] Saved GitHub user: ${userData.login} to Database`);
+            // SECURITY FIX: PII Cleaned Log (No real username printed in console)
+            console.log(`[+] Saved GitHub user: [REDACTED] to Database`);
         } catch (dbError) {
-            console.error("[-] Neon Database save failed:", dbError);
-            // ডাটাবেজ ফেল করলেও যেন লগইন আটকে না যায়
+            console.error("[-] Neon Database save failed.");
         }
 
-        // টোকেনে provider: 'github' যুক্ত করা হলো
         const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url, provider: 'github' }, JWT_SECRET, { expiresIn: '1h' });
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
     } catch (error) { 
@@ -872,7 +845,7 @@ app.get('/api/auth/github/callback', async (req, res) => {
 });
 
 // ==========================================
-// ১২. পেজ রাউট: PROFILE SETTINGS
+// ১২. পেজ রাউট: PROFILE SETTINGS (With Account Deletion UI & XSS Protection)
 // ==========================================
 app.get('/profile', (req, res) => {
     const profileContent = `
@@ -911,12 +884,35 @@ app.get('/profile', (req, res) => {
         </div>
 
         <script>
+            async function deleteUserAccount() {
+                if (!confirm("WARNING: Are you sure you want to permanently delete your account data from our database?")) return;
+                
+                try {
+                    const response = await fetch('/api/account/delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        alert(data.message);
+                        localStorage.removeItem('token');
+                        window.location.href = '/';
+                    } else {
+                        alert("Error: " + data.error);
+                    }
+                } catch (e) {
+                    alert("Failed to communicate with the server.");
+                }
+            }
+
             document.addEventListener("DOMContentLoaded", () => {
                 const token = localStorage.getItem('token');
                 if (!token) return window.location.href = '/';
 
                 try {
-                    // JWT Token Decode করা হচ্ছে
                     const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
                     
                     document.getElementById('profileName').innerText = payload.user || "Unknown User";
@@ -928,10 +924,18 @@ app.get('/profile', (req, res) => {
 
                     if (payload.provider === 'github') {
                         document.getElementById('profileRole').innerText = "GitHub Authorized User";
-                        if (payload.avatar) {
-                            const imgHtml = '<img src="' + payload.avatar + '" alt="Avatar" class="w-full h-full object-cover">';
-                            avatarEl.innerHTML = imgHtml;
-                            navAvatarEl.innerHTML = imgHtml;
+                        if (payload.avatar && payload.avatar.startsWith('https://')) {
+                            // SECURITY FIX: Safe DOM element creation instead of innerHTML to prevent XSS
+                            const img1 = document.createElement('img');
+                            img1.src = payload.avatar;
+                            img1.alt = "Avatar";
+                            img1.className = "w-full h-full object-cover";
+                            avatarEl.innerHTML = '';
+                            avatarEl.appendChild(img1);
+
+                            const img2 = img1.cloneNode(true);
+                            navAvatarEl.innerHTML = '';
+                            navAvatarEl.appendChild(img2);
                         }
                         
                         actionsEl.innerHTML = \`
@@ -942,24 +946,35 @@ app.get('/profile', (req, res) => {
                                 </div>
                                 <span class="material-symbols-outlined text-emerald-400">cloud_done</span>
                             </div>
-                            <button onclick="localStorage.removeItem('token'); window.location.href='/';" class="bg-surface-container hover:bg-error/10 border border-outline-variant/10 hover:border-error/30 text-error rounded-lg p-4 transition-colors flex items-center justify-center gap-2 text-sm font-bold w-full">
+                            <button onclick="localStorage.removeItem('token'); window.location.href='/';" class="bg-surface-container hover:bg-surface-variant/50 border border-outline-variant/10 text-on-surface rounded-lg p-4 transition-colors flex items-center justify-center gap-2 text-sm font-bold w-full">
                                 <span class="material-symbols-outlined text-sm">logout</span> SIGN OUT
+                            </button>
+                            <button onclick="deleteUserAccount()" class="md:col-span-2 bg-error/10 hover:bg-error/20 border border-error/30 text-error rounded-lg p-4 transition-colors flex items-center justify-center gap-2 text-sm font-bold w-full">
+                                <span class="material-symbols-outlined text-sm">delete_forever</span> DELETE MY ACCOUNT & DATA
                             </button>
                         \`;
                     } else {
-                        // Local Admin Logic
                         document.getElementById('profileRole').innerText = "System Administrator (Local)";
-                        const initial = payload.user.charAt(0).toUpperCase();
-                        const initialHtml = '<div class="w-full h-full flex items-center justify-center text-3xl font-bold bg-primary-container text-on-primary-container">' + initial + '</div>';
-                        avatarEl.innerHTML = initialHtml;
-                        navAvatarEl.innerHTML = '<div class="w-full h-full flex items-center justify-center text-lg font-bold bg-primary-container text-on-primary-container">' + initial + '</div>';
+                        const initial = (payload.user || "A").charAt(0).toUpperCase();
+                        
+                        const div1 = document.createElement('div');
+                        div1.className = "w-full h-full flex items-center justify-center text-3xl font-bold bg-primary-container text-on-primary-container";
+                        div1.innerText = initial;
+                        avatarEl.innerHTML = '';
+                        avatarEl.appendChild(div1);
+
+                        const div2 = document.createElement('div');
+                        div2.className = "w-full h-full flex items-center justify-center text-lg font-bold bg-primary-container text-on-primary-container";
+                        div2.innerText = initial;
+                        navAvatarEl.innerHTML = '';
+                        navAvatarEl.appendChild(div2);
                         
                         actionsEl.innerHTML = \`
                             <div class="bg-surface-container/50 border border-outline-variant/10 rounded-lg p-4 flex flex-col justify-center">
                                 <div class="font-medium text-on-surface text-sm flex items-center gap-2 mb-1">
                                     <span class="material-symbols-outlined text-sm">key</span> Local Account
                                 </div>
-                                <div class="text-xs text-on-surface-variant">Update password via .env file. Data not saved to cloud DB.</div>
+                                <div class="text-xs text-on-surface-variant">Update password via Vercel Environment Variables.</div>
                             </div>
                             <button onclick="localStorage.removeItem('token'); window.location.href='/';" class="bg-surface-container hover:bg-error/10 border border-outline-variant/10 hover:border-error/30 text-error rounded-lg p-4 transition-colors flex items-center justify-center gap-2 text-sm font-bold w-full">
                                 <span class="material-symbols-outlined text-sm">logout</span> SIGN OUT
@@ -967,58 +982,60 @@ app.get('/profile', (req, res) => {
                         \`;
                     }
                 } catch(e) {
-                    console.error("Profile rendering error", e);
+                    console.error("Profile rendering error");
                 }
             });
         </script>
     `;
     res.send(generateLayout('USER PROFILE', profileContent));
 });
+
 // ==========================================
-// ১৩. Google SEO Sitemap (sitemap.xml)
+// ১৩. একাউন্ট ডিলিট ফ্লো (Data Privacy & Deletion API)
+// ==========================================
+app.post('/api/account/delete', requireHTTPAuth, async (req, res) => {
+    try {
+        const username = req.user.user;
+        await sql`DELETE FROM users WHERE username = ${username}`;
+        res.json({ success: true, message: "Your account and personal data have been permanently deleted from our database." });
+    } catch (err) {
+        res.status(500).json({ success: false, error: "Failed to delete account data." });
+    }
+});
+
+// ==========================================
+// ১৪. Google SEO Sitemap (sitemap.xml)
 // ==========================================
 app.get('/sitemap.xml', (req, res) => {
-    // আপনার লাইভ ডোমেইন নাম এখানে দিন (যেমন: https://triscout.quarry.dpdns.org)
     const domain = 'https://triscout.quarry.dpdns.org'; 
     
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <!-- Home / Login Page -->
     <url>
         <loc>${domain}/</loc>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
-    
-    <!-- About Page (Important for SEO) -->
     <url>
         <loc>${domain}/about</loc>
         <changefreq>monthly</changefreq>
         <priority>0.9</priority>
     </url>
-    
-    <!-- CLI Tool Page -->
     <url>
         <loc>${domain}/cli</loc>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
-    
-    <!-- My Projects / Portfolio Page -->
     <url>
         <loc>${domain}/project</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
-    
-    <!-- Dashboard / Scanner Page -->
     <url>
         <loc>${domain}/dashboard</loc>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
     </url>
-    
-    <!-- Reports Page -->
     <url>
         <loc>${domain}/reports</loc>
         <changefreq>monthly</changefreq>
@@ -1031,7 +1048,7 @@ app.get('/sitemap.xml', (req, res) => {
 });
 
 // ==========================================
-// ১৪. SEO Robots.txt (Optional but Recommended)
+// ১৫. SEO Robots.txt
 // ==========================================
 app.get('/robots.txt', (req, res) => {
     const domain = 'https://triscout.quarry.dpdns.org';
@@ -1047,3 +1064,4 @@ Sitemap: ${domain}/sitemap.xml`;
 });
 
 module.exports = app;
+            
