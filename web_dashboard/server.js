@@ -6,41 +6,30 @@ const axios = require('axios');
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
 require('dotenv').config();
-const { requireHTTPAuth } = require('./middleware/auth.js');
+
+// auth.js থেকেই সরাসরি JWT_SECRET এবং getEnv নিয়ে আসা হলো (ফলে Secret Mismatch হওয়ার সম্ভাবনা 0%)
+const { requireHTTPAuth, JWT_SECRET, getEnv } = require('./middleware/auth.js');
 
 const app = express();
 
-// ==========================================
-// SMART ENV READER (স্পেস থাকলেও কাজ করবে এবং সার্ভার ক্র্যাশ করবে না)
-// ==========================================
-function getEnv(key) {
-    if (process.env[key]) return process.env[key].trim();
-    // যদি Vercel-এ নামের আগে বা পরে ভুলবশত স্পেস পড়ে গিয়ে থাকে, তবুও এটি খুঁজে বের করবে
-    const foundKey = Object.keys(process.env).find(k => k.trim() === key);
-    return foundKey ? process.env[foundKey].trim() : undefined;
-}
-
-const JWT_SECRET = getEnv('JWT_SECRET') || crypto.randomBytes(32).toString('hex');
 const DATABASE_URL = getEnv('DATABASE_URL');
 const GITHUB_CLIENT_ID = getEnv('GITHUB_CLIENT_ID');
 const GITHUB_CLIENT_SECRET = getEnv('GITHUB_CLIENT_SECRET');
 const ADMIN_USER = getEnv('ADMIN_USERNAME');
 const ADMIN_PASS = getEnv('ADMIN_PASSWORD');
 
-// ক্র্যাশ না করে লগে পরিষ্কারভাবে বলে দেবে কোন ভেরিয়েবলটি পাওয়া যাচ্ছে না
-if (!getEnv('JWT_SECRET') || !DATABASE_URL) {
-    console.warn("WARNING: Missing ENV variables ->", {
-        JWT_SECRET_FOUND: !!getEnv('JWT_SECRET'),
-        DATABASE_URL_FOUND: !!DATABASE_URL
-    });
-}
-
 // ডাটাবেজ কানেকশন সেফটি চেক
 const sql = DATABASE_URL ? neon(DATABASE_URL) : async () => { throw new Error("Database URL not configured"); };
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// ⚡ Bolt: Add maxAge caching to static assets to prevent redundant network requests
 app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1d' }));
+
+// ফেভিকন (Favicon) রিকোয়েস্ট হ্যান্ডেল করার জন্য সরাসরি রাউট
+app.get('/favicon.ico', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/logo.svg'));
+});
 
 // ==========================================
 // ১. ইমেইল ট্রান্সপোর্টার সেটআপ
@@ -48,12 +37,13 @@ app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1d' }));
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user: getEnv('GMAIL_USER'), pass: getEnv('GMAIL_PASS') }
-});
+}); 
 
 // ==========================================
-// ২. মাল্টি-পেজ লেআউট ফাংশন 
+// ২. মাল্টি-পেজ লেআউট ফাংশন (Favicon, Dropdown, Mobile Menu & Active Tab Fixed)
 // ==========================================
 function generateLayout(pageTitle, content) {
+    // CSS classes for Active and Normal states
     const activeLink = "flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-variant/20 hover:bg-surface-variant/40";
     const normalLink = "flex items-center gap-3 px-3 py-2 rounded-lg text-on-surface-variant font-medium hover:bg-surface-variant/50 transition-colors";
     
@@ -70,7 +60,29 @@ function generateLayout(pageTitle, content) {
         <meta charset="utf-8"/>
         <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
         <title>TriScout - ${pageTitle}</title>
+        <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+        
+        <!-- Primary Meta Tags -->
+        <meta name="title" content="TriScout - Advanced Defensive Cybersecurity Tool" />
         <meta name="description" content="TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads." />
+        <meta name="keywords" content="cybersecurity, passive scanner, vulnerability assessment, TriScout, Kiran Mondal, web security, header check, nodejs" />
+        <meta name="author" content="Kiran Mondal" />
+        <meta name="theme-color" content="#10131a" />
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://triscout.quarry.dpdns.org/" />
+        <meta property="og:title" content="TriScout - Advanced Defensive Cybersecurity Tool" />
+        <meta property="og:description" content="TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads." />
+        <meta property="og:image" content="https://github.com/Kiran-mondal.png" />
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://triscout.quarry.dpdns.org/" />
+        <meta property="twitter:title" content="TriScout - Advanced Defensive Cybersecurity Tool" />
+        <meta property="twitter:description" content="TriScout is an advanced defensive cybersecurity tool designed to help developers and system administrators perform passive vulnerability assessments without executing malicious payloads." />
+        <meta property="twitter:image" content="https://github.com/Kiran-mondal.png" />
+        
         <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -86,6 +98,7 @@ function generateLayout(pageTitle, content) {
     </head>
     <body class="bg-background text-on-surface font-body-md min-h-screen">
         
+        <!-- SideNavBar (Mobile Friendly & Dynamic Active State) -->
         <nav id="mobileSidebar" class="bg-surface-container h-screen w-64 flex flex-col border-r border-outline-variant/10 shadow-sm fixed left-0 top-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="p-6 pb-2 flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -121,8 +134,10 @@ function generateLayout(pageTitle, content) {
             </div>
         </nav>
 
+        <!-- Overlay for Mobile Sidebar -->
         <div id="sidebarOverlay" onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
+        <!-- TopNavBar -->
         <header class="bg-surface/90 backdrop-blur-xl h-16 w-full flex items-center justify-between px-4 md:px-6 z-40 border-b border-outline-variant/10 fixed top-0 right-0 left-0 md:left-64">
             <div class="flex items-center gap-2">
                 <button onclick="toggleMenu()" aria-label="Open menu" class="md:hidden text-on-surface p-2 -ml-2 hover:bg-surface-variant/50 rounded-lg transition-colors flex items-center justify-center">
@@ -155,6 +170,7 @@ function generateLayout(pageTitle, content) {
             </div>
         </header>
 
+        <!-- System Status Bar -->
         <div class="bg-surface-container-low/50 backdrop-blur-md border-b border-outline-variant/5 fixed top-16 right-0 left-0 md:left-64 h-8 flex items-center px-4 md:px-6 z-20 overflow-x-auto">
             <div class="flex items-center gap-2 text-xs">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -162,6 +178,7 @@ function generateLayout(pageTitle, content) {
             </div>
         </div>
 
+        <!-- Main Content -->
         <main class="pt-[110px] md:ml-64 p-4 md:p-6 min-h-screen pb-20">
             ${content}
         </main>
@@ -198,7 +215,9 @@ function generateLayout(pageTitle, content) {
                     try {
                         const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
                         const dropName = document.getElementById('dropdownUserName');
+                        const navName = document.getElementById('navProfileName');
                         if(dropName && payload.user) dropName.innerText = payload.user;
+                        if(navName && payload.user) navName.innerText = payload.user;
                     } catch(e) {}
                 }
             });
@@ -225,7 +244,7 @@ app.post('/login', (req, res) => {
         res.send(`<script>alert("ACCESS DENIED"); window.location.href="/";</script>`);
     }
 });
-
+                    
 // ==========================================
 // ৪. পেজ রাউট: SCANNER (Command Center)
 // ==========================================
