@@ -10,7 +10,7 @@
 
 /* =========================================
    Animated Cyber Background
-========================================= */
+============================================= */
 @keyframes moveGrid {
     0% { background-position: 0px 0px; }
     100% { background-position: 50px 50px; }
@@ -50,7 +50,7 @@ body::after {
 
 /* =========================================
    Transparent Glass Navbar
-========================================= */
+============================================= */
 .cyber-navbar {
     display: flex;
     justify-content: space-between;
@@ -140,7 +140,7 @@ body::after {
 
 /* =========================================
    Main Content Layout
-========================================= */
+============================================= */
 .content-wrapper {
     padding: 30px;
     max-width: 1200px;
@@ -260,7 +260,7 @@ button:disabled, button[disabled] {
 
 /* =========================================
    Mobile Responsiveness & Hamburger Menu
-========================================= */
+============================================= */
 @media (max-width: 768px) {
     .cyber-navbar { padding: 15px 20px; }
     .brand-title { font-size: 1.5em; }
@@ -294,8 +294,39 @@ button:disabled, button[disabled] {
 }
 
 /* GitHub Button */
-.github-container { display: flex; justify-content: center; width: 100%; margin-bottom: 10px; position: relative; z-index: 10; }
-.github-btn { background: transparent; color: var(--text-main); border: 2px solid var(--border-color); width: 75px; height: 75px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; padding: 0; }
-.github-btn svg { width: 40px !important; height: 40px !important; fill: currentColor; }
-.github-btn:hover { background: var(--text-main); color: #000; border-color: var(--text-main); box-shadow: 0 0 15px rgba(255, 255, 255, 0.2); }
-    
+.github-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 10;
+}
+
+.github-btn {
+    background: transparent;
+    color: var(--text-main);
+    border: 2px solid var(--border-color);
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.github-btn svg {
+    width: 40px !important;
+    height: 40px !important;
+    fill: currentColor;
+}
+
+.github-btn:hover {
+    background: var(--text-main);
+    color: #000;
+    border-color: var(--text-main);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
