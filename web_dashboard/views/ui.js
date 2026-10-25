@@ -228,7 +228,7 @@ function generateLayout(pageTitle, content) {
         <!-- Main Workspace Body -->
         <main class="relative pt-16 min-h-screen bg-surface bg-[radial-gradient(#1d2027_1px,transparent_1px)] [background-size:20px_20px]">
             <div class="w-full px-gutter lg:px-gutter-lg py-margin-md">
-                ${content}
+            
             </div>
         </main>
     </div>
@@ -1566,6 +1566,7 @@ function getDashboardPage() {
 // ==========================================
 
 // ২. REPORTS পেজ (Gmail Dispatch & Print/Export)
+
 function getReportsPage() {
     const reportContent = `
         <div class="max-w-4xl mx-auto">
