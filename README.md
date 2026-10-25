@@ -16,6 +16,10 @@
   A fast, modular cybersecurity framework for network reconnaissance built with <strong>Go</strong>, <strong>Python</strong>, and <strong>Node.js</strong>.
 </p>
 
+<p align="center">
+  <strong>Live Website:</strong> <a href="https://triscout.quarry.dpdns.org/dashboard#recon">https://triscout.quarry.dpdns.org/dashboard#recon</a>
+</p>
+
 ---
 
 ## 🚀 Features
@@ -28,7 +32,7 @@
 
 ## 📁 Project Structure
 
-```
+```text
 TriScout/
 ├── go_scanner/        # Port scanner (Go)
 ├── python_processor/  # Data enrichment (Python)
@@ -57,6 +61,7 @@ cd TriScout
 chmod +x run_all.sh
 ./run_all.sh -target 192.168.1.1 -ports 1-1024 -format pdf
 ```
+
 ## 🔧 Technology Stack
 
 - **Go:** Concurrent scanning, networking
@@ -68,6 +73,22 @@ chmod +x run_all.sh
 1. **Go Scanner** → `results.json` (raw ports)
 2. **Python Processor** → `processed.json` (enriched data)
 3. **Web Dashboard** → Display and export reports
+
+## 🌐 Project Website
+
+This project is available as a live website at:
+
+https://triscout.quarry.dpdns.org/dashboard#recon
+
+This repository is intended for authorized security testing, research, and learning only. It is not a public offensive toolkit and must not be used for unauthorized scanning, intrusion, or malicious activity.
+
+## ⚠️ Responsible Use Notice
+
+This project is provided for legitimate security research, defensive testing, and educational purposes only. It must only be used on systems and networks where you have explicit authorization to test.
+
+By installing, running, or modifying this project, you acknowledge that you are solely responsible for ensuring lawful and ethical use. The creator and contributors are not liable for misuse, abuse, or any harmful activity conducted with this code or any deployed instance of the project.
+
+Any use that violates local laws, network policies, privacy expectations, or third-party rights is strictly prohibited.
 
 ## 👨‍💻 Author
 
