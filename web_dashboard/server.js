@@ -6,18 +6,7 @@ const axios = require('axios');
 const { neon } = require('@neondatabase/serverless');
 require('dotenv').config();
 
-// ১. auth.js থেকে সরাসরি JWT_SECRET এবং getEnv ইম্পোর্ট (Secret Mismatch রোধ করার জন্য)
 const { requireHTTPAuth, JWT_SECRET, getEnv } = require('./middleware/auth.js');
-
-// ২. আলাদা UI ফাইল (views/ui.js) থেকে সমস্ত পেজ ডিজাইন ইম্পোর্ট
-const {
-    getDashboardPage,
-    getReportsPage,
-    getCliPage,
-    getAboutPage,
-    getProjectPage,
-    getProfilePage
-} = require('./views/ui.js');
 
 const app = express();
 
@@ -27,59 +16,45 @@ const GITHUB_CLIENT_SECRET = getEnv('GITHUB_CLIENT_SECRET');
 const ADMIN_USER = getEnv('ADMIN_USERNAME');
 const ADMIN_PASS = getEnv('ADMIN_PASSWORD');
 
-// ডাটাবেজ কানেকশন সেফটি চেক
 const sql = DATABASE_URL ? neon(DATABASE_URL) : async () => { throw new Error("Database URL not configured"); };
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1d' }));
 
-// ফেভিকন (Favicon) রিকোয়েস্ট হ্যান্ডেল করার জন্য সরাসরি রাউট
 app.get('/favicon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/logo.svg'));
 });
 
-// ==========================================
-// ১. ইমেইল ট্রান্সপোর্টার সেটআপ
-// ==========================================
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user: getEnv('GMAIL_USER'), pass: getEnv('GMAIL_PASS') }
 }); 
 
-// ==========================================
-// ২. লগইন রাউট (404 Error Fix & Env Credential Validation)
-// ==========================================
 app.get('/login', (req, res) => {
     res.redirect('/');
 });
 
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    
     if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
         const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '1h' });
         res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
     } else {
-        res.send(`<script>alert("ACCESS DENIED"); window.location.href="/";</script>`);
+        res.send(`<script>alert("ACCESS DENIED: Invalid credentials."); window.location.href="/";</script>`);
     }
 });
 
-// ==========================================
-// ৩. পেজ রাউটস (সমস্ত UI এখন views/ui.js থেকে আসছে)
-// ==========================================
-app.get('/dashboard', (req, res) => res.send(getDashboardPage()));
-app.get('/reports', (req, res) => res.send(getReportsPage()));
-app.get('/cli', (req, res) => res.send(getCliPage()));
-app.get('/about', (req, res) => res.send(getAboutPage()));
-app.get('/project', (req, res) => res.send(getProjectPage()));
-app.get('/profile', (req, res) => res.send(getProfilePage()));
+// সমস্ত ড্যাশবোর্ড এবং সাব-পেজ রাউট এখন সরাসরি খাঁটি HTML ফাইল (views/index.html) সার্ভ করবে
+const dashboardHtmlPath = path.join(__dirname, 'views', 'index.html');
 
-// ==========================================
-// ৪. উন্নত প্যাসিভ স্ক্যানার API (Structured Checks + Score + Report)
-// ==========================================
+app.get(['/dashboard', '/reports', '/cli', '/about', '/project', '/profile'], (req, res) => {
+    res.sendFile(dashboardHtmlPath);
+});
+
+// উন্নত প্যাসিভ স্ক্যানার API (Protected + SSRF Guard + Structured Checks)
 const scanCache = new Map();
-const CACHE_TTL = 60 * 1000; // 1 minute
+const CACHE_TTL = 60 * 1000;
 const MAX_CACHE_SIZE = 1000;
 
 const isPrivateIp = (ipStr) => {
@@ -101,7 +76,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
     try {
         const parsedUrl = new URL(target);
         const hostname = parsedUrl.hostname;
-
         const lookupResult = await require('dns').promises.lookup(hostname);
         const ip = lookupResult.address;
 
@@ -128,7 +102,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             maxContentLength: 5 * 1024 * 1024,
             maxBodyLength: 5 * 1024 * 1024,
             headers: {
-                'User-Agent': 'TriScout-Ethical-Passive-Scanner/2.0 (+https://triscout.quarry.dpdns.org)'
+                'User-Agent': 'TriScout-Ethical-Passive-Scanner/2.4 (+https://triscout.quarry.dpdns.org)'
             }
         });
         const headers = response.headers;
@@ -138,7 +112,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         let score = 100;
         const checks = [];
 
-        // 1. Error Handling Check
         if (htmlBody.includes('Stack trace:') || htmlBody.includes('SyntaxError:') || htmlBody.includes('SQL syntax')) {
             report += `[!] Error Handling: CRITICAL (Stack trace exposed!)\n`;
             score -= 20;
@@ -148,7 +121,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Error Handling', status: 'SECURE', category: 'Source Leak', impact: '0 pts', detail: 'No raw stack traces or database errors leaked.' });
         }
 
-        // 2. Secrets Exposure Check
         if (htmlBody.includes('api_key') || secretRegex.test(htmlBody)) {
             report += `[!] Secrets Exposure: CRITICAL (Possible API Keys found)\n`;
             score -= 25;
@@ -158,7 +130,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Secrets Exposure', status: 'SECURE', category: 'Credentials', impact: '0 pts', detail: 'No exposed API keys or secret tokens found in page source.' });
         }
 
-        // 3. Rate Limiting Check
         if (headers['x-ratelimit-limit'] || headers['retry-after'] || headers['ratelimit-limit']) {
             report += `[+] Rate Limiting: SECURE\n`;
             checks.push({ name: 'Rate Limiting', status: 'SECURE', category: 'Traffic', impact: '0 pts', detail: 'Rate-limiting headers are actively enforced.' });
@@ -168,7 +139,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Rate Limiting', status: 'NOTICE', category: 'Traffic', impact: '-5 pts', detail: 'No explicit rate-limit headers exposed (may be handled by WAF).' });
         }
 
-        // 4. Tech Stack / Dependencies Exposure
         if (headers['x-powered-by']) {
             report += `[!] Dependencies: WARNING (Tech Stack Exposed: ${headers['x-powered-by']})\n`;
             score -= 10;
@@ -184,7 +154,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
 
         report += `\n--- DEFENSIVE HTTP SECURITY HEADERS ---\n`;
 
-        // 5. HSTS Header
         if (headers['strict-transport-security']) {
             report += `[+] HSTS (Strict-Transport-Security): SECURE\n`;
             checks.push({ name: 'HSTS Policy', status: 'SECURE', category: 'SSL/TLS', impact: '0 pts', detail: 'Enforces encrypted HTTPS connections against downgrade attacks.' });
@@ -194,7 +163,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'HSTS Policy', status: 'MISSING', category: 'SSL/TLS', impact: '-10 pts', detail: 'Missing Strict-Transport-Security header.' });
         }
 
-        // 6. CSP Header
         if (headers['content-security-policy']) {
             report += `[+] CSP (Content-Security-Policy): SECURE\n`;
             checks.push({ name: 'CSP Header', status: 'SECURE', category: 'XSS Defense', impact: '0 pts', detail: 'Content-Security-Policy is active to mitigate XSS injection.' });
@@ -204,7 +172,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'CSP Header', status: 'MISSING', category: 'XSS Defense', impact: '-10 pts', detail: 'No Content-Security-Policy defined against script injection.' });
         }
 
-        // 7. X-Frame-Options Header
         if (headers['x-frame-options']) {
             report += `[+] X-Frame-Options: SECURE\n`;
             checks.push({ name: 'X-Frame-Options', status: 'SECURE', category: 'Clickjacking', impact: '0 pts', detail: `Protected against iframe clickjacking (${headers['x-frame-options']}).` });
@@ -214,7 +181,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'X-Frame-Options', status: 'MISSING', category: 'Clickjacking', impact: '-10 pts', detail: 'Site can be embedded in unauthorized external iframes.' });
         }
 
-        // 8. X-Content-Type-Options Header
         if (headers['x-content-type-options']) {
             report += `[+] X-Content-Type-Options: SECURE\n`;
             checks.push({ name: 'MIME Sniffing', status: 'SECURE', category: 'Headers', impact: '0 pts', detail: 'Prevents browser MIME-type sniffing (nosniff).' });
@@ -227,9 +193,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         if (score < 0) score = 0;
         report += `\nOVERALL SECURITY SCORE: ${score}/100`;
 
-        if (scanCache.size >= MAX_CACHE_SIZE) {
-            scanCache.clear();
-        }
+        if (scanCache.size >= MAX_CACHE_SIZE) scanCache.clear();
         scanCache.set(target, { report, score, checks, timestamp: Date.now() });
 
         res.json({ success: true, report, score, checks });
@@ -238,9 +202,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
     }
 });
 
-// ==========================================
-// ৫. ইমেইল পাঠানোর API (Protected)
-// ==========================================
 app.post('/api/send-report', requireHTTPAuth, async (req, res) => {
     const { target, reportData, emailTo } = req.body;
     if(!target || !reportData || !emailTo) return res.status(400).json({ success: false, error: "Missing information." });
@@ -259,9 +220,6 @@ app.post('/api/send-report', requireHTTPAuth, async (req, res) => {
     }
 });
 
-// ==========================================
-// ৬. গিটহাব লগইন লজিক (PII Sanitized Logs)
-// ==========================================
 let isDbInitialized = false;
 
 app.get('/api/auth/github', (req, res) => {
@@ -304,7 +262,6 @@ app.get('/api/auth/github/callback', async (req, res) => {
                 ON CONFLICT (username) DO UPDATE 
                 SET avatar_url = EXCLUDED.avatar_url, last_login = NOW()
             `;
-            console.log(`[+] Saved GitHub user: [REDACTED] to Database`);
         } catch (dbError) {
             console.error("[-] Neon Database save failed.");
         }
@@ -316,9 +273,6 @@ app.get('/api/auth/github/callback', async (req, res) => {
     }
 });
 
-// ==========================================
-// ৭. একাউন্ট ডিলিট ফ্লো (Data Privacy & Deletion API)
-// ==========================================
 app.post('/api/account/delete', requireHTTPAuth, async (req, res) => {
     try {
         const username = req.user.user;
@@ -329,9 +283,6 @@ app.post('/api/account/delete', requireHTTPAuth, async (req, res) => {
     }
 });
 
-// ==========================================
-// ৮. Google SEO Sitemap & Robots.txt
-// ==========================================
 app.get('/sitemap.xml', (req, res) => {
     const domain = 'https://triscout.quarry.dpdns.org'; 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -343,23 +294,15 @@ app.get('/sitemap.xml', (req, res) => {
     <url><loc>${domain}/dashboard</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
     <url><loc>${domain}/reports</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>`;
-
     res.header('Content-Type', 'application/xml');
     res.send(sitemap);
 });
 
 app.get('/robots.txt', (req, res) => {
     const domain = 'https://triscout.quarry.dpdns.org';
-    const robots = `User-agent: *
-Allow: /
-Disallow: /profile
-Disallow: /api/
-
-Sitemap: ${domain}/sitemap.xml`;
-
+    const robots = `User-agent: *\nAllow: /\nDisallow: /profile\nDisallow: /api/\n\nSitemap: ${domain}/sitemap.xml`;
     res.header('Content-Type', 'text/plain');
     res.send(robots);
 });
 
 module.exports = app;
-    
