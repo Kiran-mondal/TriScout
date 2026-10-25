@@ -276,6 +276,7 @@ function generateLayout(pageTitle, content) {
 </body>
 </html>`;
 }
+
 // ==========================================
 // ফাইল: web_dashboard/views/ui.js (Part 2 of 5)
 // Dashboard Core: Briefing, Zero-Preload Metrics, Tab 1 (Recon) & Tab 2 (Posture)
@@ -674,12 +675,7 @@ function getDashboardPage() {
 
             </div>
         </div>
-
-// ==========================================
-// ফাইল: web_dashboard/views/ui.js (Part 3 of 5)
-// Tabs 3 (Ledger), 4 (Topology HUD), 5 (History), Export Bar, Terminal & Modal
-// ==========================================
-
+        
         <!-- TAB 3: VULNERABILITY ASSESSMENT LEDGER -->
         <div class="tab-pane hidden flex flex-col gap-space-md" id="tab-pane-ledger">
             <div class="bg-surface-container-low p-space-lg rounded-xl shadow-lg border border-surface-variant/20">
@@ -970,11 +966,6 @@ function getDashboardPage() {
     </div>
 
 </div>
-
-// ==========================================
-// ফাইল: web_dashboard/views/ui.js (Part 4 of 5)
-// Complete Interactive Client Engine (On-Demand Scan, Free DoH DNS, Tabs, Filters & Exports)
-// ==========================================
 
 <script>
     // Global State (Zero pre-loaded dummy reports)
@@ -1863,7 +1854,6 @@ function getProjectPage() {
     return generateLayout('MY PROJECTS', projectContent);
 }
 
-// ৬. PROFILE SETTINGS পেজ (With Account Deletion Flow)
 function getProfilePage() {
     const profileContent = `
         <div class="max-w-3xl mx-auto">
