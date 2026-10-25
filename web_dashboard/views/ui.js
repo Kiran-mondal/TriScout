@@ -1092,3 +1092,88 @@ module.exports = {
     getProjectPage,
     getProfilePage
 };
+
+function getReportsPage() {
+    const reportContent = `
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-surface-container-low p-6 rounded-xl shadow-xl border border-surface-variant/20">
+                <h3 class="text-xl font-bold text-on-surface mb-2">Security Report Dispatch</h3>
+                <div id="reportPreview" class="bg-[#05070c] p-4 rounded-xl font-mono text-xs text-slate-300 h-64 overflow-y-auto mb-4">No recent scan report found.</div>
+                <div class="flex gap-3">
+                    <input type="email" id="emailInput" class="flex-1 bg-surface-container border border-surface-variant/40 rounded-xl px-4 py-3 text-sm text-on-surface" placeholder="client@domain.com">
+                    <button onclick="sendReport()" class="bg-primary-container text-on-primary font-bold px-6 py-3 rounded-xl text-xs uppercase cursor-pointer">Send Email</button>
+                </div>
+            </div>
+        </div>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const r = localStorage.getItem('triscout_report');
+                const t = localStorage.getItem('triscout_target');
+                if (r && t) document.getElementById('reportPreview').innerText = "TARGET: " + t + "\\n\\n" + r;
+            });
+            async function sendReport() {
+                const emailTo = document.getElementById('emailInput').value;
+                const target = localStorage.getItem('triscout_target');
+                const reportData = localStorage.getItem('triscout_report');
+                if (!emailTo || !reportData) return alert('Missing email or report data!');
+                const res = await fetch('/api/send-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                    body: JSON.stringify({ target, reportData, emailTo })
+                });
+                const d = await res.json();
+                alert(d.success ? 'Report sent successfully!' : 'Failed to send.');
+            }
+        </script>
+    `;
+    return generateLayout('SECURITY REPORTS', reportContent);
+}
+
+function getCliPage() {
+    return generateLayout('CLI TOOL', `
+        <div class="max-w-3xl mx-auto bg-surface-container-low p-6 rounded-xl border border-surface-variant/20">
+            <h3 class="text-xl font-bold text-on-surface mb-2">TriScout CLI &amp; Integrations</h3>
+            <div class="bg-[#05070c] p-4 rounded-xl font-mono text-xs text-emerald-400">
+                $ npm install -g @kiran-mondal/triscout<br>$ triscout example.com
+            </div>
+        </div>
+    `);
+}
+
+function getAboutPage() {
+    return generateLayout('ABOUT TRISCOUT', `
+        <div class="max-w-3xl mx-auto bg-surface-container-low p-6 rounded-xl border border-surface-variant/20">
+            <h3 class="text-xl font-bold text-on-surface mb-2">About TriScout v2.4 TAC-OPS</h3>
+            <p class="text-sm text-on-surface-variant">Advanced defensive cybersecurity reconnaissance framework developed by Kiran Mondal.</p>
+        </div>
+    `);
+}
+
+function getProjectPage() {
+    return generateLayout('MY PROJECTS', `
+        <div class="max-w-5xl mx-auto text-center">
+            <img src="https://github.com/Kiran-mondal.png" class="w-20 h-20 rounded-full mx-auto mb-3 border-2 border-primary-container object-cover">
+            <h2 class="text-2xl font-bold text-on-surface">Kiran Mondal</h2>
+            <p class="text-xs text-on-surface-variant font-mono mb-6">Full-Stack Developer &amp; Cyber Security Enthusiast</p>
+        </div>
+    `);
+}
+
+function getProfilePage() {
+    return generateLayout('USER PROFILE', `
+        <div class="max-w-xl mx-auto bg-surface-container-low p-6 rounded-xl border border-surface-variant/20 text-center">
+            <h3 class="text-xl font-bold text-on-surface mb-4">Operator Settings</h3>
+            <button onclick="localStorage.removeItem('token'); window.location.href='/';" class="bg-red-500/20 text-red-400 font-bold px-6 py-3 rounded-xl text-xs uppercase cursor-pointer">Sign Out Session</button>
+        </div>
+    `);
+}
+
+module.exports = {
+    generateLayout,
+    getDashboardPage,
+    getReportsPage,
+    getCliPage,
+    getAboutPage,
+    getProjectPage,
+    getProfilePage
+};
