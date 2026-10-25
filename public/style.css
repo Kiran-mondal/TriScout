@@ -330,3 +330,59 @@ button:disabled, button[disabled] {
     border-color: var(--text-main);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
 }
+
+/* ==========================================
+   TriScout v2.4 TAC-OPS Dashboard Styles
+   ========================================== */
+html.dark, body.tac-ops-body {
+    margin: 0;
+    padding: 0;
+    background-color: #10131b;
+    color: #e0e2ed;
+    overscroll-behavior: none;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0b0e15;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #272a32;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #39ff88;
+}
+
+#mobileSidebar {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tac-grid-bg {
+    background-color: #10131b;
+    background-image: radial-gradient(#1d2027 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.sidebar-active {
+    background-color: #272a32 !important;
+    color: #e0e2ed !important;
+    border-left: 3px solid #39ff88 !important;
+    box-shadow: inset 0 0 12px rgba(57, 255, 136, 0.12);
+}
+
+.sidebar-active .nav-icon {
+    color: #39ff88 !important;
+}
+
+.tab-btn-active {
+    background-color: #272a32 !important;
+    color: #39ff88 !important;
+    border-bottom: 2px solid #39ff88 !important;
+}
