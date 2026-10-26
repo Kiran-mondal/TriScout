@@ -12,8 +12,9 @@
 <body class="bg-[#10131b] text-[#e0e2ed] font-['Inter'] min-h-screen flex items-center justify-center p-4 bg-[radial-gradient(#1d2027_1px,transparent_1px)] [background-size:20px_20px]">
 
     <div class="max-w-md w-full bg-[#181b23] border border-[#32353d]/60 rounded-2xl p-6 sm:p-8 shadow-2xl">
-        <div class="flex flex-col items-center text-center mb-6">
-            <img src="/logo.svg" alt="TriScout" class="w-14 h-14 mb-3 object-contain" />
+        
+        <div class="flex flex-col items-center text-center mb-5">
+            <img src="/logo.svg" alt="TriScout" class="w-14 h-14 mb-2.5 object-contain" />
             <div class="flex items-center gap-2 mb-1">
                 <h1 class="text-2xl font-bold tracking-tight text-white">TriScout</h1>
                 <span class="font-['JetBrains_Mono'] text-[10px] bg-[#1d2027] text-[#39ff88] border border-[#39ff88]/40 px-2 py-0.5 rounded uppercase font-bold">v2.4 TAC-OPS</span>
@@ -21,47 +22,146 @@
             <p class="text-xs text-[#bacbb9] font-['JetBrains_Mono']">Authorized Defensive Reconnaissance Console</p>
         </div>
 
-        <!-- GitHub OAuth Login Button -->
-        <a href="/api/auth/github" class="w-full py-3 px-4 rounded-xl bg-[#272a32] hover:bg-[#32353d] text-white font-['JetBrains_Mono'] text-xs uppercase font-bold flex items-center justify-center gap-2.5 border border-[#32353d] transition-all mb-4">
-            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            <span>Continue with GitHub OAuth</span>
-        </a>
-
-        <div class="relative flex py-2 items-center mb-4">
-            <div class="flex-grow border-t border-[#32353d]"></div>
-            <span class="flex-shrink mx-3 text-[#849584] font-['JetBrains_Mono'] text-[10px] uppercase">OR OPERATOR CREDENTIALS</span>
-            <div class="flex-grow border-t border-[#32353d]"></div>
+        <!-- Auth Mode Switcher (Sign In vs Sign Up) -->
+        <div class="grid grid-cols-2 gap-1 p-1 bg-[#10131b] rounded-xl border border-[#32353d]/60 mb-5 font-['JetBrains_Mono'] text-xs">
+            <button id="tab-login-btn" type="button" onclick="toggleAuthMode('login')" class="py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#39ff88] shadow">
+                Sign In
+            </button>
+            <button id="tab-register-btn" type="button" onclick="toggleAuthMode('register')" class="py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white">
+                Create Account
+            </button>
         </div>
 
-        <!-- Local Admin Login Form -->
-        <form action="/login" method="POST" class="space-y-3 font-['JetBrains_Mono'] text-xs">
+        <!-- Notification Banner -->
+        <div id="auth-alert" class="hidden mb-4 p-3 rounded-lg font-['JetBrains_Mono'] text-xs border"></div>
+
+        <!-- FORM 1: SIGN IN (Local Admin + Registered Database Users) -->
+        <form id="login-form" onsubmit="handleAuthSubmit(event, '/api/auth/login')" class="space-y-3.5 font-['JetBrains_Mono'] text-xs">
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Operator ID</label>
-                <input type="text" name="username" required placeholder="Enter Admin Username" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Operator Username or Email</label>
+                <input type="text" id="login-username" required placeholder="Enter Username or Email" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
             </div>
             <div>
                 <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Access Passkey</label>
-                <input type="password" name="password" required placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+                <input type="password" id="login-password" required placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
             </div>
-            <button type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer mt-2">
+            <button id="login-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer mt-2">
                 Authenticate Session
             </button>
         </form>
+
+        <!-- FORM 2: CREATE ACCOUNT (SIGN UP) -->
+        <form id="register-form" onsubmit="handleAuthSubmit(event, '/api/auth/register')" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Choose Operator Username</label>
+                <input type="text" id="reg-username" required minlength="3" maxlength="30" placeholder="e.g. cyber_sentinel" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+            </div>
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Email Address</label>
+                <input type="email" id="reg-email" required placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+            </div>
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Create Passkey (Min 6 chars)</label>
+                <input type="password" id="reg-password" required minlength="6" placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+            </div>
+            <button id="reg-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#aeecff] hover:bg-[#00d9ff] text-[#003918] font-bold uppercase tracking-wider transition-all shadow-[0_0_16px_rgba(174,236,255,0.3)] cursor-pointer mt-2">
+                Register Operator Account
+            </button>
+        </form>
+
+        <div class="relative flex py-4 items-center">
+            <div class="flex-grow border-t border-[#32353d]"></div>
+            <span class="flex-shrink mx-3 text-[#849584] font-['JetBrains_Mono'] text-[10px] uppercase">OR EXTERNAL OAUTH</span>
+            <div class="flex-grow border-t border-[#32353d]"></div>
+        </div>
+
+        <!-- GitHub OAuth Login Button -->
+        <a href="/api/auth/github" class="w-full py-3 px-4 rounded-xl bg-[#272a32] hover:bg-[#32353d] text-white font-['JetBrains_Mono'] text-xs uppercase font-bold flex items-center justify-center gap-2.5 border border-[#32353d] transition-all">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            <span>Continue with GitHub</span>
+        </a>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // ইতিমধ্যে লগইন টোকেন থাকলে সরাসরি ড্যাশবোর্ডে নিয়ে যাবে
-            if (localStorage.getItem('token')) {
-                window.location.href = '/dashboard';
-                return;
-            }
-            // টেলিগ্রাম মিনি অ্যাপ থেকে ওপেন করলে সরাসরি ড্যাশবোর্ডে প্রবেশ করবে
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+            if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.expand();
-                window.location.href = '/dashboard';
+                window.Telegram.WebApp.ready();
             }
         });
+
+        function showAlert(msg, isError) {
+            const box = document.getElementById('auth-alert');
+            box.classList.remove('hidden', 'bg-red-950/40', 'border-red-500/50', 'text-red-300', 'bg-emerald-950/40', 'border-emerald-500/50', 'text-emerald-300');
+            if (isError) {
+                box.classList.add('bg-red-950/40', 'border-red-500/50', 'text-red-300');
+            } else {
+                box.classList.add('bg-emerald-950/40', 'border-emerald-500/50', 'text-emerald-300');
+            }
+            box.innerText = msg;
+        }
+
+        function toggleAuthMode(mode) {
+            const loginForm = document.getElementById('login-form');
+            const regForm = document.getElementById('register-form');
+            const loginBtn = document.getElementById('tab-login-btn');
+            const regBtn = document.getElementById('tab-register-btn');
+            document.getElementById('auth-alert').classList.add('hidden');
+
+            if (mode === 'register') {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                regBtn.className = "py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#aeecff] shadow";
+                loginBtn.className = "py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white";
+            } else {
+                regForm.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+                loginBtn.className = "py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#39ff88] shadow";
+                regBtn.className = "py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white";
+            }
+        }
+
+        async function handleAuthSubmit(e, endpoint) {
+            e.preventDefault();
+            const isRegister = endpoint.includes('register');
+            const btn = document.getElementById(isRegister ? 'reg-submit-btn' : 'login-submit-btn');
+            const origText = btn.innerText;
+
+            const payload = isRegister ? {
+                username: document.getElementById('reg-username').value.trim(),
+                email: document.getElementById('reg-email').value.trim(),
+                password: document.getElementById('reg-password').value
+            } : {
+                username: document.getElementById('login-username').value.trim(),
+                password: document.getElementById('login-password').value
+            };
+
+            btn.disabled = true;
+            btn.innerText = 'PROCESSING...';
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    showAlert(data.error || 'Authentication failed.', true);
+                } else if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    sessionStorage.setItem('active_session', '1');
+                    showAlert('ACCESS GRANTED. Redirecting to Command Center...', false);
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 400);
+                }
+            } catch (err) {
+                showAlert('Server connection failed. Please try again.', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = origText;
+            }
+        }
     </script>
 </body>
 </html>
