@@ -49,6 +49,10 @@ app.post('/login', (req, res) => {
 const dashboardHtmlPath = path.join(__dirname, 'views', 'index.html');
 
 app.get(['/dashboard', '/reports', '/cli', '/about', '/project', '/profile'], (req, res) => {
+    // ব্রাউজার যাতে কখনোই পুরনো Pipeline পেজ ক্যাশ (304) না করে
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(dashboardHtmlPath);
 });
 
