@@ -67,29 +67,30 @@
             </div>
 
             <nav class="flex-1 px-2.5 space-y-1 font-mono text-xs" id="sidebar-nav">
-                <a href="/dashboard" onclick="return switchTab(event, 'overview')" data-tab="overview" class="sidebar-item sidebar-active flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                <a href="#" onclick="return switchTab(event, 'overview')" data-tab="overview" class="sidebar-item sidebar-active flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                     <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">grid_view</span><span>Overview</span></div>
                     <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">HUD</span>
                 </a>
-                <a href="/dashboard?tab=scanner" onclick="return switchTab(event, 'scanner')" data-tab="scanner" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                <a href="#" onclick="return switchTab(event, 'scanner')" data-tab="scanner" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                     <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">radar</span><span>Target Scanner</span></div>
                     <span id="nav-badge-vulns" class="text-[10px] px-1.5 py-0.5 rounded bg-primary-container/20 text-primary-container font-bold">SCAN</span>
                 </a>
-                <a href="/reports" onclick="return switchTab(event, 'reports')" data-tab="reports" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                <a href="#" onclick="return switchTab(event, 'reports')" data-tab="reports" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                     <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">description</span><span>Reports &amp; Export</span></div>
                     <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-secondary">MAIL</span>
                 </a>
-                <a href="/cli" onclick="return switchTab(event, 'cli')" data-tab="cli" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                <a href="#" onclick="return switchTab(event, 'cli')" data-tab="cli" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                     <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">terminal</span><span>CLI Tool</span></div>
                     <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">NPM</span>
                 </a>
-                <a href="/project" onclick="return switchTab(event, 'project')" data-tab="project" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                <a href="#" onclick="return switchTab(event, 'project')" data-tab="project" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                     <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">work</span><span>My Projects</span></div>
                 </a>
-                <a href="/profile" onclick="return switchTab(event, 'profile')" data-tab="profile" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                <a href="#" onclick="return switchTab(event, 'profile')" data-tab="profile" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
                     <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">manage_accounts</span><span>Account &amp; System</span></div>
                 </a>
             </nav>
+            
         </div>
 
         <div class="p-3 bg-surface-container-lowest/90 border-t border-surface-variant/20">
@@ -1075,23 +1076,15 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            let isTelegramApp = false;
+                document.addEventListener('DOMContentLoaded', () => {
             if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
-                tg.expand();
-                tg.ready();
-                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                    isTelegramApp = true;
-                    const tgUser = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name || 'TG_Operator';
-                    document.getElementById('navProfileName').innerText = tgUser;
-                    document.getElementById('profileName').innerText = tgUser;
-                }
+                window.Telegram.WebApp.expand();
+                window.Telegram.WebApp.ready();
             }
 
             const token = localStorage.getItem('token');
-            if (!token && !isTelegramApp) {
-                window.location.href = '/';
+            if (!token) {
+                window.location.replace('/');
                 return;
             }
 
@@ -1104,36 +1097,37 @@
                 if (preview) preview.innerText = 'TARGET: ' + savedTarget + '\n\n' + savedReport;
             }
 
-            if (token) {
-                try {
-                    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-                    const user = payload.user || 'Operator';
-                    document.getElementById('navProfileName').innerText = user;
-                    document.getElementById('profileName').innerText = user;
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                const user = payload.user || 'Operator';
+                document.getElementById('navProfileName').innerText = user;
+                document.getElementById('profileName').innerText = user;
 
-                    const actionsEl = document.getElementById('profileActions');
-                    if (payload.provider === 'github') {
-                        document.getElementById('profileRole').innerText = 'GitHub OAuth Verified Operator';
-                        if (payload.avatar && payload.avatar.startsWith('https://')) {
-                            const img1 = document.createElement('img');
-                            img1.src = payload.avatar;
-                            img1.className = 'w-full h-full object-cover';
-                            const av1 = document.getElementById('navProfileAvatar');
-                            const av2 = document.getElementById('profileAvatar');
-                            av1.innerHTML = ''; av1.appendChild(img1);
-                            av2.innerHTML = ''; av2.appendChild(img1.cloneNode(true));
-                        }
-                        actionsEl.innerHTML =
-                            '<button onclick="localStorage.removeItem(\'token\'); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface uppercase font-bold cursor-pointer">Sign Out Session</button>' +
-                            '<button onclick="deleteUserAccount()" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold border border-error/30 cursor-pointer">Delete Account Data</button>';
-                    } else {
-                        document.getElementById('profileRole').innerText = 'System Administrator (Local Env)';
-                        actionsEl.innerHTML =
-                            '<div class="p-3.5 rounded-lg bg-surface-container text-on-surface-variant">Local Admin managed via Environment Variables.</div>' +
-                            '<button onclick="localStorage.removeItem(\'token\'); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold cursor-pointer">Sign Out Session</button>';
+                const actionsEl = document.getElementById('profileActions');
+                if (payload.provider === 'github' || payload.provider === 'registered') {
+                    document.getElementById('profileRole').innerText = payload.provider === 'github'
+                        ? 'GitHub OAuth Verified Operator'
+                        : ('Registered Operator (' + (payload.email || 'Verified') + ')');
+
+                    if (payload.avatar && payload.avatar.startsWith('https://')) {
+                        const img1 = document.createElement('img');
+                        img1.src = payload.avatar;
+                        img1.className = 'w-full h-full object-cover';
+                        const av1 = document.getElementById('navProfileAvatar');
+                        const av2 = document.getElementById('profileAvatar');
+                        av1.innerHTML = ''; av1.appendChild(img1);
+                        av2.innerHTML = ''; av2.appendChild(img1.cloneNode(true));
                     }
-                } catch (e) {}
-            }
+                    actionsEl.innerHTML =
+                        '<button onclick="localStorage.removeItem(\'token\'); sessionStorage.clear(); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface uppercase font-bold cursor-pointer">Sign Out Session</button>' +
+                        '<button onclick="deleteUserAccount()" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold border border-error/30 cursor-pointer">Delete Account Data</button>';
+                } else {
+                    document.getElementById('profileRole').innerText = 'System Administrator (Local Env)';
+                    actionsEl.innerHTML =
+                        '<div class="p-3.5 rounded-lg bg-surface-container text-on-surface-variant">Local Admin managed via Environment Variables.</div>' +
+                        '<button onclick="localStorage.removeItem(\'token\'); sessionStorage.clear(); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold cursor-pointer">Sign Out Session</button>';
+                }
+            } catch (e) {}
 
             const path = window.location.pathname.replace('/', '');
             const params = new URLSearchParams(window.location.search);
@@ -1147,6 +1141,5 @@
             }
         });
     </script>
-    
 </body>
-</html>                                                                                                                                                                                                                                
+</html>
