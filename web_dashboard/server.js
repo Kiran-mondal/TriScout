@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const axios = require('axios'); 
 const { neon } = require('@neondatabase/serverless');
@@ -20,7 +21,7 @@ const sql = DATABASE_URL ? neon(DATABASE_URL) : async () => { throw new Error("D
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1d' }));
+app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1h' }));
 
 app.get('/favicon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/logo.svg'));
@@ -31,32 +32,143 @@ const transporter = nodemailer.createTransport({
     auth: { user: getEnv('GMAIL_USER'), pass: getEnv('GMAIL_PASS') }
 }); 
 
+// Database Schema Initialization (Supports both GitHub OAuth and Standard Registration)
+let isDbInitialized = false;
+async function ensureUsersTable() {
+    if (isDbInitialized) return;
+    await sql`
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(255) UNIQUE NOT NULL,
+            email VARCHAR(255),
+            password_hash TEXT,
+            avatar_url TEXT,
+            provider VARCHAR(50) DEFAULT 'local',
+            last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    `;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
+    isDbInitialized = true;
+}
+
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const derived = crypto.scryptSync(password, salt, 64).toString('hex');
+    return `${salt}:${derived}`;
+}
+
+function verifyPassword(password, storedHash) {
+    if (!storedHash || !storedHash.includes(':')) return false;
+    const [salt, key] = storedHash.split(':');
+    const keyBuffer = Buffer.from(key, 'hex');
+    const derivedBuffer = crypto.scryptSync(password, salt, 64);
+    return crypto.timingSafeEqual(keyBuffer, derivedBuffer);
+}
+
 app.get('/login', (req, res) => {
     res.redirect('/');
 });
 
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
-        const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '1h' });
-        res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
-    } else {
-        res.send(`<script>alert("ACCESS DENIED: Invalid credentials."); window.location.href="/";</script>`);
+// 1. New User Registration API (Sign Up)
+app.post('/api/auth/register', async (req, res) => {
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+        return res.status(400).json({ success: false, error: 'All fields (Username, Email, Password) are required.' });
+    }
+    if (password.length < 6) {
+        return res.status(400).json({ success: false, error: 'Passkey must be at least 6 characters long.' });
+    }
+    if (ADMIN_USER && username.toLowerCase() === ADMIN_USER.toLowerCase()) {
+        return res.status(400).json({ success: false, error: 'This username is reserved for System Admin.' });
+    }
+
+    try {
+        await ensureUsersTable();
+        const existing = await sql`
+            SELECT id FROM users WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${email}) LIMIT 1
+        `;
+        if (existing.length > 0) {
+            return res.status(409).json({ success: false, error: 'Username or Email is already registered.' });
+        }
+
+        const passHash = hashPassword(password);
+        await sql`
+            INSERT INTO users (username, email, password_hash, provider, last_login)
+            VALUES (${username}, ${email}, ${passHash}, 'registered', NOW())
+        `;
+
+        const token = jwt.sign({ user: username, email, provider: 'registered' }, JWT_SECRET, { expiresIn: '2h' });
+        res.json({ success: true, token });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Database registration error. Please try again.' });
     }
 });
 
-// সমস্ত ড্যাশবোর্ড এবং সাব-পেজ রাউট এখন সরাসরি খাঁটি HTML ফাইল (views/index.html) সার্ভ করবে
+// 2. Unified Login API (Supports Env Admin + Registered Database Users)
+app.post('/api/auth/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ success: false, error: 'Username and password are required.' });
+    }
+
+    // Check Local Environment Admin First
+    if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
+        const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '2h' });
+        return res.json({ success: true, token });
+    }
+
+    // Check Neon PostgreSQL Registered Users
+    try {
+        await ensureUsersTable();
+        const rows = await sql`
+            SELECT username, email, password_hash, avatar_url, provider
+            FROM users
+            WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${username})
+            LIMIT 1
+        `;
+        if (rows.length === 0 || !rows[0].password_hash) {
+            return res.status(401).json({ success: false, error: 'Invalid credentials or account uses GitHub OAuth.' });
+        }
+
+        const userRecord = rows[0];
+        if (!verifyPassword(password, userRecord.password_hash)) {
+            return res.status(401).json({ success: false, error: 'ACCESS DENIED: Incorrect passkey.' });
+        }
+
+        await sql`UPDATE users SET last_login = NOW() WHERE username = ${userRecord.username}`;
+        const token = jwt.sign(
+            { user: userRecord.username, email: userRecord.email, avatar: userRecord.avatar_url, provider: userRecord.provider || 'registered' },
+            JWT_SECRET,
+            { expiresIn: '2h' }
+        );
+        return res.json({ success: true, token });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: 'Authentication service unavailable.' });
+    }
+});
+
+// Fallback Form POST /login
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
+        const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '2h' });
+        return res.send(`<script>localStorage.setItem('token', '${token}'); sessionStorage.setItem('active_session', '1'); window.location.href = '/dashboard';</script>`);
+    }
+    res.send(`<script>alert("ACCESS DENIED: Invalid credentials."); window.location.href="/";</script>`);
+});
+
+// Serve Dashboard HTML with strict no-cache headers
 const dashboardHtmlPath = path.join(__dirname, 'views', 'index.html');
 
 app.get(['/dashboard', '/reports', '/cli', '/about', '/project', '/profile'], (req, res) => {
-    // ব্রাউজার যাতে কখনোই পুরনো Pipeline পেজ ক্যাশ (304) না করে
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.sendFile(dashboardHtmlPath);
 });
 
-// উন্নত প্যাসিভ স্ক্যানার API (Protected + SSRF Guard + Structured Checks)
+// Passive Scanner Engine
 const scanCache = new Map();
 const CACHE_TTL = 60 * 1000;
 const MAX_CACHE_SIZE = 1000;
@@ -224,8 +336,6 @@ app.post('/api/send-report', requireHTTPAuth, async (req, res) => {
     }
 });
 
-let isDbInitialized = false;
-
 app.get('/api/auth/github', (req, res) => {
     const redirectUri = `https://${req.headers.host}/api/auth/github/callback`;
     res.redirect(`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=read:user`);
@@ -248,18 +358,7 @@ app.get('/api/auth/github/callback', async (req, res) => {
         const userData = await userResponse.json();
 
         try {
-            if (!isDbInitialized) {
-                await sql`
-                    CREATE TABLE IF NOT EXISTS users (
-                        id SERIAL PRIMARY KEY,
-                        username VARCHAR(255) UNIQUE NOT NULL,
-                        avatar_url TEXT,
-                        provider VARCHAR(50),
-                        last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                `;
-                isDbInitialized = true;
-            }
+            await ensureUsersTable();
             await sql`
                 INSERT INTO users (username, avatar_url, provider, last_login)
                 VALUES (${userData.login}, ${userData.avatar_url}, 'github', NOW())
@@ -270,8 +369,8 @@ app.get('/api/auth/github/callback', async (req, res) => {
             console.error("[-] Neon Database save failed.");
         }
 
-        const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url, provider: 'github' }, JWT_SECRET, { expiresIn: '1h' });
-        res.send(`<script>localStorage.setItem('token', '${token}'); window.location.href = '/dashboard';</script>`);
+        const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url, provider: 'github' }, JWT_SECRET, { expiresIn: '2h' });
+        res.send(`<script>localStorage.setItem('token', '${token}'); sessionStorage.setItem('active_session', '1'); window.location.href = '/dashboard';</script>`);
     } catch (error) { 
         res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>'); 
     }
@@ -310,3 +409,4 @@ app.get('/robots.txt', (req, res) => {
 });
 
 module.exports = app;
+                
