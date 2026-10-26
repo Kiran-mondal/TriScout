@@ -1,189 +1,67 @@
 <!DOCTYPE html>
-<html>
+<html class="dark" lang="en">
 <head>
-    <title>TRISCOUT // LOGIN</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- এই লাইনটিই মোবাইল স্ক্রিনে সাইজ ঠিক করবে -->
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <link rel="stylesheet" href="/style.css">
-    <link rel="icon" type="image/svg+xml" href="/logo.svg">
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px; /* মোবাইলের সাইডে ফাঁকা রাখার জন্য */
-            box-sizing: border-box;
-            background-color: #050505;
-        }
-
-        .login-card {
-            background: #0a0a0a;
-            padding: 40px; 
-            border: 1px solid #333;
-            width: 100%;
-            max-width: 450px; 
-            box-sizing: border-box;
-            position: relative;
-        }
-
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: -1px;
-            left: -1px;
-            width: 15px;
-            height: 15px;
-            border-top: 2px solid #d4ff00;
-            border-left: 2px solid #d4ff00;
-        }
-
-        .logo-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 35px;
-        }
-        
-        .logo-header img {
-            width: 45px;
-            height: 45px;
-            margin-right: 15px;
-        }
-
-        .logo-header h2 {
-            color: #d4ff00;
-            letter-spacing: 4px;
-            margin: 0;
-            font-size: 32px;
-            text-shadow: 0 0 8px rgba(212, 255, 0, 0.4);
-        }
-
-        /* মোবাইলের জন্য লেখার সাইজ একটু ছোট করা হলো */
-        @media (max-width: 480px) {
-            .logo-header h2 {
-                font-size: 26px;
-            }
-            .login-card {
-                padding: 30px 20px;
-            }
-        }
-
-        /* শুধুমাত্র গিটহাব লোগোর জন্য স্টাইল */
-        .github-container {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .github-btn {
-            background: transparent;
-            color: #fff;
-            border: 1px solid #555;
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .github-btn:hover {
-            background: #fff;
-            color: #000;
-            border-color: #fff;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
-        }
-
-        .github-btn:focus-visible {
-            outline: 2px solid #d4ff00;
-            outline-offset: 4px;
-        }
-
-        .divider {
-            text-align: center;
-            margin: 30px 0;
-            color: #555;
-            font-size: 12px;
-            letter-spacing: 2px;
-            display: flex;
-            align-items: center;
-        }
-        .divider::before, .divider::after {
-            content: "";
-            flex: 1;
-            border-bottom: 1px dashed #333;
-        }
-        .divider::before { margin-right: 15px; }
-        .divider::after { margin-left: 15px; }
-
-        .input-box {
-            width: 100%;
-            padding: 14px;
-            margin-bottom: 15px;
-            background: #000;
-            border: 1px solid #333;
-            color: #d4ff00;
-            font-family: inherit;
-            box-sizing: border-box;
-            outline: none;
-            font-size: 14px;
-        }
-        .input-box:focus {
-            border-color: #d4ff00;
-            box-shadow: 0 0 8px rgba(212, 255, 0, 0.2);
-        }
-        
-        .full-width-btn {
-            width: 100%;
-            padding: 14px;
-            background: #d4ff00;
-            color: #000;
-            border: 1px solid #d4ff00;
-            font-weight: bold;
-            cursor: pointer;
-            font-family: inherit;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: 0.2s;
-        }
-        .full-width-btn:hover {
-            background: #000;
-            color: #d4ff00;
-        }
-    </style>
+    <title>TriScout v2.4 TAC-OPS // Authentication</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet"/>
 </head>
-<body>
-    <div class="login-card">
-        
-        <div class="logo-header">
-            <img src="/logo.svg" alt="TriScout Logo">
-            <h2>TRISCOUT</h2>
+<body class="bg-[#10131b] text-[#e0e2ed] font-['Inter'] min-h-screen flex items-center justify-center p-4 bg-[radial-gradient(#1d2027_1px,transparent_1px)] [background-size:20px_20px]">
+
+    <div class="max-w-md w-full bg-[#181b23] border border-[#32353d]/60 rounded-2xl p-6 sm:p-8 shadow-2xl">
+        <div class="flex flex-col items-center text-center mb-6">
+            <img src="/logo.svg" alt="TriScout" class="w-14 h-14 mb-3 object-contain" />
+            <div class="flex items-center gap-2 mb-1">
+                <h1 class="text-2xl font-bold tracking-tight text-white">TriScout</h1>
+                <span class="font-['JetBrains_Mono'] text-[10px] bg-[#1d2027] text-[#39ff88] border border-[#39ff88]/40 px-2 py-0.5 rounded uppercase font-bold">v2.4 TAC-OPS</span>
+            </div>
+            <p class="text-xs text-[#bacbb9] font-['JetBrains_Mono']">Authorized Defensive Reconnaissance Console</p>
         </div>
 
-        <!-- শুধুমাত্র গিটহাব লোগো -->
-        <div class="github-container">
-            <a href="/api/auth/github" class="github-btn" style="text-decoration: none;" aria-label="Authenticate via GitHub">
-                <svg xmlns="http://www.w3.org/2000/svg" width="140" height="140" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
-            </a>
+        <!-- GitHub OAuth Login Button -->
+        <a href="/api/auth/github" class="w-full py-3 px-4 rounded-xl bg-[#272a32] hover:bg-[#32353d] text-white font-['JetBrains_Mono'] text-xs uppercase font-bold flex items-center justify-center gap-2.5 border border-[#32353d] transition-all mb-4">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            <span>Continue with GitHub OAuth</span>
+        </a>
+
+        <div class="relative flex py-2 items-center mb-4">
+            <div class="flex-grow border-t border-[#32353d]"></div>
+            <span class="flex-shrink mx-3 text-[#849584] font-['JetBrains_Mono'] text-[10px] uppercase">OR OPERATOR CREDENTIALS</span>
+            <div class="flex-grow border-t border-[#32353d]"></div>
         </div>
 
-        <div class="divider">OR LOCAL ADMIN</div>
-
-        <!-- আসল সার্ভার ফর্ম -->
-        <form action="/login" method="POST" style="width: 100%;">
-            <input type="text" name="username" class="input-box" placeholder="USERNAME" aria-label="Username" required>
-            <input type="password" name="password" class="input-box" placeholder="PASSWORD" aria-label="Password" required>
-            
-            <button type="submit" class="full-width-btn">ACCESS SYSTEM</button>
+        <!-- Local Admin Login Form -->
+        <form action="/login" method="POST" class="space-y-3 font-['JetBrains_Mono'] text-xs">
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Operator ID</label>
+                <input type="text" name="username" required placeholder="Enter Admin Username" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+            </div>
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Access Passkey</label>
+                <input type="password" name="password" required placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+            </div>
+            <button type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer mt-2">
+                Authenticate Session
+            </button>
         </form>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // ইতিমধ্যে লগইন টোকেন থাকলে সরাসরি ড্যাশবোর্ডে নিয়ে যাবে
+            if (localStorage.getItem('token')) {
+                window.location.href = '/dashboard';
+                return;
+            }
+            // টেলিগ্রাম মিনি অ্যাপ থেকে ওপেন করলে সরাসরি ড্যাশবোর্ডে প্রবেশ করবে
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                window.Telegram.WebApp.expand();
+                window.location.href = '/dashboard';
+            }
+        });
+    </script>
 </body>
 </html>
