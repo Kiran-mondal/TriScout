@@ -1,131 +1,852 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <title>TriScout v2.0.0 - Pipeline Console</title>
-    <style>
-        :root {
-            --bg-main: #0b0f19;
-            --bg-card: #131a2c;
-            --border-color: #1e2942;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-blue: #38bdf8;
-        }
-
-        body {
-            background-color: var(--bg-main);
-            color: var(--text-primary);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            padding: 24px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 16px;
-            margin-bottom: 24px;
-        }
-
-        h1 {
-            color: var(--accent-blue);
-            font-size: 1.8rem;
-            margin: 0;
-        }
-
-        .status-pill {
-            background: #10b98122;
-            color: #10b981;
-            padding: 6px 12px;
-            border-radius: 9999px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            border: 1px solid #10b98144;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 24px;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        .meta-label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 4px;
-        }
-
-        .meta-value {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-
-        .port-row {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .port-row:last-child {
-            border-bottom: none;
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-
-        .High { background: #ef444422; color: #ef4444; border: 1px solid #ef444444; }
-        .Medium { background: #f9731622; color: #f97316; border: 1px solid #f9731644; }
-        .Low { background: #eab30822; color: #eab308; border: 1px solid #eab30844; }
-        .None { background: #10b98122; color: #10b981; border: 1px solid #10b98144; }
-    </style>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>TriScout v2.4 TAC-OPS // Command Center</title>
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "background": "#10131b",
+                        "surface": "#10131b",
+                        "surface-container-lowest": "#0b0e15",
+                        "surface-container-low": "#181b23",
+                        "surface-container": "#1d2027",
+                        "surface-container-high": "#272a32",
+                        "surface-container-highest": "#32353d",
+                        "surface-variant": "#32353d",
+                        "primary-container": "#39ff88",
+                        "primary-fixed": "#63ff95",
+                        "on-primary": "#003918",
+                        "secondary": "#aeecff",
+                        "on-surface": "#e0e2ed",
+                        "on-surface-variant": "#bacbb9",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "on-error": "#ffdad6"
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                }
+            }
+        };
+    </script>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🛰️ TriScout Multi-Language Console</h1>
-            <div class="status-pill" id="ws-status">Live Stream Disconnected</div>
-        </header>
+<body class="tac-ops-body font-sans text-on-surface antialiased selection:bg-primary-container selection:text-on-primary">
 
-        <div class="grid">
-            <div class="card">
-                <h2>Pipeline Profile</h2>
-                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 16px 0;">
-                
-                <div class="meta-label">Target Authority</div>
-                <div class="meta-value" id="lbl-target">Awaiting Pipeline...</div>
+    <div id="sidebarOverlay" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden lg:hidden"></div>
 
-                <div class="meta-label">Capture Synchronization Time</div>
-                <div class="meta-value" id="lbl-time">N/A</div>
-
-                <div class="meta-label">System Structural State</div>
-                <div class="meta-value" id="lbl-status">-</div>
+    <aside id="mobileSidebar" class="fixed left-0 top-0 h-full w-64 bg-surface-container-low z-50 flex flex-col justify-between select-none shadow-[2px_0_16px_rgba(0,0,0,0.6)] transform -translate-x-full lg:translate-x-0 border-r border-surface-variant/20">
+        <div class="flex flex-col flex-1 min-h-0">
+            <div class="h-16 px-4 flex items-center justify-between bg-surface-container-lowest/80 border-b border-surface-variant/20">
+                <div class="flex items-center gap-2.5">
+                    <img src="/logo.svg" alt="TriScout" class="w-7 h-7 object-contain" />
+                    <div>
+                        <span class="font-bold text-base tracking-tight text-on-surface block leading-none">TriScout</span>
+                        <span class="font-mono text-[10px] text-primary-container uppercase tracking-widest">v2.4 TAC-OPS</span>
+                    </div>
+                </div>
+                <button onclick="toggleMobileSidebar()" class="lg:hidden text-on-surface-variant hover:text-on-surface p-1">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
             </div>
 
-            <div class="card">
-                <h2>Enriched Service Analysis</h2>
+            <div class="px-4 pt-4 pb-2">
+                <span class="font-mono text-[10px] text-on-surface-variant uppercase tracking-wider">CORE WORKSPACES (6)</span>
+            </div>
+
+            <nav class="flex-1 px-2.5 space-y-1 font-mono text-xs" id="sidebar-nav">
+                <a href="/dashboard" onclick="return switchTab(event, 'overview')" data-tab="overview" class="sidebar-item sidebar-active flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                    <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">grid_view</span><span>Overview</span></div>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">HUD</span>
+                </a>
+                <a href="/dashboard?tab=scanner" onclick="return switchTab(event, 'scanner')" data-tab="scanner" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                    <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">radar</span><span>Target Scanner</span></div>
+                    <span id="nav-badge-vulns" class="text-[10px] px-1.5 py-0.5 rounded bg-primary-container/20 text-primary-container font-bold">SCAN</span>
+                </a>
+                <a href="/reports" onclick="return switchTab(event, 'reports')" data-tab="reports" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                    <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">description</span><span>Reports &amp; Export</span></div>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-secondary">MAIL</span>
+                </a>
+                <a href="/cli" onclick="return switchTab(event, 'cli')" data-tab="cli" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                    <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">terminal</span><span>CLI Tool</span></div>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant">NPM</span>
+                </a>
+                <a href="/project" onclick="return switchTab(event, 'project')" data-tab="project" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                    <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">work</span><span>My Projects</span></div>
+                </a>
+                <a href="/profile" onclick="return switchTab(event, 'profile')" data-tab="profile" class="sidebar-item flex items-center justify-between px-3 py-3 rounded-lg transition-all text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface">
+                    <div class="flex items-center gap-3"><span class="nav-icon material-symbols-outlined text-lg">manage_accounts</span><span>Account &amp; System</span></div>
+                </a>
+            </nav>
+        </div>
+
+        <div class="p-3 bg-surface-container-lowest/90 border-t border-surface-variant/20">
+            <div class="p-3 rounded-lg bg-surface-container border border-surface-variant/40">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="font-mono text-[10px] text-on-surface-variant uppercase">ACTIVE TARGET</span>
+                    <span id="sidebar-defcon-status" class="font-mono text-[10px] text-primary-container font-bold">STANDBY</span>
+                </div>
+                <div id="sidebar-active-target" class="font-mono text-xs text-secondary font-semibold truncate mb-2">No Target Scanned</div>
+                <button onclick="localStorage.removeItem('token'); window.location.href='/'" class="w-full py-1.5 rounded bg-error-container/40 hover:bg-error-container text-error font-mono text-[11px] font-bold uppercase flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                    <span class="material-symbols-outlined text-sm">logout</span> Sign Out
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="lg:pl-64">
+        <header class="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-30 flex items-center justify-between px-4 lg:px-8 border-b border-surface-variant/20">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleMobileSidebar()" aria-label="Open menu" class="lg:hidden p-2 -ml-1 rounded text-on-surface hover:bg-surface-container-high">
+                    <span class="material-symbols-outlined text-2xl">menu</span>
+                </button>
+                <div class="flex items-center gap-2">
+                    <span class="h-2.5 w-2.5 rounded-full bg-primary-container animate-pulse"></span>
+                    <span id="top-page-title" class="font-mono text-xs sm:text-sm font-bold text-on-surface uppercase tracking-wider">OVERVIEW // COMMAND CENTER</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="switchTab(null, 'scanner')" class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-primary-container text-on-primary font-mono text-xs uppercase font-bold hover:bg-primary-fixed transition-all shadow-[0_0_12px_rgba(57,255,136,0.3)] cursor-pointer" type="button">
+                    <span class="material-symbols-outlined text-sm font-bold">radar</span>
+                    <span>Launch Scan</span>
+                </button>
+                <button onclick="switchTab(null, 'profile')" class="flex items-center gap-2 pl-3 py-1 border-l border-surface-variant cursor-pointer">
+                    <div id="navProfileAvatar" class="w-8 h-8 rounded-full bg-surface-container-high text-primary-container flex items-center justify-center font-bold ring-1 ring-surface-variant overflow-hidden">
+                        <span class="material-symbols-outlined text-base">person</span>
+                    </div>
+                    <span id="navProfileName" class="hidden sm:inline font-mono text-xs text-on-surface font-semibold">Operator</span>
+                </button>
+            </div>
+        </header>
+
+        <main class="relative pt-20 min-h-screen tac-grid-bg px-4 lg:px-8 pb-12">
+
+            <!-- TAB 1: OVERVIEW (Briefing, 4 Metric Cards, Posture Gauge, Topology HUD & Scan History) -->
+            <section id="tab-overview" class="tab-view flex flex-col gap-6">
+                
+                <div class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-surface-container-low p-6 rounded-xl shadow-xl border border-surface-variant/20">
+                    <div class="max-w-3xl">
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <span class="px-2.5 py-0.5 rounded bg-surface-container font-mono text-[10px] text-primary-container uppercase font-semibold">PASSIVE ETHICAL RECON</span>
+                            <span id="mission-status-badge" class="px-2.5 py-0.5 rounded bg-surface-container-high font-mono text-[10px] text-secondary">STATE: ON-DEMAND STANDBY</span>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl text-on-surface font-bold mb-1">Welcome to TriScout Command Center</h1>
+                        <p class="text-sm text-on-surface-variant">
+                            Zero pre-generated reports are loaded. Launch an on-demand scan in the Target Scanner tab to populate live posture metrics, network topology, and vulnerability ledgers.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full xl:w-auto shrink-0">
+                        <button onclick="switchTab(null, 'scanner')" class="flex-1 xl:flex-initial flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-primary-container text-on-primary font-mono text-xs uppercase font-bold hover:bg-primary-fixed transition-all shadow-[0_0_20px_rgba(57,255,136,0.3)] cursor-pointer">
+                            <span class="material-symbols-outlined text-lg">bolt</span>
+                            <span>Open Target Scanner</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4 Tactical Metric Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div onclick="switchTab(null, 'scanner')" class="bg-surface-container-low p-5 rounded-xl shadow-lg border border-surface-variant/20 hover:border-secondary/50 cursor-pointer transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-mono text-[11px] text-on-surface-variant uppercase">Evaluated Controls</span>
+                            <span id="metric-assets-tag" class="font-mono text-[10px] text-secondary bg-surface-container px-2 py-0.5 rounded">Idle</span>
+                        </div>
+                        <div class="flex items-baseline justify-between mb-3">
+                            <span id="metric-assets-count" class="text-3xl text-on-surface font-bold font-mono">0</span>
+                            <span class="material-symbols-outlined text-secondary text-2xl">hub</span>
+                        </div>
+                        <div class="text-[11px] font-mono text-on-surface-variant pt-2 border-t border-surface-variant/20">
+                            HTTP Headers, DNS &amp; Source Probes
+                        </div>
+                    </div>
+
+                    <div onclick="switchTab(null, 'scanner')" class="bg-surface-container-low p-5 rounded-xl shadow-lg border border-surface-variant/20 hover:border-error/50 cursor-pointer transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-mono text-[11px] text-on-surface-variant uppercase">Missing / Warnings</span>
+                            <span id="metric-vuln-tag" class="font-mono text-[10px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">No Scan</span>
+                        </div>
+                        <div class="flex items-baseline justify-between mb-3">
+                            <span id="metric-vuln-total" class="text-3xl text-amber-400 font-bold font-mono">0</span>
+                            <span class="material-symbols-outlined text-amber-400 text-2xl">warning</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 pt-2 border-t border-surface-variant/20 font-mono text-[10px]">
+                            <span class="px-2 py-0.5 bg-error-container text-on-error rounded font-bold"><span id="pill-crit">0</span> Crit</span>
+                            <span class="px-2 py-0.5 bg-surface-container-high text-amber-300 rounded"><span id="pill-high">0</span> Warn</span>
+                            <span class="px-2 py-0.5 bg-surface-container text-primary-container rounded"><span id="pill-low">0</span> Secure</span>
+                        </div>
+                    </div>
+
+                    <div onclick="switchTab(null, 'scanner')" class="bg-surface-container-low p-5 rounded-xl shadow-lg border border-surface-variant/20 hover:border-error/50 cursor-pointer transition-all">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-mono text-[11px] text-on-surface-variant uppercase">Critical Leaks</span>
+                            <span id="crit-status-label" class="font-mono text-[10px] text-error font-bold">0 EXPOSED</span>
+                        </div>
+                        <div class="flex items-baseline justify-between mb-3">
+                            <span id="metric-crit-big" class="text-3xl text-error font-bold font-mono">00</span>
+                            <span class="material-symbols-outlined text-error text-2xl">gpp_bad</span>
+                        </div>
+                        <div class="text-[11px] font-mono text-on-surface-variant pt-2 border-t border-surface-variant/20">
+                            API Keys &amp; Stack Trace Exposure
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-low p-5 rounded-xl shadow-lg border border-surface-variant/20">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-mono text-[11px] text-on-surface-variant uppercase">Security Posture</span>
+                            <span id="scan-state-badge" class="font-mono text-[10px] text-secondary bg-surface-container px-2 py-0.5 rounded font-semibold">READY</span>
+                        </div>
+                        <div class="flex items-baseline justify-between mb-2">
+                            <span id="metric-score-big" class="text-3xl text-primary-container font-bold font-mono">--%</span>
+                            <span class="material-symbols-outlined text-primary-container text-2xl">verified_user</span>
+                        </div>
+                        <div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden my-2">
+                            <div id="metric-score-bar" class="bg-primary-container h-full rounded-full transition-all duration-700" style="width: 0%;"></div>
+                        </div>
+                        <div class="flex items-center justify-between font-mono text-[10px] text-on-surface-variant">
+                            <span id="scans-executed-count">0 scans in session</span>
+                            <span id="scan-latency-text">Latency: -- ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Posture Gauge & Interactive Network Topology HUD Integrated on Overview -->
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                    <div class="xl:col-span-5 bg-surface-container-low p-6 rounded-xl shadow-lg border border-surface-variant/20 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between pb-3 mb-4 border-b border-surface-variant/20">
+                                <h3 class="text-base text-on-surface font-bold">Attack Surface &amp; Posture Gauge</h3>
+                                <span id="posture-gauge-grade" class="font-mono text-xs text-secondary bg-surface-container px-2.5 py-1 rounded font-bold">STANDBY</span>
+                            </div>
+                            <div class="flex flex-col sm:flex-row items-center gap-6 my-2">
+                                <div class="relative w-36 h-36 flex items-center justify-center shrink-0">
+                                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                        <circle class="text-surface-container-high" cx="50" cy="50" fill="none" r="40" stroke="currentColor" stroke-width="8"></circle>
+                                        <circle id="posture-gauge-circle" class="text-primary-container transition-all duration-700" cx="50" cy="50" fill="none" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" stroke-width="8"></circle>
+                                    </svg>
+                                    <div class="absolute flex flex-col items-center justify-center text-center">
+                                        <span id="posture-gauge-score" class="text-3xl font-bold font-mono text-on-surface">--</span>
+                                        <span class="font-mono text-[10px] text-on-surface-variant">/ 100</span>
+                                    </div>
+                                </div>
+                                <div class="flex-1 w-full space-y-2.5 font-mono text-xs">
+                                    <div>
+                                        <div class="flex justify-between mb-1"><span class="text-error">Critical</span><span id="dist-crit-pct">0%</span></div>
+                                        <div class="w-full bg-surface-container h-1.5 rounded-full"><div id="dist-crit-bar" class="bg-error h-full rounded-full" style="width:0%"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between mb-1"><span class="text-amber-400">Missing / Warn</span><span id="dist-high-pct">0%</span></div>
+                                        <div class="w-full bg-surface-container h-1.5 rounded-full"><div id="dist-high-bar" class="bg-amber-400 h-full rounded-full" style="width:0%"></div></div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between mb-1"><span class="text-primary-container">Secure Controls</span><span id="dist-low-pct">0%</span></div>
+                                        <div class="w-full bg-surface-container h-1.5 rounded-full"><div id="dist-low-bar" class="bg-primary-container h-full rounded-full" style="width:0%"></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-surface-container rounded mt-4 font-mono text-xs text-on-surface-variant flex justify-between">
+                            <span>Status:</span>
+                            <span id="posture-recommendation" class="text-secondary font-semibold">Run a scan to calculate posture.</span>
+                        </div>
+                    </div>
+
+                    <div class="xl:col-span-7 bg-surface-container-low p-6 rounded-xl shadow-lg border border-surface-variant/20 flex flex-col">
+                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-surface-variant/20">
+                            <h3 class="text-base text-on-surface font-bold flex items-center gap-2">
+                                <span class="material-symbols-outlined text-secondary">lan</span> Live Network Topology HUD
+                            </h3>
+                            <span id="hud-ping-badge" class="font-mono text-xs text-primary-container bg-surface-container px-2.5 py-0.5 rounded">IDLE</span>
+                        </div>
+                        <div class="bg-surface-container-lowest rounded-xl p-3 border border-surface-variant/30 flex items-center justify-center flex-1">
+                            <svg class="w-full h-56 select-none" fill="none" viewBox="0 0 760 220">
+                                <path d="M120 110 L360 55" stroke="#00d9ff" stroke-dasharray="4 4" stroke-width="2"></path>
+                                <path d="M120 110 L360 165" stroke="#39ff88" stroke-width="2.5"></path>
+                                <path d="M360 55 L620 110" stroke="#aeecff" stroke-dasharray="3 3" stroke-width="1.5"></path>
+                                <path d="M360 165 L620 110" stroke="#39ff88" stroke-width="2.5"></path>
+                                <g transform="translate(120, 110)">
+                                    <circle fill="#181b23" r="26" stroke="#39ff88" stroke-width="2.5"></circle>
+                                    <text fill="#39ff88" font-family="JetBrains Mono" font-size="9.5" font-weight="bold" text-anchor="middle" y="3">TRISCOUT</text>
+                                    <text fill="#e0e2ed" font-family="Inter" font-size="10" text-anchor="middle" y="40">Recon Node</text>
+                                </g>
+                                <g transform="translate(360, 55)">
+                                    <circle fill="#181b23" r="22" stroke="#00d9ff" stroke-width="2"></circle>
+                                    <text fill="#00d9ff" font-family="JetBrains Mono" font-size="9" font-weight="bold" text-anchor="middle" y="3">DNS-DOH</text>
+                                </g>
+                                <g transform="translate(360, 165)">
+                                    <circle fill="#181b23" r="22" stroke="#39ff88" stroke-width="2"></circle>
+                                    <text fill="#39ff88" font-family="JetBrains Mono" font-size="9" font-weight="bold" text-anchor="middle" y="3">HEADERS</text>
+                                </g>
+                                <g transform="translate(620, 110)">
+                                    <circle fill="#181b23" r="28" stroke="#aeecff" stroke-width="2.5"></circle>
+                                    <text fill="#aeecff" font-family="JetBrains Mono" font-size="10" font-weight="bold" text-anchor="middle" y="4" id="svg-target-score">IDLE</text>
+                                    <text fill="#e0e2ed" font-family="Inter" font-size="10.5" font-weight="bold" text-anchor="middle" y="44" id="svg-target-host">No Target</text>
+                                    <text fill="#849584" font-family="JetBrains Mono" font-size="9" text-anchor="middle" y="58" id="svg-target-ip">IP: --</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Session Scan History on Overview -->
+                <div class="bg-surface-container-low p-6 rounded-xl shadow-lg border border-surface-variant/20">
+                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-surface-variant/20">
+                        <h3 class="text-base text-on-surface font-bold">Recent Session Scan History</h3>
+                        <button onclick="clearScanHistory()" class="px-2.5 py-1 rounded bg-error-container/40 text-error font-mono text-xs hover:bg-error-container/70 cursor-pointer">Clear History</button>
+                    </div>
+                    <div class="space-y-2 font-mono text-xs" id="scan-history-list">
+                        <div class="p-4 text-center text-on-surface-variant">No scan history recorded in this session yet.</div>
+                    </div>
+                </div>
+
+            </section>
+            <!-- TAB 2: TARGET SCANNER (All Scanning Controls, Color Matrix, Ledger & Terminal in One Place) -->
+            <section id="tab-scanner" class="tab-view hidden flex flex-col gap-6">
+                
+                <!-- Target Input & Scope Launcher -->
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                    <div class="xl:col-span-5 bg-surface-container-low p-6 rounded-xl shadow-lg border border-surface-variant/20 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between pb-3 mb-4 border-b border-surface-variant/20">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-primary-container">radar</span>
+                                    <h3 class="text-base text-on-surface font-bold">Target Reconnaissance Launcher</h3>
+                                </div>
+                                <span class="font-mono text-[10px] text-primary-container bg-surface-container px-2 py-0.5 rounded">ETHICAL-ROE</span>
+                            </div>
+
+                            <label class="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider mb-1.5 block">Authorized Target Domain / URL</label>
+                            <div class="flex rounded-lg bg-surface-container p-1.5 mb-4 border border-surface-variant/40 focus-within:border-primary-container">
+                                <span class="px-2.5 py-1.5 font-mono text-xs text-secondary bg-surface-container-high rounded mr-1">TARGET</span>
+                                <input class="w-full bg-transparent px-2 font-mono text-sm text-on-surface focus:outline-none" id="target-domain-input" placeholder="https://example.com" type="text"/>
+                                <button onclick="pasteTargetClipboard()" class="px-2 text-on-surface-variant hover:text-secondary cursor-pointer" title="Paste" type="button">
+                                    <span class="material-symbols-outlined text-base">content_paste</span>
+                                </button>
+                            </div>
+
+                            <label class="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider mb-2 block">Active Scanning Modules</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 font-mono text-xs">
+                                <label class="flex items-center gap-2 p-2.5 rounded bg-surface-container cursor-pointer">
+                                    <input checked type="checkbox" class="accent-primary-container rounded"/>
+                                    <span>DNS &amp; IPv4 Lookup</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded bg-surface-container cursor-pointer">
+                                    <input checked type="checkbox" class="accent-primary-container rounded"/>
+                                    <span>HTTP Header Audit</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded bg-surface-container cursor-pointer">
+                                    <input checked type="checkbox" class="accent-primary-container rounded"/>
+                                    <span>API Secret Leaks</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded bg-surface-container cursor-pointer">
+                                    <input checked type="checkbox" class="accent-primary-container rounded"/>
+                                    <span>Tech Fingerprinting</span>
+                                </label>
+                            </div>
+
+                            <div class="p-3 bg-surface-container rounded mb-5 border border-surface-variant/30">
+                                <label class="flex items-start gap-2 cursor-pointer text-xs text-on-surface-variant">
+                                    <input checked class="mt-0.5 accent-primary-container" id="compliance-check" type="checkbox"/>
+                                    <span>I confirm authorization to test this target under passive ethical reconnaissance rules.</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button onclick="executeTargetAssessment()" class="w-full flex items-center justify-center gap-2 py-3.5 rounded-lg bg-primary-container text-on-primary font-mono text-xs uppercase font-bold hover:bg-primary-fixed transition-all shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer" id="dispatch-recon-btn" type="button">
+                            <span class="material-symbols-outlined text-base">rocket_launch</span>
+                            <span>Initiate Target Scan</span>
+                        </button>
+                    </div>
+
+                    <!-- Live Terminal Stream right beside the Scanner Input -->
+                    <div class="xl:col-span-7 bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden border border-surface-variant/30 flex flex-col justify-between">
+                        <div class="bg-surface-container-low px-4 py-3 flex items-center justify-between border-b border-surface-variant/20 font-mono text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="h-3 w-3 rounded-full bg-error inline-block"></span>
+                                <span class="h-3 w-3 rounded-full bg-amber-400 inline-block"></span>
+                                <span class="h-3 w-3 rounded-full bg-primary-container inline-block"></span>
+                                <span class="text-on-surface-variant ml-2">triscout-scanner@soc-node: ~</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="term-stream-badge" class="px-2 py-0.5 rounded bg-surface-container text-primary-container text-[10px]">READY</span>
+                                <button onclick="clearTerminalBuffer()" class="text-on-surface-variant hover:text-on-surface cursor-pointer p-1" title="Clear Console">
+                                    <span class="material-symbols-outlined text-base">delete</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="p-4 font-mono text-xs space-y-1.5 overflow-y-auto h-64 bg-surface-container-lowest text-slate-300 flex-1" id="terminal-body">
+                            <div><span class="text-primary-container font-bold">[SYSTEM]</span> TriScout v2.4 On-Demand Scanner Ready.</div>
+                            <div><span class="text-secondary font-bold">[INFO]</span> Enter a domain on the left or type <span class="text-white">scan example.com</span> below.</div>
+                            <div id="terminal-append-point"></div>
+                        </div>
+
+                        <form onsubmit="handleTerminalCommand(event)" class="bg-surface-container-low px-4 py-2.5 flex items-center gap-2 border-t border-surface-variant/20 font-mono text-xs">
+                            <span class="text-primary-container font-bold">&gt;</span>
+                            <input class="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant focus:outline-none" id="terminal-input" placeholder="Type command ('scan example.com', 'help', 'status', 'clear')..." type="text"/>
+                            <button class="px-3 py-1 rounded bg-surface-container text-secondary uppercase font-semibold hover:bg-surface-container-high cursor-pointer" type="submit">Run</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Color-Coded Security Control Matrix & Vulnerability Ledger -->
+                <div class="bg-surface-container-low p-6 rounded-xl shadow-lg border border-surface-variant/20">
+                    <div class="flex flex-wrap items-center justify-between gap-4 pb-3 mb-4 border-b border-surface-variant/20">
+                        <div>
+                            <h3 class="text-base text-on-surface font-bold flex items-center gap-2">
+                                <span class="material-symbols-outlined text-secondary">security</span>
+                                Color-Coded Security Controls &amp; Vulnerability Ledger
+                            </h3>
+                            <p class="text-xs text-on-surface-variant">Filter controls by status and click any card to view remediation steps</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 font-mono text-[10px]">
+                            <button onclick="filterLedgerByStatus('ALL', this)" class="ledger-filter-btn px-2.5 py-1 rounded bg-surface-container-high text-primary-container font-bold cursor-pointer">ALL (<span id="lf-all">0</span>)</button>
+                            <button onclick="filterLedgerByStatus('CRITICAL', this)" class="ledger-filter-btn px-2.5 py-1 rounded bg-error-container/60 text-on-error font-bold cursor-pointer">CRITICAL (<span id="lf-crit">0</span>)</button>
+                            <button onclick="filterLedgerByStatus('MISSING', this)" class="ledger-filter-btn px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 font-bold cursor-pointer">MISSING / WARN (<span id="lf-high">0</span>)</button>
+                            <button onclick="filterLedgerByStatus('NOTICE', this)" class="ledger-filter-btn px-2.5 py-1 rounded bg-surface-container text-secondary cursor-pointer">NOTICE (<span id="lf-med">0</span>)</button>
+                            <button onclick="filterLedgerByStatus('SECURE', this)" class="ledger-filter-btn px-2.5 py-1 rounded bg-primary-container/20 text-primary-container font-bold cursor-pointer">SECURE (<span id="lf-low">0</span>)</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="ledger-items-container">
+                        <div class="md:col-span-2 p-8 text-center text-on-surface-variant font-mono text-xs bg-surface-container rounded-lg">
+                            [AWAITING SCAN] Initiate a scan above to inspect HTTP headers, missing protections, and color-coded security cards.
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 3: REPORTS & EXPORT (Email Dispatch + PDF, JSON, CSV Export) -->
+            <section id="tab-reports" class="tab-view hidden flex flex-col gap-6 max-w-5xl mx-auto">
+                
+                <!-- Quick Local Export Card -->
+                <div class="bg-surface-container-low p-6 rounded-xl shadow-lg border border-surface-variant/20 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 rounded-lg bg-surface-container text-secondary">
+                            <span class="material-symbols-outlined text-2xl">file_download</span>
+                        </div>
+                        <div>
+                            <h3 class="text-base text-on-surface font-bold">Instant Local Report Export</h3>
+                            <p class="text-xs text-on-surface-variant">Download the active scan findings directly to your device</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto font-mono text-xs">
+                        <button onclick="exportScanReport('pdf')" class="flex-1 md:flex-initial px-4 py-2.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high uppercase font-semibold cursor-pointer flex items-center justify-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm text-error">picture_as_pdf</span> Print / PDF
+                        </button>
+                        <button onclick="exportScanReport('json')" class="flex-1 md:flex-initial px-4 py-2.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high uppercase font-semibold cursor-pointer flex items-center justify-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm text-secondary">data_object</span> JSON
+                        </button>
+                        <button onclick="exportScanReport('csv')" class="flex-1 md:flex-initial px-4 py-2.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high uppercase font-semibold cursor-pointer flex items-center justify-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm text-primary-container">table_chart</span> CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gmail Dispatch Card -->
+                <div class="bg-surface-container-low p-6 rounded-xl shadow-xl border border-surface-variant/20">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-surface-variant/20">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary-container">mail</span>
+                            <h3 class="text-base text-on-surface font-bold">Dispatch Security Report via Gmail</h3>
+                        </div>
+                        <span class="font-mono text-[10px] text-secondary bg-surface-container px-2.5 py-1 rounded">SMTP RELAY</span>
+                    </div>
+
+                    <div id="reportPreview" class="bg-surface-container-lowest text-on-surface p-4 mb-4 font-mono text-xs border border-surface-variant/30 h-64 overflow-y-auto rounded-lg leading-relaxed">
+                        No recent scan report found in session buffer. Run a scan in the Target Scanner tab first.
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="email" id="emailInput" class="flex-1 bg-surface-container border border-surface-variant/40 text-on-surface placeholder:text-on-surface-variant rounded-lg px-4 py-3 font-mono text-xs focus:outline-none focus:border-primary-container" placeholder="Enter recipient email address (e.g. client@domain.com)"/>
+                        <button id="reportBtn" onclick="sendReportEmail()" class="bg-primary-container hover:bg-primary-fixed text-on-primary font-mono text-xs uppercase font-bold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer">
+                            <span class="material-symbols-outlined text-base">send</span>
+                            <span>Send Report</span>
+                        </button>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- TAB 4: CLI TOOL -->
+            <section id="tab-cli" class="tab-view hidden max-w-4xl mx-auto">
+                <div class="bg-surface-container-low p-6 sm:p-8 rounded-xl shadow-xl border border-surface-variant/20">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-surface-variant/20">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary-container text-2xl">terminal</span>
+                            <h3 class="text-lg text-on-surface font-bold">TriScout CLI Edition</h3>
+                        </div>
+                        <span class="font-mono text-[10px] text-primary-container bg-surface-container px-2.5 py-1 rounded">NPM GLOBAL</span>
+                    </div>
+                    <p class="text-sm text-on-surface-variant mb-6 leading-relaxed">
+                        Execute passive security header checks and leak assessments directly from your terminal or automated CI/CD workflows.
+                    </p>
+                    <div class="bg-surface-container-lowest p-5 rounded-lg border border-surface-variant/30 font-mono text-xs sm:text-sm text-on-surface mb-6 leading-relaxed">
+                        <span class="text-on-surface-variant"># Install globally via NPM</span><br>
+                        <span class="text-primary-container font-bold">$</span> npm install -g @kiran-mondal/triscout<br><br>
+                        <span class="text-on-surface-variant"># Run a quick passive scan</span><br>
+                        <span class="text-primary-container font-bold">$</span> triscout example.com
+                    </div>
+                    <button onclick="window.open('https://github.com/Kiran-mondal/triscout/packages', '_blank')" class="w-full py-3 rounded-lg bg-primary-container hover:bg-primary-fixed text-on-primary font-mono text-xs uppercase font-bold transition-all flex items-center justify-center gap-2 cursor-pointer" type="button">
+                        <span class="material-symbols-outlined text-base">open_in_new</span>
+                        <span>View Package on GitHub</span>
+                    </button>
+                </div>
+            </section>                                                                                                                                                                                              </section>
+              <!-- TAB 5: MY PROJECTS (Portfolio & Live Applications) -->
+            <section id="tab-project" class="tab-view hidden max-w-6xl mx-auto">
+                <div class="bg-surface-container-low rounded-xl p-6 sm:p-8 mb-6 flex flex-col items-center justify-center text-center border border-surface-variant/20 shadow-xl">
+                    <div class="p-1.5 rounded-full bg-gradient-to-tr from-primary-container to-secondary mb-3 shadow-[0_0_24px_rgba(57,255,136,0.3)]">
+                        <img src="https://github.com/Kiran-mondal.png" alt="Kiran Mondal" class="w-20 h-20 rounded-full border-4 border-surface-container-lowest object-cover">
+                    </div>
+                    <h2 class="text-2xl text-on-surface font-bold uppercase tracking-wide mb-1">Kiran Mondal</h2>
+                    <p class="text-on-surface-variant font-mono text-xs mb-4 flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm text-primary-container">code</span>
+                        Full-Stack Developer &amp; Cyber Security Enthusiast
+                    </p>
+                    <a href="https://github.com/Kiran-mondal" target="_blank" class="bg-surface-container-high hover:bg-primary-container hover:text-on-primary text-secondary px-5 py-2 rounded-lg border border-surface-variant/40 transition-all flex items-center gap-2 font-mono text-xs uppercase font-bold">
+                        <span class="material-symbols-outlined text-base">open_in_new</span>
+                        <span>View GitHub Profile</span>
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div class="bg-surface-container-low rounded-xl p-5 flex flex-col border border-surface-variant/20 hover:border-secondary/50 transition-all shadow-lg">
+                        <div class="flex items-center gap-3 mb-3">
+                            <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="512" height="512" rx="120" fill="#0D4FF0"/>
+                                <path d="M256 80L120 140V240C120 330 176 407 256 432C336 407 392 330 392 240V140L256 80Z" fill="white"/>
+                                <circle cx="256" cy="255" r="70" fill="#0D4FF0"/>
+                                <rect x="235" y="240" width="42" height="75" rx="8" fill="white"/>
+                            </svg>
+                            <h3 class="text-base text-on-surface font-bold">Password Guard</h3>
+                        </div>
+                        <p class="text-xs text-on-surface-variant flex-grow mb-4 leading-relaxed">Advanced AI-powered password protection &amp; vault management tool with 3D Cyber UI.</p>
+                        <div class="flex gap-2 mt-auto font-mono text-xs">
+                            <a href="https://passwordguard.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary-container text-on-primary text-center py-2 rounded uppercase font-bold">Live App</a>
+                            <a href="https://github.com/Kiran-mondal/Password-Guard" target="_blank" class="flex-1 bg-surface-container text-secondary text-center py-2 rounded uppercase font-bold border border-surface-variant/40">Code</a>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-low rounded-xl p-5 flex flex-col border border-surface-variant/20 hover:border-secondary/50 transition-all shadow-lg">
+                        <div class="flex items-center gap-3 mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32">
+                                <path d="M 120 390 C 120 270, 392 350, 392 210 C 392 130, 310 90, 256 90" fill="none" stroke="#58a6ff" stroke-width="45" stroke-linecap="round" />
+                                <circle cx="256" cy="90" r="45" fill="#58a6ff" />
+                            </svg>
+                            <h3 class="text-base text-on-surface font-bold">ZenDrift</h3>
+                        </div>
+                        <p class="text-xs text-on-surface-variant flex-grow mb-4 leading-relaxed">Dynamic performance tracking system built for an engaging and smooth web experience.</p>
+                        <div class="flex gap-2 mt-auto font-mono text-xs">
+                            <a href="https://zendrift.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary-container text-on-primary text-center py-2 rounded uppercase font-bold">Live App</a>
+                            <a href="https://github.com/Kiran-mondal" target="_blank" class="flex-1 bg-surface-container text-secondary text-center py-2 rounded uppercase font-bold border border-surface-variant/40">Code</a>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-low rounded-xl p-5 flex flex-col border border-surface-variant/20 hover:border-secondary/50 transition-all shadow-lg">
+                        <div class="flex items-center gap-3 mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="32" height="32">
+                                <path d="M 280 250 C 420 250, 420 380, 350 400 C 450 420, 450 580, 280 580" stroke="#00f2fe" stroke-width="45" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="450" cy="120" r="30" fill="#00f2fe" />
+                            </svg>
+                            <h3 class="text-base text-on-surface font-bold">Omlang</h3>
+                        </div>
+                        <p class="text-xs text-on-surface-variant flex-grow mb-4 leading-relaxed">A modern language and communication-focused platform with an intuitive user interface.</p>
+                        <div class="flex gap-2 mt-auto font-mono text-xs">
+                            <a href="https://omlang.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary-container text-on-primary text-center py-2 rounded uppercase font-bold">Live App</a>
+                            <a href="https://github.com/Kiran-mondal" target="_blank" class="flex-1 bg-surface-container text-secondary text-center py-2 rounded uppercase font-bold border border-surface-variant/40">Code</a>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-low rounded-xl p-5 flex flex-col border border-surface-variant/20 hover:border-secondary/50 transition-all shadow-lg">
+                        <div class="flex items-center gap-3 mb-3">
+                            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+                                <circle cx="50" cy="50" r="48" fill="#d97706" stroke="#ffffff" stroke-width="2"/>
+                                <path d="M50 20 L75 55 L50 80 L25 55 Z" fill="#ffffff" />
+                            </svg>
+                            <h3 class="text-base text-on-surface font-bold">Chaturanga</h3>
+                        </div>
+                        <p class="text-xs text-on-surface-variant flex-grow mb-4 leading-relaxed">Interactive web-based application focused on deep logic, planning, and strategy.</p>
+                        <div class="flex gap-2 mt-auto font-mono text-xs">
+                            <a href="https://chaturanga.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary-container text-on-primary text-center py-2 rounded uppercase font-bold">Live App</a>
+                            <a href="https://github.com/Kiran-mondal" target="_blank" class="flex-1 bg-surface-container text-secondary text-center py-2 rounded uppercase font-bold border border-surface-variant/40">Code</a>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface-container-low rounded-xl p-5 flex flex-col border border-surface-variant/20 hover:border-secondary/50 transition-all shadow-lg">
+                        <div class="flex items-center gap-3 mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32">
+                                <circle cx="256" cy="256" r="168" fill="none" stroke="#dc2626" stroke-width="48" />
+                                <circle cx="256" cy="256" r="56" fill="none" stroke="#dc2626" stroke-width="48" />
+                            </svg>
+                            <h3 class="text-base text-on-surface font-bold">Pachisi</h3>
+                        </div>
+                        <p class="text-xs text-on-surface-variant flex-grow mb-4 leading-relaxed">Play the ancient Indian epic board game of strategy, heritage, and royal culture.</p>
+                        <div class="flex gap-2 mt-auto font-mono text-xs">
+                            <a href="https://pachisi.quarry.dpdns.org" target="_blank" class="flex-1 bg-primary-container text-on-primary text-center py-2 rounded uppercase font-bold">Live App</a>
+                            <a href="https://github.com/Kiran-mondal" target="_blank" class="flex-1 bg-surface-container text-secondary text-center py-2 rounded uppercase font-bold border border-surface-variant/40">Code</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 6: ACCOUNT & SYSTEM (Profile, Account Deletion & System Architecture in One Tab) -->
+            <section id="tab-profile" class="tab-view hidden max-w-4xl mx-auto flex flex-col gap-6">
+                
+                <!-- Operator Profile Card -->
+                <div class="bg-surface-container-low rounded-xl p-6 border border-surface-variant/20 shadow-xl">
+                    <div class="flex flex-col sm:flex-row items-center gap-5 pb-5 mb-5 border-b border-surface-variant/20">
+                        <div class="w-20 h-20 rounded-full bg-surface-container-high flex items-center justify-center ring-2 ring-primary-container overflow-hidden shrink-0" id="profileAvatar">
+                            <span class="material-symbols-outlined text-4xl text-primary-container">person</span>
+                        </div>
+                        <div class="text-center sm:text-left">
+                            <h3 class="text-2xl text-on-surface font-bold" id="profileName">Operator</h3>
+                            <p class="font-mono text-xs text-secondary mt-0.5" id="profileRole">Authorized SecOps Session</p>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-surface-container text-primary-container font-mono text-[10px] mt-2">
+                                <span class="h-2 w-2 rounded-full bg-primary-container animate-pulse"></span> ACTIVE &amp; SECURED
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs" id="profileActions"></div>
+                </div>
+
+                <!-- System Architecture Card -->
+                <div class="bg-surface-container-low p-6 rounded-xl shadow-xl border border-surface-variant/20">
+                    <div class="flex items-center justify-between pb-3 mb-4 border-b border-surface-variant/20">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-secondary">shield_lock</span>
+                            <h3 class="text-base text-on-surface font-bold">TriScout System Architecture</h3>
+                        </div>
+                        <span class="font-mono text-[10px] text-secondary bg-surface-container px-2.5 py-1 rounded">v2.4 TAC-OPS</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left font-mono text-xs">
+                            <tbody class="divide-y divide-surface-variant/20">
+                                <tr>
+                                    <td class="py-2.5 px-3 text-on-surface-variant font-semibold">Engine Build</td>
+                                    <td class="py-2.5 px-3 text-primary-container font-bold">TriScout v2.4 (On-Demand Zero-Preload)</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-3 text-on-surface-variant font-semibold">Core Stack</td>
+                                    <td class="py-2.5 px-3 text-on-surface">Node.js / Express / Axios / Neon Serverless PostgreSQL</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-3 text-on-surface-variant font-semibold">Capabilities</td>
+                                    <td class="py-2.5 px-3 text-on-surface">HTTP Header Audit, Source Leak Regex, Free Google DoH DNS, SSRF Guardrail</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-2.5 px-3 text-on-surface-variant font-semibold">Lead Developer</td>
+                                    <td class="py-2.5 px-3 text-secondary font-bold">Kiran Mondal</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        let currentScanData = null;
+        let sessionScanCount = 0;
+
+        function toggleMobileSidebar() {
+            const sb = document.getElementById('mobileSidebar');
+            const ov = document.getElementById('sidebarOverlay');
+            if (sb && ov) {
+                sb.classList.toggle('-translate-x-full');
+                ov.classList.toggle('hidden');
+            }
+        }
+
+        function switchTab(e, tabId) {
+            if (e) e.preventDefault();
+
+            document.querySelectorAll('.tab-view').forEach(sec => sec.classList.add('hidden'));
+            const activeSec = document.getElementById('tab-' + tabId);
+            if (activeSec) activeSec.classList.remove('hidden');
+
+            document.querySelectorAll('.sidebar-item').forEach(link => link.classList.remove('sidebar-active'));
+            const activeNav = document.querySelector('[data-tab="' + tabId + '"]');
+            if (activeNav) activeNav.classList.add('sidebar-active');
+
+            const titles = {
+                overview: 'OVERVIEW // COMMAND CENTER',
+                scanner: 'TARGET SCANNER // RECONNAISSANCE',
+                reports: 'REPORTS & EXPORT // DISPATCH',
+                cli: 'CLI TOOL // NPM PACKAGE',
+                project: 'MY PROJECTS // PORTFOLIO',
+                profile: 'ACCOUNT & SYSTEM // SETTINGS'
+            };
+            const titleEl = document.getElementById('top-page-title');
+            if (titleEl && titles[tabId]) titleEl.innerText = titles[tabId];
+
+            const sb = document.getElementById('mobileSidebar');
+            const ov = document.getElementById('sidebarOverlay');
+            if (sb && !sb.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
+                sb.classList.add('-translate-x-full');
+                if (ov) ov.classList.add('hidden');
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return false;
+        }
+
+        function appendTerm(type, msg) {
+            const tb = document.getElementById('terminal-body');
+            const ap = document.getElementById('terminal-append-point');
+            if (!tb || !ap) return;
+            const div = document.createElement('div');
+            let color = 'text-primary-container';
+            if (type === '[VULN]' || type === '[ERROR]') color = 'text-error';
+            else if (type === '[RECON]' || type === '[DNS]') color = 'text-secondary';
+            const safe = String(msg).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            div.innerHTML = '<span class="text-on-surface-variant">[' + new Date().toLocaleTimeString() + ']</span> <span class="font-bold ' + color + '">' + type + '</span> ' + safe;
+            tb.insertBefore(div, ap);
+            tb.scrollTop = tb.scrollHeight;
+        }
+
+        function clearTerminalBuffer() {
+            const tb = document.getElementById('terminal-body');
+            if (tb) tb.innerHTML = '<div id="terminal-append-point"></div>';
+        }
+
+        async function resolveDNS(domain) {
+            try {
+                const clean = domain.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+                const res = await fetch('https://dns.google/resolve?name=' + encodeURIComponent(clean) + '&type=A');
+                const data = await res.json();
+                if (data && data.Answer && data.Answer.length > 0) {
+                    return { ip: data.Answer[0].data, host: clean };
+                }
+            } catch (e) {}
+            return { ip: 'Resolved via Backend', host: domain.replace(/^https?:\/\//, '').split('/')[0] };
+        }
+
+        function getRemediationAdvice(name) {
+            if (name.includes('HSTS')) return 'Add "Strict-Transport-Security: max-age=63072000; includeSubDomains; preload" to your web server response headers.';
+            if (name.includes('CSP')) return 'Configure a strict "Content-Security-Policy" header to mitigate XSS and unauthorized script execution.';
+            if (name.includes('X-Frame')) return 'Set "X-Frame-Options: DENY" or "SAMEORIGIN" to prevent iframe clickjacking.';
+            if (name.includes('MIME')) return 'Add "X-Content-Type-Options: nosniff" to prevent browser MIME-type sniffing.';
+            if (name.includes('Tech Stack')) return 'Disable "X-Powered-By" headers and hide generator version meta tags.';
+            if (name.includes('Secrets')) return 'Rotate exposed API keys immediately and store secrets in server-side environment variables.';
+            if (name.includes('Error')) return 'Disable raw stack traces in production responses.';
+            return 'Enforce rate limiting at the reverse proxy or API gateway level.';
+        }
+
+        async function executeTargetAssessment(customTarget) {
+            const inputEl = document.getElementById('target-domain-input');
+            const target = (customTarget || (inputEl ? inputEl.value : '')).trim();
+            if (!target) return alert('Please enter a target domain or URL first!');
+
+            const comp = document.getElementById('compliance-check');
+            if (comp && !comp.checked) return alert('Please verify the ethical authorization checkbox first.');
+
+            switchTab(null, 'scanner');
+
+            const btn = document.getElementById('dispatch-recon-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">sync</span><span>Scanning Target...</span>';
+            }
+
+            document.getElementById('mission-status-badge').innerText = 'STATE: ACTIVE PROBING';
+            document.getElementById('sidebar-active-target').innerText = target;
+            document.getElementById('term-stream-badge').innerText = 'PROBING';
+
+            const start = performance.now();
+            appendTerm('[RECON]', 'Initiating passive security scan for: ' + target);
+
+            const dns = await resolveDNS(target);
+            appendTerm('[DNS]', 'Host ' + dns.host + ' resolved to IPv4: ' + dns.ip);
+
+            try {
+                const res = await fetch('/api/account/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const d = await res.json();
+                if (d.success) {
+                    alert(d.message);
+                    localStorage.removeItem('token');
+                    window.location.href = '/';
+                } else {
+                    alert('Error: ' + d.error);
+                }
+            } catch (e) {
+                alert('Failed to reach account deletion API.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+
+            renderScanHistory();
+
+            const savedReport = localStorage.getItem('triscout_report');
+            const savedTarget = localStorage.getItem('triscout_target');
+            if (savedReport && savedTarget) {
+                const preview = document.getElementById('reportPreview');
+                if (preview) preview.innerText = 'TARGET: ' + savedTarget + '\n\n' + savedReport;
+            }
+
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                const user = payload.user || 'Operator';
+                document.getElementById('navProfileName').innerText = user;
+                document.getElementById('profileName').innerText = user;
+
+                const actionsEl = document.getElementById('profileActions');
+                if (payload.provider === 'github') {
+                    document.getElementById('profileRole').innerText = 'GitHub OAuth Verified Operator';
+                    if (payload.avatar && payload.avatar.startsWith('https://')) {
+                        const img1 = document.createElement('img');
+                        img1.src = payload.avatar;
+                        img1.className = 'w-full h-full object-cover';
+                        const av1 = document.getElementById('navProfileAvatar');
+                        const av2 = document.getElementById('profileAvatar');
+                        av1.innerHTML = ''; av1.appendChild(img1);
+                        av2.innerHTML = ''; av2.appendChild(img1.cloneNode(true));
+                    }
+                    actionsEl.innerHTML =
+                        '<button onclick="localStorage.removeItem(\'token\'); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface uppercase font-bold cursor-pointer">Sign Out Session</button>' +
+                        '<button onclick="deleteUserAccount()" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold border border-error/30 cursor-pointer">Delete Account Data</button>';
+                } else {
+                    document.getElementById('profileRole').innerText = 'System Administrator (Local Env)';
+                    actionsEl.innerHTML =
+                        '<div class="p-3.5 rounded-lg bg-surface-container text-on-surface-variant">Local Admin managed via Environment Variables.</div>' +
+                        '<button onclick="localStorage.removeItem(\'token\'); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold cursor-pointer">Sign Out Session</button>';
+                }
+            } catch (e) {}
+
+            const path = window.location.pathname.replace('/', '');
+            const params = new URLSearchParams(window.location.search);
+            const tabParam = params.get('tab');
+            if (tabParam) {
+                switchTab(null, tabParam);
+            } else if (['reports', 'cli', 'project', 'profile'].includes(path)) {
+                switchTab(null, path);
+            } else if (path === 'about') {
+                switchTab(null, 'profile');
+            }
+        });
+    </script>
+</body>
+</html>                                                                                                                                                                                                                                
