@@ -660,7 +660,7 @@
         </main>
     </div>
 
-    <script>
+   <script>
         let currentScanData = null;
         let sessionScanCount = 0;
 
@@ -775,6 +775,289 @@
             appendTerm('[DNS]', 'Host ' + dns.host + ' resolved to IPv4: ' + dns.ip);
 
             try {
+                const res = await fetch('/api/scan-headers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ target: target })
+                });
+                const data = await res.json();
+                const latency = Math.round(performance.now() - start);
+
+                if (!data.success) {
+                    appendTerm('[ERROR]', data.error || 'Target scan failed.');
+                    return;
+                }
+
+                sessionScanCount++;
+                const score = typeof data.score === 'number' ? data.score : 50;
+                const checks = Array.isArray(data.checks) ? data.checks : [];
+
+                currentScanData = {
+                    target: target,
+                    host: dns.host,
+                    ip: dns.ip,
+                    score: score,
+                    checks: checks,
+                    report: data.report,
+                    latency: latency,
+                    timestamp: new Date().toLocaleString()
+                };
+
+                localStorage.setItem('triscout_target', target);
+                localStorage.setItem('triscout_report', data.report);
+                saveScanHistory(currentScanData);
+
+                data.report.split('\n').forEach(line => {
+                    if (line.trim()) {
+                        if (line.startsWith('[+]')) appendTerm('[PASS]', line);
+                        else if (line.startsWith('[!]')) appendTerm('[VULN]', line);
+                        else appendTerm('[INFO]', line);
+                    }
+                });
+
+                appendTerm('[READY]', 'Scan finished in ' + latency + 'ms. Score: ' + score + '/100.');
+                updateAllDashboardWidgets(currentScanData);
+            } catch (err) {
+                appendTerm('[ERROR]', 'Could not reach scanning API.');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-outlined text-base">rocket_launch</span><span>Initiate Target Scan</span>';
+                }
+                document.getElementById('term-stream-badge').innerText = 'READY';
+            }
+        }
+
+        function updateAllDashboardWidgets(scan) {
+            const checks = scan.checks || [];
+            const crit = checks.filter(c => c.status === 'CRITICAL').length;
+            const high = checks.filter(c => c.status === 'MISSING' || c.status === 'WARNING').length;
+            const med = checks.filter(c => c.status === 'NOTICE').length;
+            const low = checks.filter(c => c.status === 'SECURE').length;
+            const openIssues = crit + high;
+            const total = Math.max(checks.length, 1);
+
+            document.getElementById('metric-assets-count').innerText = checks.length;
+            document.getElementById('metric-assets-tag').innerText = scan.ip;
+            document.getElementById('metric-vuln-total').innerText = openIssues;
+            document.getElementById('metric-vuln-tag').innerText = openIssues > 0 ? 'Action Req' : 'Secure';
+            document.getElementById('pill-crit').innerText = crit;
+            document.getElementById('pill-high').innerText = high;
+            document.getElementById('pill-low').innerText = low;
+
+            document.getElementById('nav-badge-vulns').innerText = openIssues > 0 ? (openIssues + ' WARN') : 'CLEAN';
+            document.getElementById('sidebar-defcon-status').innerText = scan.score >= 80 ? 'SECURE' : 'AT RISK';
+
+            document.getElementById('metric-crit-big').innerText = String(crit).padStart(2, '0');
+            document.getElementById('crit-status-label').innerText = crit > 0 ? (crit + ' CRITICAL') : '0 EXPOSED';
+
+            document.getElementById('metric-score-big').innerText = scan.score + '%';
+            document.getElementById('metric-score-bar').style.width = scan.score + '%';
+            document.getElementById('scan-state-badge').innerText = 'VERIFIED';
+            document.getElementById('scans-executed-count').innerText = sessionScanCount + ' scan(s) in session';
+            document.getElementById('scan-latency-text').innerText = 'Latency: ' + scan.latency + ' ms';
+
+            const offset = 251.2 - (251.2 * (scan.score / 100));
+            document.getElementById('posture-gauge-circle').style.strokeDashoffset = offset;
+            document.getElementById('posture-gauge-score').innerText = scan.score;
+            document.getElementById('posture-gauge-grade').innerText = scan.score >= 85 ? 'GRADE A+' : (scan.score >= 60 ? 'GRADE B' : 'HIGH RISK');
+
+            const critPct = Math.round((crit / total) * 100);
+            const highPct = Math.round((high / total) * 100);
+            const lowPct = Math.round((low / total) * 100);
+            document.getElementById('dist-crit-pct').innerText = critPct + '%';
+            document.getElementById('dist-crit-bar').style.width = critPct + '%';
+            document.getElementById('dist-high-pct').innerText = highPct + '%';
+            document.getElementById('dist-high-bar').style.width = highPct + '%';
+            document.getElementById('dist-low-pct').innerText = lowPct + '%';
+            document.getElementById('dist-low-bar').style.width = lowPct + '%';
+
+            document.getElementById('posture-recommendation').innerText = openIssues > 0
+                ? (openIssues + ' missing/vulnerable control(s) detected.')
+                : 'All evaluated controls are secure.';
+
+            document.getElementById('hud-ping-badge').innerText = scan.latency + ' ms';
+            document.getElementById('svg-target-score').innerText = scan.score + '/100';
+            document.getElementById('svg-target-host').innerText = scan.host;
+            document.getElementById('svg-target-ip').innerText = 'IP: ' + scan.ip;
+
+            document.getElementById('lf-all').innerText = checks.length;
+            document.getElementById('lf-crit').innerText = crit;
+            document.getElementById('lf-high').innerText = high;
+            document.getElementById('lf-med').innerText = med;
+            document.getElementById('lf-low').innerText = low;
+
+            const container = document.getElementById('ledger-items-container');
+            container.innerHTML = checks.map(c => {
+                let borderCls = 'border-primary-container/40 bg-emerald-950/15';
+                let badgeCls = 'bg-primary-container text-on-primary';
+                if (c.status === 'CRITICAL') {
+                    borderCls = 'border-error/60 bg-red-950/25';
+                    badgeCls = 'bg-error text-background';
+                } else if (c.status === 'MISSING' || c.status === 'WARNING') {
+                    borderCls = 'border-amber-400/50 bg-amber-950/20';
+                    badgeCls = 'bg-amber-400 text-black';
+                } else if (c.status === 'NOTICE') {
+                    borderCls = 'border-secondary/40 bg-surface-container';
+                    badgeCls = 'bg-secondary text-black';
+                }
+
+                return '<div class="ledger-card p-4 rounded-xl border transition-all cursor-pointer ' + borderCls + '" data-status="' + c.status + '" onclick="this.querySelector(\'.rem-box\').classList.toggle(\'hidden\')">' +
+                    '<div class="flex items-center justify-between gap-2 mb-1.5">' +
+                        '<div class="flex items-center gap-2">' +
+                            '<span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase ' + badgeCls + '">' + c.status + '</span>' +
+                            '<span class="font-bold text-sm text-on-surface">' + c.name + '</span>' +
+                        '</div>' +
+                        '<span class="font-mono text-[11px] text-on-surface-variant">' + c.impact + '</span>' +
+                    '</div>' +
+                    '<p class="text-xs text-on-surface-variant mb-1">' + c.detail + '</p>' +
+                    '<div class="rem-box hidden mt-2.5 pt-2.5 border-t border-white/10 text-xs text-secondary font-mono">' +
+                        '<strong>Fix:</strong> ' + getRemediationAdvice(c.name) +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+            const preview = document.getElementById('reportPreview');
+            if (preview) preview.innerText = 'TARGET: ' + scan.target + '\n\n' + scan.report;
+        }
+
+        function filterLedgerByStatus(status, btn) {
+            document.querySelectorAll('.ledger-filter-btn').forEach(b => b.classList.remove('ring-2', 'ring-primary-container'));
+            if (btn) btn.classList.add('ring-2', 'ring-primary-container');
+            document.querySelectorAll('.ledger-card').forEach(card => {
+                const st = card.getAttribute('data-status');
+                if (status === 'ALL' || st === status || (status === 'MISSING' && (st === 'MISSING' || st === 'WARNING'))) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        function saveScanHistory(scan) {
+            try {
+                const list = JSON.parse(localStorage.getItem('triscout_scan_history') || '[]');
+                list.unshift({ target: scan.target, ip: scan.ip, score: scan.score, time: scan.timestamp });
+                if (list.length > 10) list.pop();
+                localStorage.setItem('triscout_scan_history', JSON.stringify(list));
+                renderScanHistory();
+            } catch (e) {}
+        }
+
+        function renderScanHistory() {
+            const container = document.getElementById('scan-history-list');
+            if (!container) return;
+            try {
+                const list = JSON.parse(localStorage.getItem('triscout_scan_history') || '[]');
+                if (!list.length) {
+                    container.innerHTML = '<div class="p-4 text-center text-on-surface-variant">No scan history recorded in this session yet.</div>';
+                    return;
+                }
+                container.innerHTML = list.map(item =>
+                    '<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container">' +
+                        '<div><span class="text-secondary font-bold">' + item.target + '</span> <span class="text-on-surface-variant text-[11px]">(' + item.ip + ')</span></div>' +
+                        '<div class="flex items-center gap-3"><span class="text-on-surface-variant text-[11px] hidden sm:inline">' + item.time + '</span><span class="px-2 py-0.5 rounded bg-surface-container-high text-primary-container font-bold">Score: ' + item.score + '/100</span></div>' +
+                    '</div>'
+                ).join('');
+            } catch (e) {}
+        }
+
+        function clearScanHistory() {
+            localStorage.removeItem('triscout_scan_history');
+            renderScanHistory();
+        }
+
+        function exportScanReport(format) {
+            if (!currentScanData) return alert('Please run a target scan first before exporting!');
+            if (format === 'json') {
+                const blob = new Blob([JSON.stringify(currentScanData, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'triscout-report-' + currentScanData.host + '.json';
+                a.click();
+            } else if (format === 'csv') {
+                const rows = [['Control', 'Category', 'Status', 'Impact', 'Detail']];
+                currentScanData.checks.forEach(c => rows.push([c.name, c.category, c.status, c.impact, '"' + c.detail.replace(/"/g, '""') + '"']));
+                const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'triscout-findings-' + currentScanData.host + '.csv';
+                a.click();
+            } else if (format === 'pdf') {
+                window.print();
+            }
+        }
+
+        async function sendReportEmail() {
+            const email = document.getElementById('emailInput').value.trim();
+            const target = localStorage.getItem('triscout_target');
+            const reportData = localStorage.getItem('triscout_report');
+            const btn = document.getElementById('reportBtn');
+
+            if (!email) return alert('Please enter a recipient email address!');
+            if (!reportData || !target) return alert('No scan report found! Run a scan first.');
+
+            btn.disabled = true;
+            btn.innerText = 'Sending...';
+            try {
+                const res = await fetch('/api/send-report', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ target: target, reportData: reportData, emailTo: email })
+                });
+                const d = await res.json();
+                alert(d.success ? 'SUCCESS: Report sent to ' + email : ('FAILED: ' + d.error));
+            } catch (e) {
+                alert('Error communicating with email server.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Send Report';
+            }
+        }
+
+        function handleTerminalCommand(e) {
+            e.preventDefault();
+            const inp = document.getElementById('terminal-input');
+            const cmd = (inp.value || '').trim();
+            if (!cmd) return;
+            appendTerm('[USER]', '> ' + cmd);
+            inp.value = '';
+
+            const lower = cmd.toLowerCase();
+            if (lower === 'help') {
+                appendTerm('[INFO]', 'Commands: scan <domain>, status, export json, clear');
+            } else if (lower.startsWith('scan ')) {
+                const t = cmd.slice(5).trim();
+                const domInp = document.getElementById('target-domain-input');
+                if (domInp) domInp.value = t;
+                executeTargetAssessment(t);
+            } else if (lower === 'status') {
+                appendTerm('[INFO]', currentScanData ? ('Active Target: ' + currentScanData.host + ' | Score: ' + currentScanData.score + '/100') : 'Idle. No target scanned yet.');
+            } else if (lower === 'export json') {
+                exportScanReport('json');
+            } else if (lower === 'clear') {
+                clearTerminalBuffer();
+            } else {
+                appendTerm('[INFO]', 'Unknown command. Type "help".');
+            }
+        }
+
+        function pasteTargetClipboard() {
+            navigator.clipboard.readText().then(t => {
+                const inp = document.getElementById('target-domain-input');
+                if (inp && t) inp.value = t.trim();
+            }).catch(() => {});
+        }
+
+        async function deleteUserAccount() {
+            if (!confirm('WARNING: Permanently delete your account data from our database?')) return;
+            try {
                 const res = await fetch('/api/account/delete', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }
@@ -793,8 +1076,21 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            let isTelegramApp = false;
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.expand();
+                tg.ready();
+                if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                    isTelegramApp = true;
+                    const tgUser = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name || 'TG_Operator';
+                    document.getElementById('navProfileName').innerText = tgUser;
+                    document.getElementById('profileName').innerText = tgUser;
+                }
+            }
+
             const token = localStorage.getItem('token');
-            if (!token) {
+            if (!token && !isTelegramApp) {
                 window.location.href = '/';
                 return;
             }
@@ -808,34 +1104,36 @@
                 if (preview) preview.innerText = 'TARGET: ' + savedTarget + '\n\n' + savedReport;
             }
 
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-                const user = payload.user || 'Operator';
-                document.getElementById('navProfileName').innerText = user;
-                document.getElementById('profileName').innerText = user;
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+                    const user = payload.user || 'Operator';
+                    document.getElementById('navProfileName').innerText = user;
+                    document.getElementById('profileName').innerText = user;
 
-                const actionsEl = document.getElementById('profileActions');
-                if (payload.provider === 'github') {
-                    document.getElementById('profileRole').innerText = 'GitHub OAuth Verified Operator';
-                    if (payload.avatar && payload.avatar.startsWith('https://')) {
-                        const img1 = document.createElement('img');
-                        img1.src = payload.avatar;
-                        img1.className = 'w-full h-full object-cover';
-                        const av1 = document.getElementById('navProfileAvatar');
-                        const av2 = document.getElementById('profileAvatar');
-                        av1.innerHTML = ''; av1.appendChild(img1);
-                        av2.innerHTML = ''; av2.appendChild(img1.cloneNode(true));
+                    const actionsEl = document.getElementById('profileActions');
+                    if (payload.provider === 'github') {
+                        document.getElementById('profileRole').innerText = 'GitHub OAuth Verified Operator';
+                        if (payload.avatar && payload.avatar.startsWith('https://')) {
+                            const img1 = document.createElement('img');
+                            img1.src = payload.avatar;
+                            img1.className = 'w-full h-full object-cover';
+                            const av1 = document.getElementById('navProfileAvatar');
+                            const av2 = document.getElementById('profileAvatar');
+                            av1.innerHTML = ''; av1.appendChild(img1);
+                            av2.innerHTML = ''; av2.appendChild(img1.cloneNode(true));
+                        }
+                        actionsEl.innerHTML =
+                            '<button onclick="localStorage.removeItem(\'token\'); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface uppercase font-bold cursor-pointer">Sign Out Session</button>' +
+                            '<button onclick="deleteUserAccount()" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold border border-error/30 cursor-pointer">Delete Account Data</button>';
+                    } else {
+                        document.getElementById('profileRole').innerText = 'System Administrator (Local Env)';
+                        actionsEl.innerHTML =
+                            '<div class="p-3.5 rounded-lg bg-surface-container text-on-surface-variant">Local Admin managed via Environment Variables.</div>' +
+                            '<button onclick="localStorage.removeItem(\'token\'); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold cursor-pointer">Sign Out Session</button>';
                     }
-                    actionsEl.innerHTML =
-                        '<button onclick="localStorage.removeItem(\'token\'); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface uppercase font-bold cursor-pointer">Sign Out Session</button>' +
-                        '<button onclick="deleteUserAccount()" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold border border-error/30 cursor-pointer">Delete Account Data</button>';
-                } else {
-                    document.getElementById('profileRole').innerText = 'System Administrator (Local Env)';
-                    actionsEl.innerHTML =
-                        '<div class="p-3.5 rounded-lg bg-surface-container text-on-surface-variant">Local Admin managed via Environment Variables.</div>' +
-                        '<button onclick="localStorage.removeItem(\'token\'); window.location.href=\'/\';" class="p-3.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error uppercase font-bold cursor-pointer">Sign Out Session</button>';
-                }
-            } catch (e) {}
+                } catch (e) {}
+            }
 
             const path = window.location.pathname.replace('/', '');
             const params = new URLSearchParams(window.location.search);
@@ -849,5 +1147,6 @@
             }
         });
     </script>
+    
 </body>
 </html>                                                                                                                                                                                                                                
