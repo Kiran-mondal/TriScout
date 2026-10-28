@@ -3,11 +3,17 @@
   
   <h1>TriScout</h1>
 
-  <img src="https://img.shields.io/badge/Go-1.18+-00ADD8?style=flat&logo=go" alt="Go Version">
-  <img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=flat&logo=python" alt="Python Version">
-  <img src="https://img.shields.io/badge/Node.js-16+-339933?style=flat&logo=nodedotjs" alt="Node.js Version">
-  <img src="https://img.shields.io/badge/Status-Active-success.svg" alt="Status">
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
+  <img src="https://img.shields.io/badge/Go-1.18+-00ADD8?style=flat&logo=go" alt="Go Version" style="width: 250px;"/>
+  <img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=flat&logo=python" alt="Python Version" style="width: 250px;"/>
+  <img src="https://img.shields.io/badge/Node.js-16+-339933?style=flat&logo=nodedotjs" alt="Node.js Version"style=" width: 250px;"/>
+  <img src="https://img.shields.io/badge/Status-Active-success.svg" alt="Status" style="width: 250px;"/>
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License" style="width: 250px;" />
+
+  
+<a href="https://www.uneed.best/tool/triscout" target="_blank" rel="noopener">
+  <img src="https://www.uneed.best/EMBED3.png" alt="Launching Soon on Uneed" style="width: 250px;" />
+</a>
+
 </div>
 
 <br>
