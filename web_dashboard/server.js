@@ -66,9 +66,22 @@ function verifyPassword(password, storedHash) {
     return crypto.timingSafeEqual(keyBuffer, derivedBuffer);
 }
 
-app.get('/login', (req, res) => {
-    res.redirect('/');
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// রুট (/) এবং (/login) পেজে কঠোরভাবে ক্যাশ বন্ধ করে সরাসরি নতুন public/index.html পাঠানো হচ্ছে
+const authHtmlPath = path.join(__dirname, '../public/index.html');
+
+app.get(['/', '/login', '/index.html'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.sendFile(authHtmlPath);
 });
+
+// বাকি স্ট্যাটিক ফাইলগুলোর (logo.svg, style.css) জন্য স্ট্যাটিক মিডলওয়্যার
+app.use(express.static(path.join(__dirname, '../public'), { index: false }));
+
 
 // 1. New User Registration API (Sign Up)
 app.post('/api/auth/register', async (req, res) => {
