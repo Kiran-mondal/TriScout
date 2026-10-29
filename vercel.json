@@ -3,7 +3,13 @@
   "builds": [
     {
       "src": "web_dashboard/server.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "web_dashboard/views/**",
+          "public/**"
+        ]
+      }
     },
     {
       "src": "api/scanner.go",
@@ -24,7 +30,14 @@
       "dest": "/api/processor.py"
     },
     {
+      "src": "/(style\\.css|logo\\.svg)",
+      "dest": "/web_dashboard/server.js"
+    },
+    {
       "src": "/(.*)",
+      "headers": {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate"
+      },
       "dest": "/web_dashboard/server.js"
     }
   ]
