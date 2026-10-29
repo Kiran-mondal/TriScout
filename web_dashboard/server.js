@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const axios = require('axios'); 
 const { neon } = require('@neondatabase/serverless');
+const fs = require('fs');
 require('dotenv').config();
 
 const { requireHTTPAuth, JWT_SECRET, getEnv } = require('./middleware/auth.js');
@@ -74,14 +75,12 @@ const authHtmlPath = path.join(__dirname, '../public/index.html');
 
 app.get(['/', '/login', '/index.html'], (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.sendFile(authHtmlPath);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    const html = fs.readFileSync(authHtmlPath, 'utf8');
+    res.status(200).send(html);
 });
-
 // বাকি স্ট্যাটিক ফাইলগুলোর (logo.svg, style.css) জন্য স্ট্যাটিক মিডলওয়্যার
 app.use(express.static(path.join(__dirname, '../public'), { index: false }));
-
 
 // 1. New User Registration API (Sign Up)
 app.post('/api/auth/register', async (req, res) => {
@@ -176,9 +175,9 @@ const dashboardHtmlPath = path.join(__dirname, 'views', 'index.html');
 
 app.get(['/dashboard', '/reports', '/cli', '/about', '/project', '/profile'], (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.sendFile(dashboardHtmlPath);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    const html = fs.readFileSync(dashboardHtmlPath, 'utf8');
+    res.status(200).send(html);
 });
 
 // Passive Scanner Engine
