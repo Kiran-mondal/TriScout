@@ -17,7 +17,6 @@
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://triscout.quarry.dpdns.org/logo.svg" />
     <meta name="twitter:card" content="summary_large_image" />
-    
 </head>
 <body class="bg-[#10131b] text-[#e0e2ed] font-['Inter'] min-h-screen flex items-center justify-center p-4 bg-[radial-gradient(#1d2027_1px,transparent_1px)] [background-size:20px_20px]">
 
@@ -34,10 +33,10 @@
 
         <!-- Auth Mode Switcher (Sign In vs Sign Up) -->
         <div class="grid grid-cols-2 gap-1 p-1 bg-[#10131b] rounded-xl border border-[#32353d]/60 mb-5 font-['JetBrains_Mono'] text-xs">
-            <button id="tab-login-btn" type="button" onclick="toggleAuthMode('login')" class="py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#39ff88] shadow">
+            <button id="tab-login-btn" type="button" onclick="switchAuthView('login')" class="py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#39ff88] shadow cursor-pointer">
                 Sign In
             </button>
-            <button id="tab-register-btn" type="button" onclick="toggleAuthMode('register')" class="py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white">
+            <button id="tab-register-btn" type="button" onclick="switchAuthView('register')" class="py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white cursor-pointer">
                 Create Account
             </button>
         </div>
@@ -46,13 +45,16 @@
         <div id="auth-alert" class="hidden mb-4 p-3 rounded-lg font-['JetBrains_Mono'] text-xs border"></div>
 
         <!-- FORM 1: SIGN IN (Local Admin + Registered Database Users) -->
-        <form id="login-form" onsubmit="handleAuthSubmit(event, '/api/auth/login')" class="space-y-3.5 font-['JetBrains_Mono'] text-xs">
+        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-3.5 font-['JetBrains_Mono'] text-xs">
             <div>
                 <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Operator Username or Email</label>
                 <input type="text" id="login-username" required placeholder="Enter Username or Email" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
             </div>
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Access Passkey</label>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-[10px] text-[#bacbb9] uppercase">Access Passkey</label>
+                    <button type="button" onclick="switchAuthView('forgot')" class="text-[10px] text-[#aeecff] hover:underline cursor-pointer">Forgot Passkey?</button>
+                </div>
                 <input type="password" id="login-password" required placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
             </div>
             <button id="login-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer mt-2">
@@ -60,22 +62,74 @@
             </button>
         </form>
 
-        <!-- FORM 2: CREATE ACCOUNT (SIGN UP) -->
-        <form id="register-form" onsubmit="handleAuthSubmit(event, '/api/auth/register')" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
+        <!-- FORM 2A: CREATE ACCOUNT (STEP 1 - USER DETAILS) -->
+        <form id="register-form" onsubmit="handleRegisterStep1(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Choose Operator Username</label>
-                <input type="text" id="reg-username" required minlength="3" maxlength="30" placeholder="e.g. cyber_sentinel" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Choose Unique Operator Username</label>
+                <input type="text" id="reg-username" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_\-]+" title="Letters, numbers, underscores, and hyphens only" placeholder="e.g. cyber_sentinel" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Email Address</label>
-                <input type="email" id="reg-email" required placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Email Address (For Verification Code)</label>
+                <input type="email" id="reg-email" required placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <div>
                 <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Create Passkey (Min 6 chars)</label>
-                <input type="password" id="reg-password" required minlength="6" placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+                <input type="password" id="reg-password" required minlength="6" placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <button id="reg-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#aeecff] hover:bg-[#00d9ff] text-[#003918] font-bold uppercase tracking-wider transition-all shadow-[0_0_16px_rgba(174,236,255,0.3)] cursor-pointer mt-2">
-                Register Operator Account
+                Send Verification Code
+            </button>
+        </form>
+
+        <!-- FORM 2B: CREATE ACCOUNT (STEP 2 - EMAIL OTP VERIFICATION) -->
+        <form id="register-otp-form" onsubmit="handleRegisterStep2(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
+            <div class="p-3 rounded-lg bg-[#10131b] border border-[#32353d] text-[#bacbb9] leading-relaxed">
+                Enter the 6-digit verification code sent to <span id="otp-target-email" class="text-[#aeecff] font-bold"></span>
+            </div>
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Email Verification Code</label>
+                <input type="text" id="reg-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-center text-lg tracking-[0.4em] text-[#39ff88] font-bold focus:outline-none focus:border-[#39ff88]"/>
+            </div>
+            <button id="reg-verify-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
+                Verify &amp; Activate Account
+            </button>
+            <button type="button" onclick="switchAuthView('register')" class="w-full py-2 text-[#bacbb9] hover:text-white text-[11px] uppercase cursor-pointer">
+                &larr; Back / Change Details
+            </button>
+        </form>
+
+        <!-- FORM 3A: FORGOT PASSKEY (STEP 1 - REQUEST RESET CODE) -->
+        <form id="forgot-form" onsubmit="handleForgotStep1(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
+            <div class="text-xs text-[#bacbb9] leading-relaxed mb-1">
+                Enter your registered username or email address to receive a 6-digit passkey reset code.
+            </div>
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Registered Email or Username</label>
+                <input type="text" id="forgot-identifier" required placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
+            </div>
+            <button id="forgot-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#aeecff] hover:bg-[#00d9ff] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
+                Send Reset Code
+            </button>
+            <button type="button" onclick="switchAuthView('login')" class="w-full py-2 text-[#bacbb9] hover:text-white text-[11px] uppercase cursor-pointer">
+                &larr; Back to Sign In
+            </button>
+        </form>
+
+        <!-- FORM 3B: FORGOT PASSKEY (STEP 2 - VERIFY OTP & SET NEW PASSKEY) -->
+        <form id="reset-form" onsubmit="handleForgotStep2(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Reset Code</label>
+                <input type="text" id="reset-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-center text-lg tracking-[0.4em] text-[#aeecff] font-bold focus:outline-none focus:border-[#aeecff]"/>
+            </div>
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">New Passkey (Min 6 chars)</label>
+                <input type="password" id="reset-new-password" required minlength="6" placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+            </div>
+            <button id="reset-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
+                Update Passkey
+            </button>
+            <button type="button" onclick="switchAuthView('login')" class="w-full py-2 text-[#bacbb9] hover:text-white text-[11px] uppercase cursor-pointer">
+                &larr; Cancel
             </button>
         </form>
 
@@ -93,6 +147,9 @@
     </div>
 
     <script>
+        let pendingVerifyEmail = '';
+        let pendingResetEmail = '';
+
         document.addEventListener('DOMContentLoaded', () => {
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.expand();
@@ -111,49 +168,48 @@
             box.innerText = msg;
         }
 
-        function toggleAuthMode(mode) {
-            const loginForm = document.getElementById('login-form');
-            const regForm = document.getElementById('register-form');
-            const loginBtn = document.getElementById('tab-login-btn');
-            const regBtn = document.getElementById('tab-register-btn');
+        function switchAuthView(view) {
+            const views = ['login-form', 'register-form', 'register-otp-form', 'forgot-form', 'reset-form'];
+            views.forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById('auth-alert').classList.add('hidden');
 
-            if (mode === 'register') {
-                loginForm.classList.add('hidden');
-                regForm.classList.remove('hidden');
-                regBtn.className = "py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#aeecff] shadow";
-                loginBtn.className = "py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white";
+            const loginBtn = document.getElementById('tab-login-btn');
+            const regBtn = document.getElementById('tab-register-btn');
+
+            if (view === 'register' || view === 'register-otp') {
+                document.getElementById(view === 'register' ? 'register-form' : 'register-otp-form').classList.remove('hidden');
+                regBtn.className = "py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#aeecff] shadow cursor-pointer";
+                loginBtn.className = "py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white cursor-pointer";
+            } else if (view === 'forgot') {
+                document.getElementById('forgot-form').classList.remove('hidden');
+            } else if (view === 'reset') {
+                document.getElementById('reset-form').classList.remove('hidden');
             } else {
-                regForm.classList.add('hidden');
-                loginForm.classList.remove('hidden');
-                loginBtn.className = "py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#39ff88] shadow";
-                regBtn.className = "py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white";
+                document.getElementById('login-form').classList.remove('hidden');
+                loginBtn.className = "py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#39ff88] shadow cursor-pointer";
+                regBtn.className = "py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white cursor-pointer";
             }
         }
 
-        async function handleAuthSubmit(e, endpoint) {
+        // Backward compatibility alias
+        function toggleAuthMode(mode) {
+            switchAuthView(mode);
+        }
+
+        async function handleLogin(e) {
             e.preventDefault();
-            const isRegister = endpoint.includes('register');
-            const btn = document.getElementById(isRegister ? 'reg-submit-btn' : 'login-submit-btn');
-            const origText = btn.innerText;
-
-            const payload = isRegister ? {
-                username: document.getElementById('reg-username').value.trim(),
-                email: document.getElementById('reg-email').value.trim(),
-                password: document.getElementById('reg-password').value
-            } : {
-                username: document.getElementById('login-username').value.trim(),
-                password: document.getElementById('login-password').value
-            };
-
+            const btn = document.getElementById('login-submit-btn');
             btn.disabled = true;
-            btn.innerText = 'PROCESSING...';
+            btn.innerText = 'AUTHENTICATING...';
 
             try {
-                const res = await fetch(endpoint, {
+                const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        username: document.getElementById('login-username').value.trim(),
+                        password: document.getElementById('login-password').value
+                    })
                 });
                 const data = await res.json();
 
@@ -169,7 +225,201 @@
                 showAlert('Server connection failed. Please try again.', true);
             } finally {
                 btn.disabled = false;
-                btn.innerText = origText;
+                btn.innerText = 'Authenticate Session';
+            }
+        }
+
+        async function handleRegisterStep1(e) {
+            e.preventDefault();
+            const btn = document.getElementById('reg-submit-btn');
+            const username = document.getElementById('reg-username').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+
+            btn.disabled = true;
+            btn.innerText = 'CHECKING & SENDING CODE...';
+
+            try {
+                const res = await fetch('/api/auth/register-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    showAlert(data.error || 'Could not send verification code.', true);
+                } else {
+                    pendingVerifyEmail = email;
+                    document.getElementById('otp-target-email').innerText = email;
+                    switchAuthView('register-otp');
+                    showAlert(data.message, false);
+                }
+            } catch (err) {
+                showAlert('Network error while requesting verification code.', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Send Verification Code';
+            }
+        }
+
+        async function handleRegisterStep2(e) {
+            e.preventDefault();
+            const btn = document.getElementById('reg-verify-btn');
+            const otp = document.getElementById('reg-otp-code').value.trim();
+
+            btn.disabled = true;
+            btn.innerText = 'VERIFYING CODE...';
+
+            try {
+                const res = await fetch('/api/auth/register-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingVerifyEmail, otp })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    showAlert(data.error || 'Verification failed.', true);
+                } else if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    sessionStorage.setItem('active_session', '1');
+                    showAlert('EMAIL VERIFIED! Redirecting to Command Center...', false);
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 500);
+                }
+            } catch (err) {
+                showAlert('Verification request failed.', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Verify & Activate Account';
+            }
+        }
+
+        async function handleRegisterStep1(e) {
+            e.preventDefault();
+            const btn = document.getElementById('reg-submit-btn');
+            const username = document.getElementById('reg-username').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const password = document.getElementById('reg-password').value;
+
+            btn.disabled = true;
+            btn.innerText = 'CHECKING & SENDING CODE...';
+
+            try {
+                const res = await fetch('/api/auth/register-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    showAlert(data.error || 'Could not send verification code.', true);
+                } else {
+                    pendingVerifyEmail = email;
+                    document.getElementById('otp-target-email').innerText = email;
+                    switchAuthView('register-otp');
+                    showAlert(data.message, false);
+                }
+            } catch (err) {
+                showAlert('Network error while requesting verification code.', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Send Verification Code';
+            }
+        }
+
+        async function handleRegisterStep2(e) {
+            e.preventDefault();
+            const btn = document.getElementById('reg-verify-btn');
+            const otp = document.getElementById('reg-otp-code').value.trim();
+
+            btn.disabled = true;
+            btn.innerText = 'VERIFYING CODE...';
+
+            try {
+                const res = await fetch('/api/auth/register-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingVerifyEmail, otp })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    showAlert(data.error || 'Verification failed.', true);
+                } else if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    sessionStorage.setItem('active_session', '1');
+                    showAlert('EMAIL VERIFIED! Redirecting to Command Center...', false);
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 500);
+                }
+            } catch (err) {
+                showAlert('Verification request failed.', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Verify & Activate Account';
+            }
+        }
+
+        async function handleForgotStep1(e) {
+            e.preventDefault();
+            const btn = document.getElementById('forgot-submit-btn');
+            const identifier = document.getElementById('forgot-identifier').value.trim();
+
+            btn.disabled = true;
+            btn.innerText = 'DISPATCHING CODE...';
+
+            try {
+                const res = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    showAlert(data.error || 'Account not found.', true);
+                } else {
+                    pendingResetEmail = data.email;
+                    switchAuthView('reset');
+                    showAlert(data.message, false);
+                }
+            } catch (err) {
+                showAlert('Error communicating with server.', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Send Reset Code';
+            }
+        }
+
+        async function handleForgotStep2(e) {
+            e.preventDefault();
+            const btn = document.getElementById('reset-submit-btn');
+            const otp = document.getElementById('reset-otp-code').value.trim();
+            const newPassword = document.getElementById('reset-new-password').value;
+
+            btn.disabled = true;
+            btn.innerText = 'UPDATING PASSKEY...';
+
+            try {
+                const res = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingResetEmail, otp, newPassword })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    showAlert(data.error || 'Passkey reset failed.', true);
+                } else {
+                    switchAuthView('login');
+                    showAlert(data.message, false);
+                }
+            } catch (err) {
+                showAlert('Failed to update passkey.', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Update Passkey';
             }
         }
     </script>
