@@ -44,11 +44,15 @@
         <!-- Notification Banner -->
         <div id="auth-alert" class="hidden mb-4 p-3 rounded-lg font-['JetBrains_Mono'] text-xs border"></div>
 
-        <!-- FORM 1: SIGN IN (Local Admin + Registered Database Users) -->
-        <form id="login-form" onsubmit="handleLogin(event)" class="space-y-3.5 font-['JetBrains_Mono'] text-xs">
+        <!-- FORM 1A: SIGN IN (STEP 1 - CREDENTIALS) -->
+        <form id="login-form" onsubmit="handleLoginStep1(event)" class="space-y-3.5 font-['JetBrains_Mono'] text-xs">
             <div>
                 <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Operator Username or Email</label>
                 <input type="text" id="login-username" required placeholder="Enter Username or Email" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+            </div>
+            <div id="legacy-email-box" class="hidden">
+                <label class="block text-[10px] text-[#aeecff] uppercase mb-1">Link Email Address (For Sign-In OTP)</label>
+                <input type="email" id="login-legacy-email" placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#aeecff] text-white focus:outline-none"/>
             </div>
             <div>
                 <div class="flex items-center justify-between mb-1">
@@ -62,6 +66,23 @@
             </button>
         </form>
 
+        <!-- FORM 1B: SIGN IN (STEP 2 - 2FA EMAIL OTP VERIFICATION) -->
+        <form id="login-otp-form" onsubmit="handleLoginStep2(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
+            <div class="p-3 rounded-lg bg-[#10131b] border border-[#32353d] text-[#bacbb9] leading-relaxed">
+                Enter the 6-digit Sign-In OTP sent to <span id="login-otp-target-email" class="text-[#39ff88] font-bold"></span>
+            </div>
+            <div>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Sign-In OTP</label>
+                <input type="text" id="login-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-center text-lg tracking-[0.4em] text-[#39ff88] font-bold focus:outline-none focus:border-[#39ff88]"/>
+            </div>
+            <button id="login-verify-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
+                Verify Sign-In OTP
+            </button>
+            <button type="button" onclick="switchAuthView('login')" class="w-full py-2 text-[#bacbb9] hover:text-white text-[11px] uppercase cursor-pointer">
+                &larr; Back to Sign In
+            </button>
+        </form>
+
         <!-- FORM 2A: CREATE ACCOUNT (STEP 1 - USER DETAILS) -->
         <form id="register-form" onsubmit="handleRegisterStep1(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
             <div>
@@ -69,7 +90,7 @@
                 <input type="text" id="reg-username" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_\-]+" title="Letters, numbers, underscores, and hyphens only" placeholder="e.g. cyber_sentinel" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Email Address (For Verification Code)</label>
+                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Email Address (Max 5 OTPs/min)</label>
                 <input type="email" id="reg-email" required placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <div>
@@ -101,7 +122,7 @@
         <!-- FORM 3A: FORGOT PASSKEY (STEP 1 - REQUEST RESET CODE) -->
         <form id="forgot-form" onsubmit="handleForgotStep1(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
             <div class="text-xs text-[#bacbb9] leading-relaxed mb-1">
-                Enter your registered username or email address to receive a 6-digit passkey reset code.
+                Enter your registered username or email address to receive a 6-digit passkey reset code (Max 5 requests/min).
             </div>
             <div>
                 <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Registered Email or Username</label>
@@ -147,6 +168,7 @@
     </div>
 
     <script>
+        let pendingLoginEmail = '';
         let pendingVerifyEmail = '';
         let pendingResetEmail = '';
 
@@ -169,7 +191,7 @@
         }
 
         function switchAuthView(view) {
-            const views = ['login-form', 'register-form', 'register-otp-form', 'forgot-form', 'reset-form'];
+            const views = ['login-form', 'login-otp-form', 'register-form', 'register-otp-form', 'forgot-form', 'reset-form'];
             views.forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById('auth-alert').classList.add('hidden');
 
@@ -184,6 +206,8 @@
                 document.getElementById('forgot-form').classList.remove('hidden');
             } else if (view === 'reset') {
                 document.getElementById('reset-form').classList.remove('hidden');
+            } else if (view === 'login-otp') {
+                document.getElementById('login-otp-form').classList.remove('hidden');
             } else {
                 document.getElementById('login-form').classList.remove('hidden');
                 loginBtn.className = "py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#39ff88] shadow cursor-pointer";
@@ -191,30 +215,39 @@
             }
         }
 
-        // Backward compatibility alias
         function toggleAuthMode(mode) {
             switchAuthView(mode);
         }
 
-        async function handleLogin(e) {
+        async function handleLoginStep1(e) {
             e.preventDefault();
             const btn = document.getElementById('login-submit-btn');
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            const email = document.getElementById('login-legacy-email').value.trim();
+
             btn.disabled = true;
-            btn.innerText = 'AUTHENTICATING...';
+            btn.innerText = 'VERIFYING...';
 
             try {
                 const res = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: document.getElementById('login-username').value.trim(),
-                        password: document.getElementById('login-password').value
-                    })
+                    body: JSON.stringify({ username, password, email })
                 });
                 const data = await res.json();
 
-                if (!data.success) {
+                if (data.needsEmail) {
+                    document.getElementById('legacy-email-box').classList.remove('hidden');
+                    document.getElementById('login-legacy-email').required = true;
+                    showAlert(data.error, true);
+                } else if (!data.success) {
                     showAlert(data.error || 'Authentication failed.', true);
+                } else if (data.requireOtp) {
+                    pendingLoginEmail = data.email;
+                    document.getElementById('login-otp-target-email').innerText = data.email;
+                    switchAuthView('login-otp');
+                    showAlert(data.message, false);
                 } else if (data.token) {
                     localStorage.setItem('token', data.token);
                     sessionStorage.setItem('active_session', '1');
@@ -229,69 +262,67 @@
             }
         }
 
-        async function handleRegisterStep1(e) {
+        async function handleLoginStep2(e) {
             e.preventDefault();
-            const btn = document.getElementById('reg-submit-btn');
-            const username = document.getElementById('reg-username').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
-            const password = document.getElementById('reg-password').value;
+            const btn = document.getElementById('login-verify-btn');
+            const otp = document.getElementById('login-otp-code').value.trim();
 
             btn.disabled = true;
-            btn.innerText = 'CHECKING & SENDING CODE...';
+            btn.innerText = 'VERIFYING OTP...';
 
             try {
-                const res = await fetch('/api/auth/register-request', {
+                const res = await fetch('/api/auth/login-verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, email, password })
+                    body: JSON.stringify({ email: pendingLoginEmail, otp })
                 });
                 const data = await res.json();
 
                 if (!data.success) {
-                    showAlert(data.error || 'Could not send verification code.', true);
-                } else {
-                    pendingVerifyEmail = email;
-                    document.getElementById('otp-target-email').innerText = email;
-                    switchAuthView('register-otp');
-                    showAlert(data.message, false);
-                }
-            } catch (err) {
-                showAlert('Network error while requesting verification code.', true);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'Send Verification Code';
-            }
-        }
-
-        async function handleRegisterStep2(e) {
-            e.preventDefault();
-            const btn = document.getElementById('reg-verify-btn');
-            const otp = document.getElementById('reg-otp-code').value.trim();
-
-            btn.disabled = true;
-            btn.innerText = 'VERIFYING CODE...';
-
-            try {
-                const res = await fetch('/api/auth/register-verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: pendingVerifyEmail, otp })
-                });
-                const data = await res.json();
-
-                if (!data.success) {
-                    showAlert(data.error || 'Verification failed.', true);
+                    showAlert(data.error || 'Invalid Sign-In OTP.', true);
                 } else if (data.token) {
                     localStorage.setItem('token', data.token);
                     sessionStorage.setItem('active_session', '1');
-                    showAlert('EMAIL VERIFIED! Redirecting to Command Center...', false);
-                    setTimeout(() => { window.location.href = '/dashboard'; }, 500);
+                    showAlert('2FA VERIFIED! Redirecting to Command Center...', false);
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 400);
                 }
             } catch (err) {
-                showAlert('Verification request failed.', true);
+                showAlert('Server connection failed. Please try again.', true);
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'Verify & Activate Account';
+                btn.innerText = 'Authenticate Session';
+            }
+        }
+
+        async function handleLoginStep2(e) {
+            e.preventDefault();
+            const btn = document.getElementById('login-verify-btn');
+            const otp = document.getElementById('login-otp-code').value.trim();
+
+            btn.disabled = true;
+            btn.innerText = 'VERIFYING OTP...';
+
+            try {
+                const res = await fetch('/api/auth/login-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: pendingLoginEmail, otp })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    showAlert(data.error || 'Invalid Sign-In OTP.', true);
+                } else if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    sessionStorage.setItem('active_session', '1');
+                    showAlert('2FA VERIFIED! Redirecting to Command Center...', false);
+                    setTimeout(() => { window.location.href = '/dashboard'; }, 400);
+                }
+            } catch (err) {
+                showAlert('OTP verification request failed.', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Verify Sign-In OTP';
             }
         }
 
