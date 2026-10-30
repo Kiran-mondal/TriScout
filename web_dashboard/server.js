@@ -35,7 +35,6 @@ app.get(['/', '/login', '/index.html'], (req, res) => {
     res.status(200).send(html);
 });
 
-// স্ট্যাটিক ফাইলগুলোর জন্য (index: false দেওয়া হয়েছে যাতে পুরনো ক্যাশড index.html লোড না হয়)
 app.use(express.static(path.join(__dirname, '../public'), { index: false }));
 
 app.get('/favicon.ico', (req, res) => {
@@ -47,7 +46,27 @@ const transporter = nodemailer.createTransport({
     auth: { user: getEnv('GMAIL_USER'), pass: getEnv('GMAIL_PASS') }
 }); 
 
-// ২. ডাটাবেস টেবিল তৈরি (Users + Email OTP Verification Table)
+// ২. ওটিপি রেট লিমিটার (প্রতি মিনিটে সর্বোচ্চ ৫টি ওটিপি)
+const otpRateLimiter = new Map();
+const OTP_LIMIT_PER_MIN = 5;
+const OTP_WINDOW_MS = 60 * 1000;
+
+function checkOtpRateLimit(key) {
+    const now = Date.now();
+    const cleanKey = String(key || 'anon').toLowerCase();
+    const timestamps = otpRateLimiter.get(cleanKey) || [];
+    const recent = timestamps.filter(ts => now - ts < OTP_WINDOW_MS);
+
+    if (recent.length >= OTP_LIMIT_PER_MIN) {
+        const waitSec = Math.ceil((OTP_WINDOW_MS - (now - recent[0])) / 1000);
+        return { allowed: false, waitSec };
+    }
+    recent.push(now);
+    otpRateLimiter.set(cleanKey, recent);
+    return { allowed: true, remaining: OTP_LIMIT_PER_MIN - recent.length };
+}
+
+// ৩. ডাটাবেস টেবিল তৈরি (Users + Email OTP Verification Table)
 let isDbInitialized = false;
 async function ensureUsersTable() {
     if (isDbInitialized) return;
@@ -98,7 +117,7 @@ function generateOTP() {
     return String(crypto.randomInt(100000, 999999));
 }
 
-// ৩A. সাইন-আপ ধাপ ১: ইউনিক নাম চেক ও ইমেইলে ৬-ডিজিটের OTP পাঠানো
+// ৪A. সাইন-আপ ধাপ ১: ইউনিক নাম চেক ও ইমেইলে ৬-ডিজিটের OTP পাঠানো (মিনিটে ৫টি লিমিটসহ)
 app.post('/api/auth/register-request', async (req, res) => {
     const username = (req.body.username || '').trim();
     const email = (req.body.email || '').trim().toLowerCase();
@@ -117,10 +136,17 @@ app.post('/api/auth/register-request', async (req, res) => {
         return res.status(409).json({ success: false, error: 'This username is reserved. Please choose a different name.' });
     }
 
+    const rateCheck = checkOtpRateLimit(email);
+    if (!rateCheck.allowed) {
+        return res.status(429).json({
+            success: false,
+            error: `Rate limit exceeded! Maximum 5 OTPs per minute. Try again in ${rateCheck.waitSec}s.`
+        });
+    }
+
     try {
         await ensureUsersTable();
 
-        // একই ইউজারনেম বা ইমেইল আগে থেকে আছে কি না তা কঠোরভাবে চেক করা হচ্ছে
         const existingUser = await sql`
             SELECT username, email FROM users 
             WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${email})
@@ -150,17 +176,17 @@ app.post('/api/auth/register-request', async (req, res) => {
         await transporter.sendMail({
             from: getEnv('GMAIL_USER'),
             to: email,
-            subject: `[TriScout] Email Verification Code: ${otp}`,
-            text: `Hello Operator ${username},\n\nYour TriScout v2.4 TAC-OPS verification code is: ${otp}\n\nThis code will expire in 10 minutes.\nIf you did not request this, please ignore this email.`
+            subject: `[TriScout] Sign-Up Verification Code: ${otp}`,
+            text: `Hello Operator ${username},\n\nYour TriScout v2.4 TAC-OPS registration verification code is: ${otp}\n\nThis code will expire in 10 minutes.`
         });
 
-        res.json({ success: true, message: 'Verification code sent to ' + email });
+        res.json({ success: true, message: `Verification code sent to ${email} (${rateCheck.remaining}/5 left this min)` });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Failed to send verification email. Check SMTP settings.' });
     }
 });
 
-// ৩B. সাইন-আপ ধাপ ২: ইমেইল OTP মিলিয়ে দেখা এবং অ্যাকাউন্ট তৈরি করা
+// ৪B. সাইন-আপ ধাপ ২: ইমেইল OTP মিলিয়ে দেখা এবং অ্যাকাউন্ট তৈরি করা
 app.post('/api/auth/register-verify', async (req, res) => {
     const email = (req.body.email || '').trim().toLowerCase();
     const otp = (req.body.otp || '').trim();
@@ -201,15 +227,17 @@ app.post('/api/auth/register-verify', async (req, res) => {
     }
 });
 
-// ৪. লগইন API (লোকাল অ্যাডমিন এবং রেজিস্টার্ড ইউজার উভয়ের জন্য)
+// ৫A. সাইন-ইন ধাপ ১: পাসওয়ার্ড চেক করে রেজিস্টার্ড ইউজারদের ইমেইলে লগইন ওটিপি (2FA) পাঠানো
 app.post('/api/auth/login', async (req, res) => {
     const username = (req.body.username || '').trim();
     const password = req.body.password || '';
+    const providedEmail = (req.body.email || '').trim().toLowerCase();
 
     if (!username || !password) {
-        return res.status(400).json({ success: false, error: 'Username and password are required.' });
+        return res.status(400).json({ success: false, error: 'Username and passkey are required.' });
     }
 
+    // লোকাল এনভায়রনমেন্ট অ্যাডমিন হলে সরাসরি টোকেন দেওয়া হবে
     if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
         const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '2h' });
         return res.json({ success: true, token });
@@ -223,28 +251,121 @@ app.post('/api/auth/login', async (req, res) => {
             WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${username})
             LIMIT 1
         `;
-        if (rows.length === 0 || !rows[0].password_hash) {
-            return res.status(401).json({ success: false, error: 'Account not found or uses GitHub OAuth.' });
+        if (rows.length === 0) {
+            return res.status(401).json({ success: false, error: 'Account not found. Please create an account first.' });
         }
 
         const userRecord = rows[0];
-        if (!verifyPassword(password, userRecord.password_hash)) {
-            return res.status(401).json({ success: false, error: 'ACCESS DENIED: Incorrect passkey.' });
+
+        // যদি ডেটাবেজের পুরনো ইউজারদের পাসওয়ার্ড সেট করা থাকে, তা মিলিয়ে দেখা হবে
+        if (userRecord.password_hash) {
+            if (!verifyPassword(password, userRecord.password_hash)) {
+                return res.status(401).json({ success: false, error: 'ACCESS DENIED: Incorrect passkey.' });
+            }
+        } else {
+            // পুরনো ইউজারের পাসওয়ার্ড না থাকলে নতুন পাসওয়ার্ডটি হ্যাশ করে সেট করে নেওয়া হবে
+            const newHash = hashPassword(password);
+            await sql`UPDATE users SET password_hash = ${newHash} WHERE username = ${userRecord.username}`;
         }
 
-        await sql`UPDATE users SET last_login = NOW() WHERE username = ${userRecord.username}`;
-        const token = jwt.sign(
-            { user: userRecord.username, email: userRecord.email, avatar: userRecord.avatar_url, provider: userRecord.provider || 'registered' },
-            JWT_SECRET,
-            { expiresIn: '2h' }
-        );
-        return res.json({ success: true, token });
+        const targetEmail = userRecord.email || providedEmail;
+        if (!targetEmail) {
+            return res.json({
+                success: false,
+                needsEmail: true,
+                error: 'Your existing database account has no email linked. Please enter your email below to receive a sign-in OTP.'
+            });
+        }
+
+        // মিনিটে সর্বোচ্চ ৫টি ওটিপি রেট লিমিট চেক
+        const rateCheck = checkOtpRateLimit(targetEmail);
+        if (!rateCheck.allowed) {
+            return res.status(429).json({
+                success: false,
+                error: `Rate limit exceeded! Maximum 5 OTPs per minute. Please wait ${rateCheck.waitSec}s.`
+            });
+        }
+
+        // যদি পুরনো ইউজার নতুন ইমেইল দিয়ে থাকে তবে ডেটাবেজে আপডেট করা
+        if (!userRecord.email && providedEmail) {
+            await sql`UPDATE users SET email = ${providedEmail} WHERE username = ${userRecord.username}`;
+        }
+
+        const otp = generateOTP();
+        await sql`
+            INSERT INTO auth_otps (email, username, otp_code, purpose, expires_at)
+            VALUES (${targetEmail}, ${userRecord.username}, ${otp}, 'login', NOW() + INTERVAL '10 minutes')
+            ON CONFLICT (email) DO UPDATE
+            SET username = EXCLUDED.username,
+                otp_code = EXCLUDED.otp_code,
+                purpose = 'login',
+                expires_at = NOW() + INTERVAL '10 minutes'
+        `;
+
+        await transporter.sendMail({
+            from: getEnv('GMAIL_USER'),
+            to: targetEmail,
+            subject: `[TriScout] Sign-In Verification Code: ${otp}`,
+            text: `Hello Operator ${userRecord.username},\n\nYour TriScout 2FA Sign-In OTP code is: ${otp}\n\nThis code expires in 10 minutes.`
+        });
+
+        return res.json({
+            success: true,
+            requireOtp: true,
+            email: targetEmail,
+            message: `Sign-In OTP sent to ${targetEmail} (${rateCheck.remaining}/5 left this min)`
+        });
     } catch (err) {
         return res.status(500).json({ success: false, error: 'Authentication service unavailable.' });
     }
 });
 
-// ৫A. ফরগট পাসওয়ার্ড ধাপ ১: ইমেইলে রিসেট কোড পাঠানো
+// ৫B. সাইন-ইন ধাপ ২: সাইন-ইন ওটিপি মিলিয়ে ড্যাশবোর্ডে প্রবেশ করানো
+app.post('/api/auth/login-verify', async (req, res) => {
+    const email = (req.body.email || '').trim().toLowerCase();
+    const otp = (req.body.otp || '').trim();
+
+    if (!email || !otp) {
+        return res.status(400).json({ success: false, error: 'Email and 6-digit OTP code are required.' });
+    }
+
+    try {
+        await ensureUsersTable();
+        const records = await sql`
+            SELECT * FROM auth_otps
+            WHERE LOWER(email) = LOWER(${email}) AND purpose = 'login' AND expires_at > NOW()
+            LIMIT 1
+        `;
+
+        if (records.length === 0 || records[0].otp_code !== otp) {
+            return res.status(400).json({ success: false, error: 'Invalid or expired Sign-In OTP code.' });
+        }
+
+        const userRows = await sql`
+            SELECT username, email, avatar_url, provider FROM users
+            WHERE LOWER(username) = LOWER(${records[0].username}) OR LOWER(email) = LOWER(${email})
+            LIMIT 1
+        `;
+        if (userRows.length === 0) {
+            return res.status(404).json({ success: false, error: 'User record not found.' });
+        }
+
+        const userRecord = userRows[0];
+        await sql`UPDATE users SET last_login = NOW(), is_verified = TRUE WHERE username = ${userRecord.username}`;
+        await sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email})`;
+
+        const token = jwt.sign(
+            { user: userRecord.username, email: userRecord.email || email, avatar: userRecord.avatar_url, provider: userRecord.provider || 'registered' },
+            JWT_SECRET,
+            { expiresIn: '2h' }
+        );
+        res.json({ success: true, token });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to verify sign-in OTP.' });
+    }
+});
+
+// ৬A. ফরগট পাসওয়ার্ড ধাপ ১: ইমেইলে রিসেট কোড পাঠানো (মিনিটে ৫টি লিমিটসহ)
 app.post('/api/auth/forgot-password', async (req, res) => {
     const identifier = (req.body.identifier || '').trim();
     if (!identifier) {
@@ -263,6 +384,14 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         }
 
         const user = rows[0];
+        const rateCheck = checkOtpRateLimit(user.email);
+        if (!rateCheck.allowed) {
+            return res.status(429).json({
+                success: false,
+                error: `Rate limit exceeded! Maximum 5 OTPs per minute. Try again in ${rateCheck.waitSec}s.`
+            });
+        }
+
         const otp = generateOTP();
 
         await sql`
@@ -281,13 +410,13 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             text: `Hello Operator ${user.username},\n\nYour password reset verification code is: ${otp}\n\nThis code expires in 10 minutes.`
         });
 
-        res.json({ success: true, email: user.email, message: 'Password reset code sent to your email.' });
+        res.json({ success: true, email: user.email, message: `Password reset code sent (${rateCheck.remaining}/5 left this min).` });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Failed to send reset email.' });
     }
 });
 
-// ৫B. ফরগট পাসওয়ার্ড ধাপ ২: কোড ভেরিফাই করে নতুন পাসওয়ার্ড সেভ করা
+// ৬B. ফরগট পাসওয়ার্ড ধাপ ২: কোড ভেরিফাই করে নতুন পাসওয়ার্ড সেভ করা
 app.post('/api/auth/reset-password', async (req, res) => {
     const email = (req.body.email || '').trim().toLowerCase();
     const otp = (req.body.otp || '').trim();
@@ -321,7 +450,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
     }
 });
 
-// ফলব্যাক ফর্ম লগইন
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
@@ -331,7 +459,7 @@ app.post('/login', async (req, res) => {
     res.send(`<script>alert("ACCESS DENIED: Invalid credentials."); window.location.href="/";</script>`);
 });
 
-// ৬. ড্যাশবোর্ড HTML সার্ভ করা (ক্যাশ বন্ধ করে সরাসরি নতুন ফাইল রিড করা হচ্ছে)
+// ৭. ড্যাশবোর্ড HTML সার্ভ করা
 const dashboardHtmlPath = path.join(__dirname, 'views', 'index.html');
 
 app.get(['/dashboard', '/reports', '/cli', '/about', '/project', '/profile'], (req, res) => {
@@ -343,7 +471,7 @@ app.get(['/dashboard', '/reports', '/cli', '/about', '/project', '/profile'], (r
     res.status(200).send(html);
 });
 
-// ৭. প্যাসিভ সিকিউরিটি স্ক্যানার ইঞ্জিন
+// ৮. প্যাসিভ সিকিউরিটি স্ক্যানার ইঞ্জিন
 const scanCache = new Map();
 const CACHE_TTL = 60 * 1000;
 const MAX_CACHE_SIZE = 1000;
