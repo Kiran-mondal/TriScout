@@ -1,11 +1,11 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const fs = require('fs');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const axios = require('axios'); 
 const { neon } = require('@neondatabase/serverless');
-const fs = require('fs');
 require('dotenv').config();
 
 const { requireHTTPAuth, JWT_SECRET, getEnv } = require('./middleware/auth.js');
@@ -22,7 +22,21 @@ const sql = DATABASE_URL ? neon(DATABASE_URL) : async () => { throw new Error("D
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1h' }));
+
+// ১. লগইন ও সাইন-আপ পেজ (public/index.html) সার্ভ করা - কোনো ক্যাশ থাকবে না
+const authHtmlPath = path.join(__dirname, '../public/index.html');
+
+app.get(['/', '/login', '/index.html'], (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    const html = fs.readFileSync(authHtmlPath, 'utf8');
+    res.status(200).send(html);
+});
+
+// স্ট্যাটিক ফাইলগুলোর জন্য (index: false দেওয়া হয়েছে যাতে পুরনো ক্যাশড index.html লোড না হয়)
+app.use(express.static(path.join(__dirname, '../public'), { index: false }));
 
 app.get('/favicon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/logo.svg'));
@@ -33,7 +47,7 @@ const transporter = nodemailer.createTransport({
     auth: { user: getEnv('GMAIL_USER'), pass: getEnv('GMAIL_PASS') }
 }); 
 
-// Database Schema Initialization (Supports both GitHub OAuth and Standard Registration)
+// ২. ডাটাবেস টেবিল তৈরি (Users + Email OTP Verification Table)
 let isDbInitialized = false;
 async function ensureUsersTable() {
     if (isDbInitialized) return;
@@ -41,15 +55,28 @@ async function ensureUsersTable() {
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username VARCHAR(255) UNIQUE NOT NULL,
-            email VARCHAR(255),
+            email VARCHAR(255) UNIQUE,
             password_hash TEXT,
             avatar_url TEXT,
             provider VARCHAR(50) DEFAULT 'local',
+            is_verified BOOLEAN DEFAULT TRUE,
             last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     `;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255)`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT TRUE`;
+
+    await sql`
+        CREATE TABLE IF NOT EXISTS auth_otps (
+            email VARCHAR(255) PRIMARY KEY,
+            username VARCHAR(255),
+            password_hash TEXT,
+            otp_code VARCHAR(10) NOT NULL,
+            purpose VARCHAR(30) NOT NULL,
+            expires_at TIMESTAMP NOT NULL
+        )
+    `;
     isDbInitialized = true;
 }
 
@@ -67,70 +94,127 @@ function verifyPassword(password, storedHash) {
     return crypto.timingSafeEqual(keyBuffer, derivedBuffer);
 }
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+function generateOTP() {
+    return String(crypto.randomInt(100000, 999999));
+}
 
-// রুট (/) এবং (/login) পেজে কঠোরভাবে ক্যাশ বন্ধ করে সরাসরি নতুন public/index.html পাঠানো হচ্ছে
-const authHtmlPath = path.join(__dirname, '../public/index.html');
+// ৩A. সাইন-আপ ধাপ ১: ইউনিক নাম চেক ও ইমেইলে ৬-ডিজিটের OTP পাঠানো
+app.post('/api/auth/register-request', async (req, res) => {
+    const username = (req.body.username || '').trim();
+    const email = (req.body.email || '').trim().toLowerCase();
+    const password = req.body.password || '';
 
-app.get(['/', '/login', '/index.html'], (req, res) => {
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    const html = fs.readFileSync(authHtmlPath, 'utf8');
-    res.status(200).send(html);
-});
-// বাকি স্ট্যাটিক ফাইলগুলোর (logo.svg, style.css) জন্য স্ট্যাটিক মিডলওয়্যার
-app.use(express.static(path.join(__dirname, '../public'), { index: false }));
-
-// 1. New User Registration API (Sign Up)
-app.post('/api/auth/register', async (req, res) => {
-    const { username, email, password } = req.body;
     if (!username || !email || !password) {
-        return res.status(400).json({ success: false, error: 'All fields (Username, Email, Password) are required.' });
+        return res.status(400).json({ success: false, error: 'Username, Email, and Passkey are required.' });
+    }
+    if (!/^[a-zA-Z0-9_-]{3,30}$/.test(username)) {
+        return res.status(400).json({ success: false, error: 'Username must be 3-30 characters (letters, numbers, _ or -).' });
     }
     if (password.length < 6) {
         return res.status(400).json({ success: false, error: 'Passkey must be at least 6 characters long.' });
     }
     if (ADMIN_USER && username.toLowerCase() === ADMIN_USER.toLowerCase()) {
-        return res.status(400).json({ success: false, error: 'This username is reserved for System Admin.' });
+        return res.status(409).json({ success: false, error: 'This username is reserved. Please choose a different name.' });
     }
 
     try {
         await ensureUsersTable();
-        const existing = await sql`
-            SELECT id FROM users WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${email}) LIMIT 1
+
+        // একই ইউজারনেম বা ইমেইল আগে থেকে আছে কি না তা কঠোরভাবে চেক করা হচ্ছে
+        const existingUser = await sql`
+            SELECT username, email FROM users 
+            WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${email})
+            LIMIT 1
         `;
-        if (existing.length > 0) {
-            return res.status(409).json({ success: false, error: 'Username or Email is already registered.' });
+        if (existingUser.length > 0) {
+            if (existingUser[0].username && existingUser[0].username.toLowerCase() === username.toLowerCase()) {
+                return res.status(409).json({ success: false, error: 'Username "' + username + '" is already taken! Please choose another name.' });
+            }
+            return res.status(409).json({ success: false, error: 'This email address is already registered.' });
         }
 
+        const otp = generateOTP();
         const passHash = hashPassword(password);
+
         await sql`
-            INSERT INTO users (username, email, password_hash, provider, last_login)
-            VALUES (${username}, ${email}, ${passHash}, 'registered', NOW())
+            INSERT INTO auth_otps (email, username, password_hash, otp_code, purpose, expires_at)
+            VALUES (${email}, ${username}, ${passHash}, ${otp}, 'register', NOW() + INTERVAL '10 minutes')
+            ON CONFLICT (email) DO UPDATE
+            SET username = EXCLUDED.username,
+                password_hash = EXCLUDED.password_hash,
+                otp_code = EXCLUDED.otp_code,
+                purpose = 'register',
+                expires_at = NOW() + INTERVAL '10 minutes'
         `;
 
-        const token = jwt.sign({ user: username, email, provider: 'registered' }, JWT_SECRET, { expiresIn: '2h' });
-        res.json({ success: true, token });
+        await transporter.sendMail({
+            from: getEnv('GMAIL_USER'),
+            to: email,
+            subject: `[TriScout] Email Verification Code: ${otp}`,
+            text: `Hello Operator ${username},\n\nYour TriScout v2.4 TAC-OPS verification code is: ${otp}\n\nThis code will expire in 10 minutes.\nIf you did not request this, please ignore this email.`
+        });
+
+        res.json({ success: true, message: 'Verification code sent to ' + email });
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Database registration error. Please try again.' });
+        res.status(500).json({ success: false, error: 'Failed to send verification email. Check SMTP settings.' });
     }
 });
 
-// 2. Unified Login API (Supports Env Admin + Registered Database Users)
+// ৩B. সাইন-আপ ধাপ ২: ইমেইল OTP মিলিয়ে দেখা এবং অ্যাকাউন্ট তৈরি করা
+app.post('/api/auth/register-verify', async (req, res) => {
+    const email = (req.body.email || '').trim().toLowerCase();
+    const otp = (req.body.otp || '').trim();
+
+    if (!email || !otp) {
+        return res.status(400).json({ success: false, error: 'Email and 6-digit verification code are required.' });
+    }
+
+    try {
+        await ensureUsersTable();
+        const records = await sql`
+            SELECT * FROM auth_otps 
+            WHERE LOWER(email) = LOWER(${email}) AND purpose = 'register' AND expires_at > NOW()
+            LIMIT 1
+        `;
+
+        if (records.length === 0 || records[0].otp_code !== otp) {
+            return res.status(400).json({ success: false, error: 'Invalid or expired verification code.' });
+        }
+
+        const pending = records[0];
+
+        const nameTaken = await sql`SELECT id FROM users WHERE LOWER(username) = LOWER(${pending.username}) LIMIT 1`;
+        if (nameTaken.length > 0) {
+            return res.status(409).json({ success: false, error: 'Username was just taken. Please register with a new username.' });
+        }
+
+        await sql`
+            INSERT INTO users (username, email, password_hash, provider, is_verified, last_login)
+            VALUES (${pending.username}, ${pending.email}, ${pending.password_hash}, 'registered', TRUE, NOW())
+        `;
+        await sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email})`;
+
+        const token = jwt.sign({ user: pending.username, email: pending.email, provider: 'registered' }, JWT_SECRET, { expiresIn: '2h' });
+        res.json({ success: true, token });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Could not complete registration.' });
+    }
+});
+
+// ৪. লগইন API (লোকাল অ্যাডমিন এবং রেজিস্টার্ড ইউজার উভয়ের জন্য)
 app.post('/api/auth/login', async (req, res) => {
-    const { username, password } = req.body;
+    const username = (req.body.username || '').trim();
+    const password = req.body.password || '';
+
     if (!username || !password) {
         return res.status(400).json({ success: false, error: 'Username and password are required.' });
     }
 
-    // Check Local Environment Admin First
     if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
         const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '2h' });
         return res.json({ success: true, token });
     }
 
-    // Check Neon PostgreSQL Registered Users
     try {
         await ensureUsersTable();
         const rows = await sql`
@@ -140,7 +224,7 @@ app.post('/api/auth/login', async (req, res) => {
             LIMIT 1
         `;
         if (rows.length === 0 || !rows[0].password_hash) {
-            return res.status(401).json({ success: false, error: 'Invalid credentials or account uses GitHub OAuth.' });
+            return res.status(401).json({ success: false, error: 'Account not found or uses GitHub OAuth.' });
         }
 
         const userRecord = rows[0];
@@ -160,7 +244,84 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// Fallback Form POST /login
+// ৫A. ফরগট পাসওয়ার্ড ধাপ ১: ইমেইলে রিসেট কোড পাঠানো
+app.post('/api/auth/forgot-password', async (req, res) => {
+    const identifier = (req.body.identifier || '').trim();
+    if (!identifier) {
+        return res.status(400).json({ success: false, error: 'Please enter your registered Email or Username.' });
+    }
+
+    try {
+        await ensureUsersTable();
+        const rows = await sql`
+            SELECT username, email, provider FROM users
+            WHERE LOWER(email) = LOWER(${identifier}) OR LOWER(username) = LOWER(${identifier})
+            LIMIT 1
+        `;
+        if (rows.length === 0 || !rows[0].email) {
+            return res.status(404).json({ success: false, error: 'No registered email found for that account.' });
+        }
+
+        const user = rows[0];
+        const otp = generateOTP();
+
+        await sql`
+            INSERT INTO auth_otps (email, username, otp_code, purpose, expires_at)
+            VALUES (${user.email}, ${user.username}, ${otp}, 'reset', NOW() + INTERVAL '10 minutes')
+            ON CONFLICT (email) DO UPDATE
+            SET otp_code = EXCLUDED.otp_code,
+                purpose = 'reset',
+                expires_at = NOW() + INTERVAL '10 minutes'
+        `;
+
+        await transporter.sendMail({
+            from: getEnv('GMAIL_USER'),
+            to: user.email,
+            subject: `[TriScout] Password Reset Code: ${otp}`,
+            text: `Hello Operator ${user.username},\n\nYour password reset verification code is: ${otp}\n\nThis code expires in 10 minutes.`
+        });
+
+        res.json({ success: true, email: user.email, message: 'Password reset code sent to your email.' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to send reset email.' });
+    }
+});
+
+// ৫B. ফরগট পাসওয়ার্ড ধাপ ২: কোড ভেরিফাই করে নতুন পাসওয়ার্ড সেভ করা
+app.post('/api/auth/reset-password', async (req, res) => {
+    const email = (req.body.email || '').trim().toLowerCase();
+    const otp = (req.body.otp || '').trim();
+    const newPassword = req.body.newPassword || '';
+
+    if (!email || !otp || !newPassword) {
+        return res.status(400).json({ success: false, error: 'All fields are required.' });
+    }
+    if (newPassword.length < 6) {
+        return res.status(400).json({ success: false, error: 'New passkey must be at least 6 characters.' });
+    }
+
+    try {
+        await ensureUsersTable();
+        const records = await sql`
+            SELECT * FROM auth_otps
+            WHERE LOWER(email) = LOWER(${email}) AND purpose = 'reset' AND expires_at > NOW()
+            LIMIT 1
+        `;
+        if (records.length === 0 || records[0].otp_code !== otp) {
+            return res.status(400).json({ success: false, error: 'Invalid or expired reset code.' });
+        }
+
+        const newHash = hashPassword(newPassword);
+        await sql`UPDATE users SET password_hash = ${newHash} WHERE LOWER(email) = LOWER(${email})`;
+        await sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email})`;
+
+        res.json({ success: true, message: 'Passkey updated successfully! You can now sign in.' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: 'Failed to reset password.' });
+    }
+});
+
+// ফলব্যাক ফর্ম লগইন
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
@@ -170,17 +331,19 @@ app.post('/login', async (req, res) => {
     res.send(`<script>alert("ACCESS DENIED: Invalid credentials."); window.location.href="/";</script>`);
 });
 
-// Serve Dashboard HTML with strict no-cache headers
+// ৬. ড্যাশবোর্ড HTML সার্ভ করা (ক্যাশ বন্ধ করে সরাসরি নতুন ফাইল রিড করা হচ্ছে)
 const dashboardHtmlPath = path.join(__dirname, 'views', 'index.html');
 
 app.get(['/dashboard', '/reports', '/cli', '/about', '/project', '/profile'], (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     const html = fs.readFileSync(dashboardHtmlPath, 'utf8');
     res.status(200).send(html);
 });
 
-// Passive Scanner Engine
+// ৭. প্যাসিভ সিকিউরিটি স্ক্যানার ইঞ্জিন
 const scanCache = new Map();
 const CACHE_TTL = 60 * 1000;
 const MAX_CACHE_SIZE = 1000;
@@ -194,7 +357,8 @@ const isPrivateIp = (ipStr) => {
     const ipv6 = ipStr.toLowerCase();
     return ipv6.startsWith('fc') || ipv6.startsWith('fd') || ipv6.startsWith('fe8');
 };
-const secretRegex = /(?:AIza[0-9A-Za-z-_]{35}|sk-[a-zA-Z0-9]{48}|[A-Za-z0-9_]{40,})/;
+
+const secretRegex = /(?:AIza[0-9A-Za-z\-_]{35}|sk-(?:proj-)?[a-zA-Z0-9\-_]{32,}|gh[pousr]_[A-Za-z0-9_]{36,255}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9a-zA-Z\-]{10,48}|sk_live_[0-9a-zA-Z]{24,}|-----BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY-----)/;
 
 app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
     let { target } = req.body;
@@ -372,8 +536,8 @@ app.get('/api/auth/github/callback', async (req, res) => {
         try {
             await ensureUsersTable();
             await sql`
-                INSERT INTO users (username, avatar_url, provider, last_login)
-                VALUES (${userData.login}, ${userData.avatar_url}, 'github', NOW())
+                INSERT INTO users (username, avatar_url, provider, is_verified, last_login)
+                VALUES (${userData.login}, ${userData.avatar_url}, 'github', TRUE, NOW())
                 ON CONFLICT (username) DO UPDATE 
                 SET avatar_url = EXCLUDED.avatar_url, last_login = NOW()
             `;
@@ -421,4 +585,3 @@ app.get('/robots.txt', (req, res) => {
 });
 
 module.exports = app;
-                
