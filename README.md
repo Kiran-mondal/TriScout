@@ -23,11 +23,8 @@
 </p>
 
 <p align="center">
-  <strong>Live Website:</strong> <a href="https://triscout.quarry.dpdns.org/dashboard#recon">https://triscout.quarry.dpdns.org/dashboard#recon</a>
-</p>
-
----
-
+  👉(Live Website:)[https://triscout.quarry.dpdns.org]
+  
 ## 🚀 Features
 
 - **⚡ Fast Port Scanning:** Concurrent scanning with Go goroutines
