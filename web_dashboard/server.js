@@ -46,24 +46,35 @@ const transporter = nodemailer.createTransport({
     auth: { user: getEnv('GMAIL_USER'), pass: getEnv('GMAIL_PASS') }
 }); 
 
-// ২. ওটিপি রেট লিমিটার (প্রতি মিনিটে সর্বোচ্চ ৫টি ওটিপি)
-const otpRateLimiter = new Map();
-const OTP_LIMIT_PER_MIN = 5;
-const OTP_WINDOW_MS = 60 * 1000;
+// ২. Token Bucket ও OTP Rate Limiter (প্রতি মিনিটে সর্বোচ্চ ৫টি ওটিপি এবং প্রতি টোকেন রিফিল)
+const tokenBuckets = new Map();
+const CAPACITY = 5;          // একটি বালতিতে সর্বোচ্চ ৫টি টোকেন থাকতে পারবে
+const REFILL_RATE_MS = 60000; // প্রতি ১ মিনিটে (৬০ সেকেন্ডে) বালতি ফুল রিফিল হবে
 
-function checkOtpRateLimit(key) {
+function checkTokenBucket(key) {
     const now = Date.now();
     const cleanKey = String(key || 'anon').toLowerCase();
-    const timestamps = otpRateLimiter.get(cleanKey) || [];
-    const recent = timestamps.filter(ts => now - ts < OTP_WINDOW_MS);
-
-    if (recent.length >= OTP_LIMIT_PER_MIN) {
-        const waitSec = Math.ceil((OTP_WINDOW_MS - (now - recent[0])) / 1000);
-        return { allowed: false, waitSec };
+    
+    let bucket = tokenBuckets.get(cleanKey);
+    if (!bucket) {
+        bucket = { tokens: CAPACITY, lastRefill: now };
+    } else {
+        // সময়ের সাথে সাথে টোকেন রিফিল হিসাব করা
+        const elapsed = now - bucket.lastRefill;
+        if (elapsed > REFILL_RATE_MS) {
+            bucket.tokens = CAPACITY;
+            bucket.lastRefill = now;
+        }
     }
-    recent.push(now);
-    otpRateLimiter.set(cleanKey, recent);
-    return { allowed: true, remaining: OTP_LIMIT_PER_MIN - recent.length };
+
+    if (bucket.tokens <= 0) {
+        tokenBuckets.set(cleanKey, bucket);
+        return { allowed: false, waitSec: Math.ceil((REFILL_RATE_MS - (now - bucket.lastRefill)) / 1000) };
+    }
+
+    bucket.tokens -= 1; // একটি টোকেন খরচ করা হলো
+    tokenBuckets.set(cleanKey, bucket);
+    return { allowed: true, remaining: bucket.tokens };
 }
 
 // ৩. ডাটাবেস টেবিল ও Row-Level Security (RLS) কনফিগারেশন
@@ -109,7 +120,6 @@ async function ensureUsersTable() {
         )
     `;
 
-    // সব টেবিলে RLS (Row-Level Security) সক্রিয় করা
     await sql`ALTER TABLE users ENABLE ROW LEVEL SECURITY`;
     await sql`ALTER TABLE auth_otps ENABLE ROW LEVEL SECURITY`;
     await sql`ALTER TABLE scan_logs ENABLE ROW LEVEL SECURITY`;
@@ -144,7 +154,6 @@ async function ensureUsersTable() {
     isDbInitialized = true;
 }
 
-// RLS Context Helper: নির্দিষ্ট ইউজারের নামে ডাটাবেস কুয়েরি চালানোর ফাংশন
 async function runWithRlsUser(username, queryFn) {
     const safeUser = String(username || '').replace(/[^a-zA-Z0-9_@.-]/g, '');
     await sql`SELECT set_config('app.current_user', ${safeUser}, false)`;
@@ -173,7 +182,7 @@ function generateOTP() {
     return String(crypto.randomInt(100000, 999999));
 }
 
-// ৪A. সাইন-আপ ধাপ ১: ইউনিক নাম চেক ও ইমেইলে ৬-ডিজিটের OTP পাঠানো
+// ৪A. সাইন-আপ ধাপ ১: Token Bucket রেট লিমিট সহ ইমেইলে OTP পাঠানো
 app.post('/api/auth/register-request', async (req, res) => {
     const username = (req.body.username || '').trim();
     const email = (req.body.email || '').trim().toLowerCase();
@@ -192,11 +201,12 @@ app.post('/api/auth/register-request', async (req, res) => {
         return res.status(409).json({ success: false, error: 'This username is reserved. Please choose a different name.' });
     }
 
-    const rateCheck = checkOtpRateLimit(email);
-    if (!rateCheck.allowed) {
+    // Token Bucket রেট লিমিট চেক (প্রতি মিনিটে সর্বোচ্চ ৫টি টোকেন)
+    const bucketCheck = checkTokenBucket(email);
+    if (!bucketCheck.allowed) {
         return res.status(429).json({
             success: false,
-            error: `Rate limit exceeded! Maximum 5 OTPs per minute. Try again in ${rateCheck.waitSec}s.`
+            error: `Token bucket empty! Rate limit exceeded. Please wait ${bucketCheck.waitSec}s before requesting another OTP.`
         });
     }
 
@@ -242,13 +252,13 @@ app.post('/api/auth/register-request', async (req, res) => {
             text: `Hello Operator ${username},\n\nYour TriScout v2.4 TAC-OPS registration verification code is: ${otp}\n\nThis code will expire in 10 minutes.`
         });
 
-        res.json({ success: true, message: `Verification code sent to ${email} (${rateCheck.remaining}/5 left this min)` });
+        res.json({ success: true, message: `Verification code sent to ${email} (Tokens remaining: ${bucketCheck.remaining}/5)` });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Failed to send verification email. Check SMTP settings.' });
     }
 });
 
-// ৪B. সাইন-আপ ধাপ ২: ইমেইল OTP মিলিয়ে দেখা এবং অ্যাকাউন্ট তৈরি করা
+// ৪B. সাইন-আপ ধাপ ২: ইমেইল OTP ভেরিফিকেশন
 app.post('/api/auth/register-verify', async (req, res) => {
     const email = (req.body.email || '').trim().toLowerCase();
     const otp = (req.body.otp || '').trim();
@@ -294,7 +304,7 @@ app.post('/api/auth/register-verify', async (req, res) => {
     }
 });
 
-// ৫A. সাইন-ইন ধাপ ১: পাসওয়ার্ড চেক ও ইমেইলে 2FA ওটিপি পাঠানো
+// ৫A. সাইন-ইন ধাপ ১: পাসওয়ার্ড চেক ও Token Bucket রেট লিমিট সহ 2FA OTP পাঠানো
 app.post('/api/auth/login', async (req, res) => {
     const username = (req.body.username || '').trim();
     const password = req.body.password || '';
@@ -340,11 +350,12 @@ app.post('/api/auth/login', async (req, res) => {
                 };
             }
 
-            const rateCheck = checkOtpRateLimit(targetEmail);
-            if (!rateCheck.allowed) {
+            // Token Bucket রেট লিমিট চেক (সাইন ইনের ক্ষেত্রেও ওটিপি স্প্যামিং রোধে)
+            const bucketCheck = checkTokenBucket(targetEmail);
+            if (!bucketCheck.allowed) {
                 return {
                     status: 429,
-                    error: `Rate limit exceeded! Maximum 5 OTPs per minute. Please wait ${rateCheck.waitSec}s.`
+                    error: `Token bucket empty! Rate limit exceeded. Please wait ${bucketCheck.waitSec}s.`
                 };
             }
 
@@ -363,7 +374,7 @@ app.post('/api/auth/login', async (req, res) => {
                     expires_at = NOW() + INTERVAL '10 minutes'
             `;
 
-            return { ok: true, username: userRecord.username, targetEmail, otp, remaining: rateCheck.remaining };
+            return { ok: true, username: userRecord.username, targetEmail, otp, remaining: bucketCheck.remaining };
         });
 
         if (authCheck.needsEmail) {
@@ -384,14 +395,14 @@ app.post('/api/auth/login', async (req, res) => {
             success: true,
             requireOtp: true,
             email: authCheck.targetEmail,
-            message: `Sign-In OTP sent to ${authCheck.targetEmail} (${authCheck.remaining}/5 left this min)`
+            message: `Sign-In OTP sent to ${authCheck.targetEmail} (Tokens remaining: ${authCheck.remaining}/5)`
         });
     } catch (err) {
         return res.status(500).json({ success: false, error: 'Authentication service unavailable.' });
     }
 });
 
-// ৫B. সাইন-ইন ধাপ ২: সাইন-ইন ওটিপি মিলিয়ে ড্যাশবোর্ডে প্রবেশ করানো
+// ৫B. সাইন-ইন ধাপ ২: ওটিপি ভেরিফাই করে লগইন সম্পন্ন করা
 app.post('/api/auth/login-verify', async (req, res) => {
     const email = (req.body.email || '').trim().toLowerCase();
     const otp = (req.body.otp || '').trim();
@@ -443,7 +454,7 @@ app.post('/api/auth/login-verify', async (req, res) => {
     }
 });
 
-// ৬A. ফরগট পাসওয়ার্ড ধাপ ১: ইমেইলে রিসেট কোড পাঠানো
+// ৬A. ফরগট পাসওয়ার্ড: Token Bucket রেট লিমিট সহ রিসেট কোড পাঠানো
 app.post('/api/auth/forgot-password', async (req, res) => {
     const identifier = (req.body.identifier || '').trim();
     if (!identifier) {
@@ -463,11 +474,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             }
 
             const user = rows[0];
-            const rateCheck = checkOtpRateLimit(user.email);
-            if (!rateCheck.allowed) {
+            const bucketCheck = checkTokenBucket(user.email);
+            if (!bucketCheck.allowed) {
                 return {
                     status: 429,
-                    error: `Rate limit exceeded! Maximum 5 OTPs per minute. Try again in ${rateCheck.waitSec}s.`
+                    error: `Token bucket empty! Rate limit exceeded. Please wait ${bucketCheck.waitSec}s.`
                 };
             }
 
@@ -480,7 +491,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
                     purpose = 'reset',
                     expires_at = NOW() + INTERVAL '10 minutes'
             `;
-            return { user, otp, remaining: rateCheck.remaining };
+            return { user, otp, remaining: bucketCheck.remaining };
         });
 
         if (resetReq.error) {
@@ -494,13 +505,13 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             text: `Hello Operator ${resetReq.user.username},\n\nYour password reset verification code is: ${resetReq.otp}\n\nThis code expires in 10 minutes.`
         });
 
-        res.json({ success: true, email: resetReq.user.email, message: `Password reset code sent (${resetReq.remaining}/5 left this min).` });
+        res.json({ success: true, email: resetReq.user.email, message: `Password reset code sent (Tokens remaining: ${resetReq.remaining}/5).` });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Failed to send reset email.' });
     }
 });
 
-// ৬B. ফরগট পাসওয়ার্ড ধাপ ২: কোড ভেরিফাই করে নতুন পাসওয়ার্ড সেভ করা
+// ৬B. ফরগট পাসওয়ার্ড: নতুন পাসওয়ার্ড সেট করা
 app.post('/api/auth/reset-password', async (req, res) => {
     const email = (req.body.email || '').trim().toLowerCase();
     const otp = (req.body.otp || '').trim();
@@ -620,7 +631,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         const headers = response.headers;
         const htmlBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
 
-        // ইথিক্যাল ওয়েব স্ক্র্যাপিং মেটাডেটা সংগ্রহ (টাইটেল, ফর্ম, স্ক্রিপ্ট ও লিংক সংখ্যা)
         const titleMatch = htmlBody.match(/<title[^>]*>([^<]+)<\/title>/i);
         const pageTitle = titleMatch ? titleMatch[1].trim().slice(0, 80) : 'Untitled Document';
         const scriptCount = (htmlBody.match(/<script\b/gi) || []).length;
@@ -634,7 +644,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         let score = 100;
         const checks = [];
 
-        // ১. Error & Stack Trace Leak Check
         if (htmlBody.includes('Stack trace:') || errorLeakRegex.test(htmlBody)) {
             report += `[!] Error Handling: CRITICAL (Stack trace or DB error exposed!)\n`;
             score -= 20;
@@ -644,7 +653,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Error Handling', status: 'SECURE', category: 'Source Leak', impact: '0 pts', detail: 'No raw stack traces or database errors leaked.' });
         }
 
-        // ২. API Key & Credential Leak Check
         if (secretRegex.test(htmlBody)) {
             report += `[!] Secrets Exposure: CRITICAL (Exposed API Keys / Tokens detected)\n`;
             score -= 25;
@@ -654,7 +662,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Secrets Exposure', status: 'SECURE', category: 'Credentials', impact: '0 pts', detail: 'No exposed API keys or secret tokens found in page source.' });
         }
 
-        // ৩. Scraped Form Transport Security Check
         if (insecureForms) {
             report += `[!] Form Transport: CRITICAL (Form submits over unencrypted HTTP!)\n`;
             score -= 15;
@@ -664,7 +671,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Form Action Security', status: 'SECURE', category: 'Web Scraper', impact: '0 pts', detail: `Evaluated ${formCount} HTML form(s); no insecure HTTP form actions found.` });
         }
 
-        // ৪. Rate Limiting Header Check
         if (headers['x-ratelimit-limit'] || headers['retry-after'] || headers['ratelimit-limit']) {
             report += `[+] Rate Limiting: SECURE\n`;
             checks.push({ name: 'Rate Limiting', status: 'SECURE', category: 'Traffic', impact: '0 pts', detail: 'Rate-limiting headers are actively enforced.' });
@@ -674,7 +680,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Rate Limiting', status: 'NOTICE', category: 'Traffic', impact: '-5 pts', detail: 'No explicit rate-limit headers exposed (may be handled by WAF).' });
         }
 
-        // ৫. Server & Tech Stack Fingerprinting Check
         if (headers['x-powered-by']) {
             report += `[!] Dependencies: WARNING (Tech Stack Exposed: ${headers['x-powered-by']})\n`;
             score -= 10;
@@ -690,7 +695,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
 
         report += `\n--- DEFENSIVE HTTP SECURITY HEADERS ---\n`;
 
-        // ৬. HSTS Policy
         if (headers['strict-transport-security']) {
             report += `[+] HSTS (Strict-Transport-Security): SECURE\n`;
             checks.push({ name: 'HSTS Policy', status: 'SECURE', category: 'SSL/TLS', impact: '0 pts', detail: 'Enforces encrypted HTTPS connections against downgrade attacks.' });
@@ -700,7 +704,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'HSTS Policy', status: 'MISSING', category: 'SSL/TLS', impact: '-10 pts', detail: 'Missing Strict-Transport-Security header.' });
         }
 
-        // ৭. Content-Security-Policy (CSP)
         if (headers['content-security-policy']) {
             report += `[+] CSP (Content-Security-Policy): SECURE\n`;
             checks.push({ name: 'CSP Header', status: 'SECURE', category: 'XSS Defense', impact: '0 pts', detail: 'Content-Security-Policy is active to mitigate XSS injection.' });
@@ -710,7 +713,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'CSP Header', status: 'MISSING', category: 'XSS Defense', impact: '-10 pts', detail: 'No Content-Security-Policy defined against script injection.' });
         }
 
-        // ৮. X-Frame-Options (Clickjacking Defense)
         if (headers['x-frame-options']) {
             report += `[+] X-Frame-Options: SECURE\n`;
             checks.push({ name: 'X-Frame-Options', status: 'SECURE', category: 'Clickjacking', impact: '0 pts', detail: `Protected against iframe clickjacking (${headers['x-frame-options']}).` });
@@ -720,7 +722,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'X-Frame-Options', status: 'MISSING', category: 'Clickjacking', impact: '-10 pts', detail: 'Site can be embedded in unauthorized external iframes.' });
         }
 
-        // ৯. X-Content-Type-Options (MIME Sniffing)
         if (headers['x-content-type-options']) {
             report += `[+] X-Content-Type-Options: SECURE\n`;
             checks.push({ name: 'MIME Sniffing', status: 'SECURE', category: 'Headers', impact: '0 pts', detail: 'Prevents browser MIME-type sniffing (nosniff).' });
@@ -730,7 +731,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'MIME Sniffing', status: 'MISSING', category: 'Headers', impact: '-10 pts', detail: 'Missing X-Content-Type-Options: nosniff header.' });
         }
 
-        // ১০. Referrer-Policy Check
         if (headers['referrer-policy']) {
             report += `[+] Referrer-Policy: SECURE (${headers['referrer-policy']})\n`;
             checks.push({ name: 'Referrer-Policy', status: 'SECURE', category: 'Privacy', impact: '0 pts', detail: `Referrer-Policy header is set (${headers['referrer-policy']}).` });
@@ -740,7 +740,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Referrer-Policy', status: 'NOTICE', category: 'Privacy', impact: '-5 pts', detail: 'Missing Referrer-Policy header to protect sensitive URL parameters.' });
         }
 
-        // ১১. Permissions-Policy Check
         if (headers['permissions-policy'] || headers['feature-policy']) {
             report += `[+] Permissions-Policy: SECURE\n`;
             checks.push({ name: 'Permissions-Policy', status: 'SECURE', category: 'Browser API', impact: '0 pts', detail: 'Browser hardware/sensor APIs are restricted via Permissions-Policy.' });
@@ -750,7 +749,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Permissions-Policy', status: 'NOTICE', category: 'Browser API', impact: '-5 pts', detail: 'Missing Permissions-Policy header to restrict camera/mic/geolocation APIs.' });
         }
 
-        // ১২. Cookie Security Flags (HttpOnly & Secure)
         const rawCookies = headers['set-cookie'];
         if (Array.isArray(rawCookies) && rawCookies.length > 0) {
             const insecureCookie = rawCookies.some(c => !/httponly/i.test(c) || !/secure/i.test(c));
@@ -772,8 +770,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
 
         if (scanCache.size >= MAX_CACHE_SIZE) scanCache.clear();
         scanCache.set(target, { report, score, checks, timestamp: Date.now() });
-
-        // RLS-এর মাধ্যমে শুধুমাত্র বর্তমান লগইন করা ইউজারের নামে স্ক্যান রিপোর্টটি ডাটাবেসে সুরক্ষিতভাবে সেভ করা
+         // RLS সুরক্ষিত স্ক্যান হিস্ট্রি ডেটাবেজে সেভ করা
         try {
             await ensureUsersTable();
             const currentOperator = req.user && req.user.user ? req.user.user : 'anonymous';
@@ -792,6 +789,8 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         res.status(500).json({ success: false, error: 'Target unreachable.' }); 
     }
 });
+
+// ৯. RLS সুরক্ষিত স্ক্যান হিস্ট্রি পাওয়ার API
 app.get('/api/scan-history', requireHTTPAuth, async (req, res) => {
     try {
         await ensureUsersTable();
