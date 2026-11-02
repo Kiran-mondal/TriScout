@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+    <!-- 1. Main Landing & Authentication Portal -->
+    <url>
+        <loc>https://triscout.quarry.dpdns.org/</loc>
+        <lastmod>2026-11-02</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>
+
+    <!-- 2. TriScout Global NPM CLI Tool Page -->
+    <url>
+        <loc>https://triscout.quarry.dpdns.org/cli</loc>
+        <lastmod>2026-11-02</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- 3. Kiran Mondal - Cyber Security & Developer Portfolio -->
+    <url>
+        <loc>https://triscout.quarry.dpdns.org/project</loc>
+        <lastmod>2026-11-02</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- 4. System Architecture & About TriScout v2.4 TAC-OPS -->
+    <url>
+        <loc>https://triscout.quarry.dpdns.org/about</loc>
+        <lastmod>2026-11-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- 5. Command Center & Passive Recon Scanner HUD -->
+    <url>
+        <loc>https://triscout.quarry.dpdns.org/dashboard</loc>
+        <lastmod>2026-11-02</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- 6. Security Reports & PDF/JSON/CSV Export -->
+    <url>
+        <loc>https://triscout.quarry.dpdns.org/reports</loc>
+        <lastmod>2026-11-02</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+</urlset>
