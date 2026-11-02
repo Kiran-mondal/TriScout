@@ -892,26 +892,4 @@ app.post('/api/account/delete', requireHTTPAuth, async (req, res) => {
     }
 });
 
-app.get('/sitemap.xml', (req, res) => {
-    const domain = 'https://triscout.quarry.dpdns.org'; 
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <url><loc>${domain}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-    <url><loc>${domain}/about</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-    <url><loc>${domain}/cli</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-    <url><loc>${domain}/project</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-    <url><loc>${domain}/dashboard</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-    <url><loc>${domain}/reports</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-</urlset>`;
-    res.header('Content-Type', 'application/xml');
-    res.send(sitemap);
-});
-
-app.get('/robots.txt', (req, res) => {
-    const domain = 'https://triscout.quarry.dpdns.org';
-    const robots = `User-agent: *\nAllow: /\nDisallow: /profile\nDisallow: /api/\n\nSitemap: ${domain}/sitemap.xml`;
-    res.header('Content-Type', 'text/plain');
-    res.send(robots);
-});
-
 module.exports = app;
