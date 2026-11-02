@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /cli
+Allow: /project
+Allow: /about
+Allow: /dashboard
+Allow: /reports
+Disallow: /profile
+Disallow: /api/
+
+Sitemap: https://triscout.quarry.dpdns.org/sitemap.xml
