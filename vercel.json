@@ -30,7 +30,10 @@
       "dest": "/api/processor.py"
     },
     {
-      "src": "/(style\\.css|logo\\.svg)",
+      "src": "/(style\\.css|logo\\.svg|sitemap\\.xml|robots\\.txt)",
+      "headers": {
+        "Cache-Control": "public, max-age=3600"
+      },
       "dest": "/web_dashboard/server.js"
     },
     {
