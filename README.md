@@ -23,7 +23,6 @@
 </p>
 
 <p align="center">
-  👉(Live Website:)[https://triscout.quarry.dpdns.org]
   
 ## 🚀 Features
 
