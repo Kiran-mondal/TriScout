@@ -1,71 +1,174 @@
 <div align="center">
   <img src="public/logo.svg" alt="TriScout Logo" width="220" height="220" />
-  
-  <h1>TriScout v2.4 TAC-OPS</h1>
-
-  <img src="https://img.shields.io/badge/Node.js-20+-339933?style=flat&logo=nodedotjs" alt="Node.js Version"/>
-  <img src="https://img.shields.io/badge/Database-Neon_PostgreSQL_%28RLS%29-336791?style=flat&logo=postgresql" alt="Neon RLS"/>
-  <img src="https://img.shields.io/badge/Security-2FA_OTP_%26_Rate_Limit-39ff88?style=flat&logo=securityscorecard" alt="Security"/>
-  <img src="https://img.shields.io/badge/Status-Active_Production-success.svg" alt="Status"/>
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"/>
-
-  <br><br>
-
-<a href="https://www.uneed.best/tool/triscout" target="_blank" rel="noopener">
-  <img src="https://www.uneed.best/EMBED3.png" alt="Featured on Uneed" style="width: 220px;" />
-</a>
-
-<a href="https://www.producthunt.com/products/triscout?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-triscout-2" target="_blank" rel="noopener noreferrer"><img alt="TriScout - Ethical Passive Reconnaissance &amp; Security Posture Console | Product Hunt" width="220" height="48" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1303112&amp;theme=dark&amp;t=1793724143663"></a>
-
+  <h1>TriScout</h1>
+  <p>
+    <strong>Defensive reconnaissance and security auditing toolkit</strong>
+  </p>
+  <img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat&logo=nodedotjs" alt="Node.js 18+" />
+  <img src="https://img.shields.io/badge/Go-1.20%2B-00ADD8?style=flat&logo=go" alt="Go 1.20+" />
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat&logo=python" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
 </div>
 
-<br>
+TriScout is a defensive cybersecurity reconnaissance project designed to audit public-facing web assets, detect common security misconfigurations, and surface risky exposures in a structured, developer-friendly workflow. It combines a web dashboard, Go-powered scanning engine, and Python-based enrichment pipeline to help security teams assess HTTP security posture, leaked secrets, and visible infrastructure information.
 
-<p align="center">
-  <strong>TriScout v2.4 TAC-OPS</strong> is an on-demand, ethical passive cybersecurity reconnaissance console and global NPM CLI toolkit engineered for auditing HTTP security headers, DNS topology, and credential/source leaks without intrusive payload generation.
-</p>
+This repository is intended for legitimate security research, defensive testing, and educational use on systems you are explicitly authorized to assess.
 
 ---
 
-## 🚀 Core Features (v2.4 TAC-OPS)
+## Overview
 
-- **🛡️ 12-Point Passive Security & DOM Audit:** Evaluates HTTP security headers (`HSTS`, `CSP`, `X-Frame-Options`, `MIME Sniffing`, `Referrer-Policy`, `Permissions-Policy`), cookie security flags (`HttpOnly`, `Secure`), and inspects scraped DOM surface for insecure form actions and server fingerprinting.
-- **🔍 Credential & Stack Trace Leak Detection:** Automatically scans public page sources for exposed API keys (OpenAI, AWS, GitHub PATs, Google Cloud, Stripe, Private RSA keys) and raw SQL/stack trace errors.
-- **🔒 Multi-Tenant Neon PostgreSQL RLS:** Powered by serverless PostgreSQL with **Row-Level Security (RLS)** policies enabled across `users`, `auth_otps`, and `scan_logs` tables so every operator's reconnaissance history is cryptographically isolated at the database layer.
-- **⚡ Token Bucket & OTP Rate Limiting:** Built-in Token Bucket rate limiter (max 5 OTP requests per minute per identifier) to prevent spam and brute-force attacks on sign-in, sign-up, and password reset flows.
-- **✉️ 2FA Email OTP Verification:** Secure authentication workflow backed by Gmail SMTP relay for sign-up activation, 2FA sign-in verification, and passkey recovery.
-- **💻 Web HUD & Global CLI:** Access the interactive TAC-OPS command center via browser or run audits directly in your terminal/CI/CD pipelines via `npx @kiran-mondal/triscout`.
-- **📊 Multi-Format Reporting:** Generate and export security posture grades (`0–100`) and vulnerability ledgers as PDF, JSON, CSV, or dispatch alerts via SMTP.
+TriScout helps identify:
+
+- security header issues such as HSTS, CSP, X-Frame-Options, and related browser protections
+- exposed credentials or secrets in public source output or obvious leak points
+- basic infrastructure exposure through port and service reconnaissance
+- risky information in scan results that can be reviewed from a browser dashboard or exported for reporting
+
+The project is split into multiple coordinated components:
+
+- `web_dashboard/` — Node.js/Express dashboard and application logic
+- `api/` — backend processing services written in Go and Python
+- `go_scanner/` — scanner implementation for port and surface discovery
+- `python_processor/` — result enrichment and output formatting
+- `public/` — frontend/static assets and branding
+- `run_all.sh` — end-to-end runner for the scanning pipeline
 
 ---
 
-## 📁 Project Structure
+## Features
+
+- Passive web reconnaissance workflow for public targets
+- Security posture evaluation against common browser and HTTP controls
+- Leak detection checks for obvious credential and token patterns
+- Multi-step scanning pipeline with Go-based collection and Python-based post-processing
+- Browser-based dashboard for reviewing findings
+- Export-friendly workflow for JSON, CSV, and similar report formats
+- Ethical guardrails to prevent scanning of restricted private or loopback ranges
+
+---
+
+## Repository Structure
 
 ```text
 TriScout/
-├── web_dashboard/     # Express server, RLS controllers, auth & scanner engine (Node.js)
-├── public/            # TAC-OPS animated dark HUD frontend, logos, sitemap.xml & robots.txt
-├── api/               # Go & Python microservices for backend telemetry
-├── vercel.json        # Edge routing, static asset caching, and serverless config
-└── package.json       # Dependencies (@neondatabase/serverless, nodemailer, jwt, axios)
+├── api/                  # Go/Python-backed processing services
+├── go_scanner/           # Scanner logic and results generation
+├── python_processor/     # Enrichment and processing pipeline
+├── public/               # Static UI assets, branding, and front-end resources
+├── web_dashboard/        # Express dashboard and application flow
+├── .gitignore
+├── LICENSE
+├── README.md
+├── SECURITY.md
+├── config.json
+├── joke-generator.js
+├── package.json
+├── run_all.sh
+├── vercel.json
+├── pnpm-lock.yaml
+└── ...
 ```
-## ⚙️ Prerequisites
-* Node.js v18+
-* Neon PostgreSQL Database URL with RLS support
-* Gmail SMTP Account (for 2FA/OTP relay)
 
-## 🌐 Live Web Console & NPM Package
-* Live Command Center: https://triscout.quarry.dpdns.org
-* Global NPM CLI Package: ```
-   npx @kiran-mondal/triscout ```
+---
 
-## ⚠️ Responsible Use Notice & Ethical Guardrails
-This project is provided for legitimate security research, defensive testing, and educational purposes only. It must only be used on systems and networks where you have explicit authorization to test.
-Built-in ethical guardrails automatically intercept and block scans targeting private IP ranges (127.0.0.1, 10.x.x.x, 192.168.x.x), loopback addresses, and internal network infrastructure.
-By installing, running, or modifying this project, you acknowledge that you are solely responsible for ensuring lawful and ethical use. The creator and contributors are not liable for misuse, abuse, or any harmful activity conducted with this code or any deployed instance of the project.
+## Prerequisites
 
-## 👨‍💻 Author
-* Kiran Mondal
-* GitHub: https://github.com/Kiran-mondal
-## ⚖️ License
-MIT License — See LICENSE file for details
+Before running the project, ensure you have:
+
+- Node.js 18+
+- Go 1.20+
+- Python 3.10+
+- npm (for the dashboard)
+- a target that you are explicitly authorized to assess
+
+---
+
+## Quick Start
+
+### 1) Install dashboard dependencies
+
+```bash
+npm install
+```
+
+### 2) Start the dashboard
+
+```bash
+npm start
+```
+
+The app is configured to serve the dashboard through the Node.js server defined in `web_dashboard/server.js`.
+
+### 3) Run the full scanning pipeline
+
+```bash
+chmod +x run_all.sh
+./run_all.sh -target example.com -ports 1-1024 -format json
+```
+
+This script performs the pipeline flow:
+
+1. run the Go scanner
+2. process results with Python
+3. copy the processed data into the dashboard
+4. launch the web dashboard locally
+
+---
+
+## Local Dashboard Access
+
+The included automation script notes a local dashboard endpoint:
+
+```text
+http://localhost:3000
+```
+
+The project configuration also identifies the dashboard port as `3000` and default local credentials are documented in the pipeline helper as:
+
+```text
+admin / triscout2026
+```
+
+Use those values only in a local development or lab environment.
+
+---
+
+## Configuration
+
+The repository includes `config.json`, which drives default pipeline settings such as:
+
+- default target selection
+- port range defaults
+- temporary and enriched result paths
+- dashboard port and refresh rate
+- scanner and processor behavior
+
+Review `config.json` to adapt defaults for your environment.
+
+---
+
+## Ethical Use Notice
+
+TriScout is provided for legitimate security research, defensive testing, and educational purposes only.
+
+By using this project, you agree to:
+
+- only assess systems you are authorized to test
+- avoid scanning private addresses or internal infrastructure without permission
+- respect applicable laws, service policies, and organizational requirements
+
+This project includes built-in guardrails to reduce accidental scanning of restricted or private network ranges.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
+
+---
+
+## Maintainer
+
+- Kiran Mondal
+- GitHub: https://github.com/Kiran-mondal
