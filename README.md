@@ -8,6 +8,14 @@
     <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
     <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
   </p>
+  <p>
+    <a href="https://www.uneed.best/tool/triscout" target="_blank" rel="noopener">
+      <img src="https://www.uneed.best/EMBED3.png" alt="Featured on Uneed" width="220" />
+    </a>
+    <a href="https://www.producthunt.com/products/triscout?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-triscout-2" target="_blank" rel="noopener noreferrer">
+      <img src="https://img.shields.io/badge/Product%20Hunt-TriScout-DA552F?logo=producthunt&logoColor=white" alt="TriScout on Product Hunt" />
+    </a>
+  </p>
 </div>
 
 TriScout brings together a web dashboard, a Go-based scanning component, and Python result processing to help users review security posture and reconnaissance results. The project is intended for defensive work, authorized assessments, and learning.
