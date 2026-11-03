@@ -14,6 +14,8 @@
   <img src="https://www.uneed.best/EMBED3.png" alt="Launching Soon on Uneed" style="width: 250px;" />
 </a>
 
+<a href="https://www.producthunt.com/products/triscout?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-triscout-2" target="_blank" rel="noopener noreferrer"><img alt="TriScout - Ethical Passive Reconnaissance &amp; Security Posture Console | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1303112&amp;theme=dark&amp;t=1793724143663"></a>
+
 </div>
 
 <br>
