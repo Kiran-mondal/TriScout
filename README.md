@@ -1,76 +1,73 @@
 <div align="center">
-  <img src="public/logo.svg" alt="TriScout logo" width="180" />
-  <h1>TriScout</h1>
-  <p><strong>An open-source defensive reconnaissance and security-auditing toolkit.</strong></p>
-  <p>
-    <img src="https://img.shields.io/badge/Node.js-18%2B-339933?logo=nodedotjs&logoColor=white" alt="Node.js 18+" />
-    <img src="https://img.shields.io/badge/Go-1.20%2B-00ADD8?logo=go&logoColor=white" alt="Go 1.20+" />
-    <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+" />
-    <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT License" />
-  </p>
-  <p>
-    <a href="https://www.uneed.best/tool/triscout" target="_blank" rel="noopener">
-      <img src="https://www.uneed.best/EMBED3.png" alt="Featured on Uneed" width="220" />
-    </a>
-    <a href="https://www.producthunt.com/products/triscout?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-triscout-2" target="_blank" rel="noopener noreferrer">
-      <img src="https://img.shields.io/badge/Product%20Hunt-TriScout-DA552F?logo=producthunt&logoColor=white" alt="TriScout on Product Hunt" />
-    </a>
-  </p>
+  <img src="public/logo.svg" alt="TriScout Logo" width="220" height="220" />
+  
+  <h1>TriScout v2.4 TAC-OPS</h1>
+
+  <img src="https://img.shields.io/badge/Node.js-20+-339933?style=flat&logo=nodedotjs" alt="Node.js Version"/>
+  <img src="https://img.shields.io/badge/Database-Neon_PostgreSQL_%28RLS%29-336791?style=flat&logo=postgresql" alt="Neon RLS"/>
+  <img src="https://img.shields.io/badge/Security-2FA_OTP_%26_Rate_Limit-39ff88?style=flat&logo=securityscorecard" alt="Security"/>
+  <img src="https://img.shields.io/badge/Status-Active_Production-success.svg" alt="Status"/>
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"/>
+
+  <br><br>
+
+  <a href="https://www.uneed.best/tool/triscout" target="_blank" rel="noopener">
+    <img src="https://www.uneed.best/EMBED3.png" alt="Featured on Uneed" style="width: 220px;" />
+  </a>
+
+  <a href="https://www.producthunt.com/products/triscout?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-triscout-2" target="_blank" rel="noopener noreferrer"><img alt="TriScout - Ethical Passive Reconnaissance &amp; Security Posture Console | Product Hunt" width="220" height="48" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1303112&amp;theme=dark&amp;t=1793724143663"></a>
 </div>
 
-TriScout brings together a web dashboard, a Go-based scanning component, and Python result processing to help users review security posture and reconnaissance results. The project is intended for defensive work, authorized assessments, and learning.
+<br>
 
-> **Authorized use only:** Only assess systems and networks that you own or have explicit permission to test. You are responsible for complying with applicable laws and service policies.
+<p align="center">
+  <strong>TriScout v2.4 TAC-OPS</strong> is an on-demand, ethical passive cybersecurity reconnaissance console and global NPM CLI toolkit engineered for auditing HTTP security headers, DNS topology, and credential/source leaks without intrusive payload generation.
+</p>
 
-## Contents
+---
 
-- [What it does](#what-it-does)
-- [Project layout](#project-layout)
-- [Requirements](#requirements)
-- [Getting started](#getting-started)
-- [Configuration](#configuration)
-- [Responsible use](#responsible-use)
-- [Contributing](#contributing)
-- [Security](#security)
-- [License](#license)
+## 🚀 Core Features (v2.4 TAC-OPS)
 
-## What it does
+- **🛡️ 12-Point Passive Security & DOM Audit:** Evaluates HTTP security headers (`HSTS`, `CSP`, `X-Frame-Options`, `MIME Sniffing`, `Referrer-Policy`, `Permissions-Policy`), cookie security flags (`HttpOnly`, `Secure`), and inspects scraped DOM surface for insecure form actions and server fingerprinting.
+- **🔍 Credential & Stack Trace Leak Detection:** Automatically scans public page sources for exposed API keys (OpenAI, AWS, GitHub PATs, Google Cloud, Stripe, Private RSA keys) and raw SQL/stack trace errors.
+- **🔒 Multi-Tenant Neon PostgreSQL RLS:** Powered by serverless PostgreSQL with **Row-Level Security (RLS)** policies enabled across `users`, `auth_otps`, and `scan_logs` tables so every operator's reconnaissance history is cryptographically isolated at the database layer.
+- **⚡ Token Bucket & OTP Rate Limiting:** Built-in Token Bucket rate limiter (max 5 OTP requests per minute per identifier) to prevent spam and brute-force attacks on sign-in, sign-up, and password reset flows.
+- **✉️ 2FA Email OTP Verification:** Secure authentication workflow backed by Gmail SMTP relay for sign-up activation, 2FA sign-in verification, and passkey recovery.
+- **💻 Web HUD & Global CLI:** Access the interactive TAC-OPS command center via browser or run audits directly in your terminal/CI/CD pipelines via `npx @kiran-mondal/triscout`.
+- **📊 Multi-Format Reporting:** Generate and export security posture grades (`0–100`) and vulnerability ledgers as PDF, JSON, CSV, or dispatch alerts via SMTP.
 
-TriScout provides components for:
+---
 
-- Reviewing common HTTP security-header and web configuration findings
-- Identifying potential sensitive-data exposures in public-facing content
-- Collecting and processing reconnaissance results through a multi-component pipeline
-- Viewing results through a browser-based dashboard
-
-The exact checks and behavior are defined by the project code and configuration. Findings should be validated by a qualified reviewer; automated results can be incomplete or incorrect.
-
-## Project layout
+## 📁 Project Structure
 
 ```text
 TriScout/
-├── api/                 # API-side Go and Python components
-├── go_scanner/          # Go scanning component
-├── python_processor/    # Python result processing
-├── public/              # Static assets and frontend resources
-├── web_dashboard/       # Node.js/Express dashboard
-├── config.json          # Pipeline and service defaults
-├── run_all.sh           # Pipeline orchestration script
-├── package.json         # Node.js dependencies and scripts
-├── SECURITY.md          # Security reporting guidance
-└── LICENSE              # MIT License
+├── web_dashboard/     # Express server, RLS controllers, auth & scanner engine (Node.js)
+├── public/            # TAC-OPS animated dark HUD frontend, logos, sitemap.xml & robots.txt
+├── api/               # Go & Python microservices for backend telemetry
+├── vercel.json        # Edge routing, static asset caching, and serverless config
+└── package.json       # Dependencies (@neondatabase/serverless, nodemailer, jwt, axios)
 ```
 
-## Requirements
+## ⚙️ Prerequisites
 
-- Node.js 18 or newer and npm
-- Go toolchain for the Go component
-- Python 3 for the processing component
-- Explicit authorization for any system you assess
+- Node.js v18 or newer
+- Go and Python 3 for the scanner and processing components
+- Neon PostgreSQL database URL and Gmail SMTP credentials if you are configuring those services
+- Authorization to test any target systems
 
-## Getting started
+## 🌐 Live Web Console & NPM Package
 
-Clone the repository and install the Node.js dependencies:
+- Live Command Center: https://triscout.quarry.dpdns.org
+- Global NPM CLI Package:
+
+  ```bash
+  npx @kiran-mondal/triscout
+  ```
+
+## 🚀 Getting Started
+
+Clone the repository and install dependencies:
 
 ```bash
 git clone https://github.com/Kiran-mondal/TriScout.git
@@ -84,35 +81,33 @@ Start the dashboard:
 npm start
 ```
 
-The server is configured to use port `3000` by default. To run the full pipeline, review `config.json` and `run_all.sh` first, then follow the script's usage instructions and only use it within an authorized lab or assessment scope. The pipeline requires the Go and Python components to be installed and available in your environment.
+To run the full pipeline, review `config.json` and `run_all.sh` first, then use the script only within an authorized lab or assessment scope. The pipeline requires Go and Python to be installed and available in your environment.
 
-## Configuration
+## ⚙️ Configuration
 
-`config.json` contains defaults for pipeline inputs and output paths, scanner behavior, processing, and dashboard settings. Review and adjust these values for your environment before use. Do not commit credentials, tokens, or other secrets to the repository; use an environment-based secret-management approach where applicable.
+`config.json` contains default pipeline paths, scanner settings, processing options, and dashboard configuration. Review and adapt the settings for your environment. Keep credentials and tokens out of source control; configure secrets through your deployment environment.
 
-## Responsible use
-
-TriScout is provided for defensive security research, authorized testing, and educational use. Do not use it to access, scan, or test systems without permission. Built-in safeguards are not a substitute for authorization or careful scope management.
-
-## Contributing
+## 🤝 Contributing
 
 Contributions, bug reports, and documentation improvements are welcome. Before opening a pull request:
 
-1. Check existing issues and pull requests to avoid duplicate work.
-2. Describe the problem or motivation and explain the proposed change.
-3. Keep changes focused and include relevant testing or reproduction details.
-4. Never include real credentials, private data, or unauthorized target information.
+1. Check existing issues and pull requests for related work.
+2. Explain the problem or motivation and describe your proposed change.
+3. Keep the change focused and include relevant testing or reproduction details.
+4. Do not include credentials, private data, or information from unauthorized targets.
 
-Please use GitHub Issues for general questions and bug reports. For potential security vulnerabilities, follow the private reporting guidance in [SECURITY.md](SECURITY.md) rather than posting sensitive details publicly.
+Use GitHub Issues for general questions and bug reports. For potential security vulnerabilities, follow the private reporting guidance in [SECURITY.md](SECURITY.md) instead of posting sensitive details publicly.
 
-## Security
+## 🔐 Security & Responsible Use
 
-Please review [SECURITY.md](SECURITY.md) for the project's security reporting instructions.
+TriScout is provided for legitimate security research, defensive testing, and educational purposes. Only use it on systems and networks that you own or have explicit permission to assess. Built-in safeguards are not a substitute for authorization, careful scope management, or compliance with applicable laws and service policies.
 
-## License
+Please review [SECURITY.md](SECURITY.md) for security reporting instructions.
+
+## ⚖️ License
 
 TriScout is distributed under the MIT License. See [LICENSE](LICENSE) for details.
 
-## Maintainer
+## 👨‍💻 Maintainer
 
 Created and maintained by [Kiran Mondal](https://github.com/Kiran-mondal).
