@@ -598,7 +598,7 @@
                                 <span class="font-mono text-[10px] text-primary-container bg-surface-container px-2 py-0.5 rounded">ETHICAL-ROE</span>
                             </div>
 
-                            <label class="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider mb-1.5 block">Authorized Target Domain / URL</label>
+                            <label for="target-domain-input" class="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider mb-1.5 block">Authorized Target Domain / URL</label>
                             <div class="flex rounded-lg bg-surface-container p-1.5 mb-4 border border-surface-variant/40 focus-within:border-primary-container">
                                 <span class="px-2.5 py-1.5 font-mono text-xs text-secondary bg-surface-container-high rounded mr-1">TARGET</span>
                                 <input class="w-full bg-transparent px-2 font-mono text-sm text-on-surface focus:outline-none" id="target-domain-input" placeholder="https://example.com" type="text"/>
@@ -610,25 +610,25 @@
                             <label class="font-mono text-[11px] text-on-surface-variant uppercase tracking-wider mb-2 block">Active Scanning Modules</label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 font-mono text-xs">
                                 <label class="flex items-center gap-2 p-2.5 rounded bg-surface-container cursor-pointer">
-                                    <input checked type="checkbox" class="accent-primary-container rounded"/>
+                                    <input checked type="checkbox" class="accent-primary-container rounded" aria-label="DNS & IPv4 Lookup module"/>
                                     <span>DNS &amp; IPv4 Lookup</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2.5 rounded bg-surface-container cursor-pointer">
-                                    <input checked type="checkbox" class="accent-primary-container rounded"/>
+                                    <input checked type="checkbox" class="accent-primary-container rounded" aria-label="HTTP Header Audit module"/>
                                     <span>HTTP Header Audit</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2.5 rounded bg-surface-container cursor-pointer">
-                                    <input checked type="checkbox" class="accent-primary-container rounded"/>
+                                    <input checked type="checkbox" class="accent-primary-container rounded" aria-label="API Secret Leaks module"/>
                                     <span>API Secret Leaks</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2.5 rounded bg-surface-container cursor-pointer">
-                                    <input checked type="checkbox" class="accent-primary-container rounded"/>
+                                    <input checked type="checkbox" class="accent-primary-container rounded" aria-label="Tech Fingerprinting module"/>
                                     <span>Tech Fingerprinting</span>
                                 </label>
                             </div>
 
                             <div class="p-3 bg-surface-container rounded mb-5 border border-surface-variant/30">
-                                <label class="flex items-start gap-2 cursor-pointer text-xs text-on-surface-variant">
+                                <label for="compliance-check" class="flex items-start gap-2 cursor-pointer text-xs text-on-surface-variant">
                                     <input checked class="mt-0.5 accent-primary-container" id="compliance-check" type="checkbox"/>
                                     <span>I confirm authorization to test this target under passive ethical reconnaissance rules.</span>
                                 </label>
@@ -665,6 +665,7 @@
                         </div>
 
                         <form onsubmit="handleTerminalCommand(event)" class="bg-surface-container-low px-4 py-2.5 flex items-center gap-2 border-t border-surface-variant/20 font-mono text-xs">
+                            <label for="terminal-input" class="sr-only">CLI Input</label>
                             <span class="text-primary-container font-bold">&gt;</span>
                             <input class="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant focus:outline-none" id="terminal-input" placeholder="Type command ('scan example.com', 'help', 'status', 'clear')..." type="text"/>
                             <button class="px-3 py-1 rounded bg-surface-container text-secondary uppercase font-semibold hover:bg-surface-container-high cursor-pointer" type="submit">Run</button>
@@ -742,6 +743,7 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-3">
+                        <label for="emailInput" class="sr-only">Recipient email address</label>
                         <input type="email" id="emailInput" class="flex-1 bg-surface-container border border-surface-variant/40 text-on-surface placeholder:text-on-surface-variant rounded-lg px-4 py-3 font-mono text-xs focus:outline-none focus:border-primary-container" placeholder="Enter recipient email address (e.g. client@domain.com)"/>
                         <button id="reportBtn" onclick="sendReportEmail()" class="bg-primary-container hover:bg-primary-fixed text-on-primary font-mono text-xs uppercase font-bold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer">
                             <span class="material-symbols-outlined text-base">send</span>

@@ -47,16 +47,16 @@
         <!-- FORM 1A: SIGN IN (STEP 1 - CREDENTIALS) -->
         <form id="login-form" onsubmit="handleLoginStep1(event)" class="space-y-3.5 font-['JetBrains_Mono'] text-xs">
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Operator Username or Email</label>
+                <label for="login-username" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Operator Username or Email</label>
                 <input type="text" id="login-username" required placeholder="Enter Username or Email" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
             </div>
             <div id="legacy-email-box" class="hidden">
-                <label class="block text-[10px] text-[#aeecff] uppercase mb-1">Link Email Address (For Sign-In OTP)</label>
+                <label for="login-legacy-email" class="block text-[10px] text-[#aeecff] uppercase mb-1">Link Email Address (For Sign-In OTP)</label>
                 <input type="email" id="login-legacy-email" placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#aeecff] text-white focus:outline-none"/>
             </div>
             <div>
                 <div class="flex items-center justify-between mb-1">
-                    <label class="text-[10px] text-[#bacbb9] uppercase">Access Passkey</label>
+                    <label for="login-password" class="text-[10px] text-[#bacbb9] uppercase">Access Passkey</label>
                     <button type="button" onclick="switchAuthView('forgot')" class="text-[10px] text-[#aeecff] hover:underline cursor-pointer">Forgot Passkey?</button>
                 </div>
                 <input type="password" id="login-password" required placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
@@ -72,7 +72,7 @@
                 Enter the 6-digit Sign-In OTP sent to <span id="login-otp-target-email" class="text-[#39ff88] font-bold"></span>
             </div>
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Sign-In OTP</label>
+                <label for="login-otp-code" class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Sign-In OTP</label>
                 <input type="text" id="login-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-center text-lg tracking-[0.4em] text-[#39ff88] font-bold focus:outline-none focus:border-[#39ff88]"/>
             </div>
             <button id="login-verify-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
@@ -86,15 +86,15 @@
         <!-- FORM 2A: CREATE ACCOUNT (STEP 1 - USER DETAILS) -->
         <form id="register-form" onsubmit="handleRegisterStep1(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Choose Unique Operator Username</label>
+                <label for="reg-username" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Choose Unique Operator Username</label>
                 <input type="text" id="reg-username" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_\-]+" title="Letters, numbers, underscores, and hyphens only" placeholder="e.g. cyber_sentinel" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Email Address (Max 5 OTPs/min)</label>
+                <label for="reg-email" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Email Address (Max 5 OTPs/min)</label>
                 <input type="email" id="reg-email" required placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Create Passkey (Min 6 chars)</label>
+                <label for="reg-password" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Create Passkey (Min 6 chars)</label>
                 <input type="password" id="reg-password" required minlength="6" placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <button id="reg-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#aeecff] hover:bg-[#00d9ff] text-[#003918] font-bold uppercase tracking-wider transition-all shadow-[0_0_16px_rgba(174,236,255,0.3)] cursor-pointer mt-2">
@@ -108,7 +108,7 @@
                 Enter the 6-digit verification code sent to <span id="otp-target-email" class="text-[#aeecff] font-bold"></span>
             </div>
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Email Verification Code</label>
+                <label for="reg-otp-code" class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Email Verification Code</label>
                 <input type="text" id="reg-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-center text-lg tracking-[0.4em] text-[#39ff88] font-bold focus:outline-none focus:border-[#39ff88]"/>
             </div>
             <button id="reg-verify-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
@@ -125,7 +125,7 @@
                 Enter your registered username or email address to receive a 6-digit passkey reset code (Max 5 requests/min).
             </div>
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">Registered Email or Username</label>
+                <label for="forgot-identifier" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Registered Email or Username</label>
                 <input type="text" id="forgot-identifier" required placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <button id="forgot-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#aeecff] hover:bg-[#00d9ff] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
@@ -139,11 +139,11 @@
         <!-- FORM 3B: FORGOT PASSKEY (STEP 2 - VERIFY OTP & SET NEW PASSKEY) -->
         <form id="reset-form" onsubmit="handleForgotStep2(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Reset Code</label>
+                <label for="reset-otp-code" class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Reset Code</label>
                 <input type="text" id="reset-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-center text-lg tracking-[0.4em] text-[#aeecff] font-bold focus:outline-none focus:border-[#aeecff]"/>
             </div>
             <div>
-                <label class="block text-[10px] text-[#bacbb9] uppercase mb-1">New Passkey (Min 6 chars)</label>
+                <label for="reset-new-password" class="block text-[10px] text-[#bacbb9] uppercase mb-1">New Passkey (Min 6 chars)</label>
                 <input type="password" id="reset-new-password" required minlength="6" placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
             </div>
             <button id="reset-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
