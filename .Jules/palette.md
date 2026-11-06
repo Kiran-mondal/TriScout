@@ -7,3 +7,6 @@
 ## 2024-05-19 - ARIA Expanded Dynamic States
 **Learning:** Found static `aria-expanded="false"` tags on dropdown toggle buttons. Screen readers rely on these dynamic attributes toggling via Javascript on interactive components like profile dropdown menus.
 **Action:** When adding `aria-expanded` and `aria-haspopup` to custom popups/dropdowns, always ensure the corresponding click handler dynamically toggles the state of `aria-expanded` between `true` and `false` to provide accurate context to screen readers.
+## 2024-05-19 - Form Label Accessibility and Click Area
+**Learning:** Found multiple form inputs where `<label>` elements were visually associated with inputs but lacked the `for` attribute linking them to the input's `id`. This prevents screen readers from announcing the label when the input is focused, and it stops users from clicking the label text to focus/toggle the input.
+**Action:** Always ensure every `<label>` element has a `for` attribute that strictly matches the `id` of its corresponding `<input>`, `<select>`, or `<textarea>`. If no visible label is desired, provide an invisible label with `.sr-only` class or use `aria-label`.
