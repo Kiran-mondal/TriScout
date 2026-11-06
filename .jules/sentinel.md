@@ -12,3 +12,8 @@
 **Vulnerability:** The `/api/scan-headers` and `/api/send-report` endpoints lacked authentication and authorization controls, allowing anonymous access.
 **Learning:** Forgetting to apply authentication middleware to specific internal or sensitive API endpoints is a common risk that allows unauthorized actions, such as consuming resources or sending spam emails.
 **Prevention:** Apply `requireHTTPAuth` middleware systematically to any endpoint handling sensitive logic or mutating state. Ensure frontend `fetch` calls dynamically include the stored JWT in the `Authorization` header.
+
+## 2024-11-06 - IPv4-mapped IPv6 SSRF Bypass
+**Vulnerability:** The `isPrivateIp` validation function for SSRF protection could be bypassed by using an IPv4-mapped IPv6 address format (e.g., `::ffff:127.0.0.1` or `[::ffff:127.0.0.1]`). DNS lookup resolution can return these IP formats which pass basic substring checks.
+**Learning:** Checking for standard IPv4 and IPv6 string prefixes is insufficient if the IP string check does not normalize IPv4-mapped IPv6 strings.
+**Prevention:** Always parse or normalize IPv4-mapped IPv6 addresses (by stripping the `::ffff:` prefix) before applying private IP range checks.

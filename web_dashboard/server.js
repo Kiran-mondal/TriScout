@@ -655,13 +655,16 @@ function checkScanRateLimit(userKey) {
 }
 
 const isPrivateIp = (ipStr) => {
-    if (ipStr === '::1' || ipStr === '0.0.0.0' || ipStr === '::' || ipStr.startsWith('127.') || ipStr.startsWith('10.') || ipStr.startsWith('192.168.') || ipStr.startsWith('169.254.')) return true;
-    if (ipStr.startsWith('172.')) {
-        const secondOctet = parseInt(ipStr.split('.')[1], 10);
+    let cleanIp = ipStr.toLowerCase().replace(/^\[|\]$/g, '');
+    if (cleanIp.startsWith('::ffff:')) {
+        cleanIp = cleanIp.substring(7);
+    }
+    if (cleanIp === '::1' || cleanIp === '0.0.0.0' || cleanIp === '::' || cleanIp.startsWith('127.') || cleanIp.startsWith('10.') || cleanIp.startsWith('192.168.') || cleanIp.startsWith('169.254.')) return true;
+    if (cleanIp.startsWith('172.')) {
+        const secondOctet = parseInt(cleanIp.split('.')[1], 10);
         if (secondOctet >= 16 && secondOctet <= 31) return true;
     }
-    const ipv6 = ipStr.toLowerCase();
-    return ipv6.startsWith('fc') || ipv6.startsWith('fd') || ipv6.startsWith('fe8');
+    return cleanIp.startsWith('fc') || cleanIp.startsWith('fd') || cleanIp.startsWith('fe8');
 };
 
 const secretRegex = /(?:AIza[0-9A-Za-z\-_]{35}|sk-(?:proj-)?[a-zA-Z0-9\-_]{32,}|gh[pousr]_[A-Za-z0-9_]{36,255}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9a-zA-Z\-]{10,48}|sk_live_[0-9a-zA-Z]{24,}|-----BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY-----)/g;
