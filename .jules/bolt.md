@@ -17,3 +17,7 @@
 ## 2025-02-14 - Function & Regex Reallocation in Hot Paths
 **Learning:** Instantiating complex regex objects and defining logic functions inside hot request paths (like `/api/scan-headers`) causes unnecessary CPU and memory allocation on every request. Short-circuiting boolean conditionals with faster text checks (like `.includes()`) before expensive `.test()` checks improves text processing performance.
 **Action:** Hoist invariant static functions and regular expressions to the module scope to compile and load them only once. Reorder logic to prioritize short-circuiting fast path execution.
+
+## 2025-02-14 - Blocking Synchronous File I/O in Hot Paths
+**Learning:** Using `fs.readFileSync` inside Express route handlers blocks the main Node.js thread for every incoming request. This becomes a severe bottleneck for heavily accessed endpoints (like index and dashboard routes).
+**Action:** Always pre-read static files (`fs.readFileSync`) once at the module level during server initialization and serve the cached string in the route handlers.

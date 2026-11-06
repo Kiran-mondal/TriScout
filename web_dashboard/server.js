@@ -25,14 +25,14 @@ app.use(express.urlencoded({ extended: true }));
 
 // ১. লগইন ও সাইন-আপ পেজ (public/index.html) সার্ভ করা - ক্যাশমুক্ত
 const authHtmlPath = path.join(__dirname, '../public/index.html');
+const AUTH_HTML_CONTENT = fs.readFileSync(authHtmlPath, 'utf8');
 
 app.get(['/', '/login', '/index.html'], (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    const html = fs.readFileSync(authHtmlPath, 'utf8');
-    res.status(200).send(html);
+    res.status(200).send(AUTH_HTML_CONTENT);
 });
 
 app.use(express.static(path.join(__dirname, '../public'), { index: false }));
@@ -616,14 +616,14 @@ async function ensureDatabaseIndexesAndCleanup() {
 
 // ৭. ড্যাশবোর্ড HTML সার্ভ করা
 const dashboardHtmlPath = path.join(__dirname, 'views', 'index.html');
+const DASHBOARD_HTML_CONTENT = fs.readFileSync(dashboardHtmlPath, 'utf8');
 
 app.get(['/dashboard', '/reports', '/cli', '/about', '/project', '/profile'], (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    const html = fs.readFileSync(dashboardHtmlPath, 'utf8');
-    res.status(200).send(html);
+    res.status(200).send(DASHBOARD_HTML_CONTENT);
 });
 
 // ============================================================================
