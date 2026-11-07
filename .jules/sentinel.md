@@ -17,3 +17,8 @@
 **Vulnerability:** The `isPrivateIp` validation function for SSRF protection could be bypassed by using an IPv4-mapped IPv6 address format (e.g., `::ffff:127.0.0.1` or `[::ffff:127.0.0.1]`). DNS lookup resolution can return these IP formats which pass basic substring checks.
 **Learning:** Checking for standard IPv4 and IPv6 string prefixes is insufficient if the IP string check does not normalize IPv4-mapped IPv6 strings.
 **Prevention:** Always parse or normalize IPv4-mapped IPv6 addresses (by stripping the `::ffff:` prefix) before applying private IP range checks.
+
+## 2024-11-20 - SSRF via HTTP Redirect Bypass
+**Vulnerability:** The `/api/scan-headers` endpoint prevented direct SSRF but could be bypassed if the remote server returned an HTTP redirect to an internal IP, because `axios.get` follows redirects by default.
+**Learning:** Checking the initial target IP for SSRF is not enough if the HTTP client automatically follows redirects. An attacker can provide a valid public IP that redirects to an internal network address (e.g. `127.0.0.1`).
+**Prevention:** Always disable automatic redirects in HTTP clients used for fetching user-supplied URLs by explicitly setting `maxRedirects: 0` in `axios`, or manually validating the redirected URL before following it.

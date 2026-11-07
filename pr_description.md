@@ -1,4 +1,5 @@
-💡 What: Added `for` attributes to orphaned `<label>` elements and explicit `sr-only` (screen-reader only) labels for visually unlabeled inputs (like CLI and email dispatch inputs).
-🎯 Why: Forms without properly associated labels prevent screen readers from announcing inputs correctly and stop users from focusing input fields by clicking their text labels, hurting accessibility and click area.
-📸 Before/After: Inputs behave exactly the same visually, but their textual labels can now be clicked to focus them, expanding the target area.
-♿ Accessibility: Ensures full WCAG compliance for form controls by programmatically associating labels with inputs.
+🚨 Severity: CRITICAL
+💡 Vulnerability: SSRF Bypass via HTTP Redirects in `/api/scan-headers`. The `axios` client blindly followed HTTP redirects by default, allowing attackers to supply a valid public URL that redirects to internal/private IPs (e.g., 127.0.0.1 or cloud metadata), bypassing the initial `isPrivateIp` check.
+🎯 Impact: Attackers could scan internal network infrastructure and potentially access internal endpoints or cloud metadata.
+🔧 Fix: Configured `axios.get` with `maxRedirects: 0` to prevent following redirects automatically, safely stopping the SSRF chain at the first request.
+✅ Verification: Tested locally by verifying that axios correctly stops at 3xx responses without following the redirect to the target location. Syntax check passes via `node -c web_dashboard/server.js`.
