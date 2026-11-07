@@ -702,6 +702,15 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
     if (!target) return res.status(400).json({ success: false, error: 'Target URL is required' });
     if (!target.startsWith('http://') && !target.startsWith('https://')) target = 'https://' + target;
 
+    if (scanCache.has(target)) {
+        const cached = scanCache.get(target);
+        if (Date.now() - cached.timestamp < CACHE_TTL) {
+            return res.json({ success: true, report: cached.report, score: cached.score, checks: cached.checks, _bolt_cached: true });
+        } else {
+            scanCache.delete(target);
+        }
+    }
+
     try {
         const parsedUrl = new URL(target);
         const hostname = parsedUrl.hostname;
@@ -713,15 +722,6 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         }
     } catch (e) {
         return res.status(400).json({ success: false, error: 'Invalid URL format or host resolution failed' });
-    }
-
-    if (scanCache.has(target)) {
-        const cached = scanCache.get(target);
-        if (Date.now() - cached.timestamp < CACHE_TTL) {
-            return res.json({ success: true, report: cached.report, score: cached.score, checks: cached.checks, _bolt_cached: true });
-        } else {
-            scanCache.delete(target);
-        }
     }
 
     try {
