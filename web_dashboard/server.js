@@ -8,6 +8,10 @@ const axios = require('axios');
 const { neon } = require('@neondatabase/serverless');
 require('dotenv').config();
 
+const dns = require('dns');
+const http = require('http');
+const https = require('https');
+
 const { requireHTTPAuth, JWT_SECRET, getEnv } = require('./middleware/auth.js');
 
 const app = express();
@@ -667,6 +671,27 @@ const isPrivateIp = (ipStr) => {
     return cleanIp.startsWith('fc') || cleanIp.startsWith('fd') || cleanIp.startsWith('fe8');
 };
 
+const safeLookup = (hostname, options, callback) => {
+    dns.lookup(hostname, options, (err, address, family) => {
+        if (err) return callback(err);
+
+        // Address can be a string or an array of objects depending on options.all
+        const addresses = Array.isArray(address) ? address : [{ address, family }];
+
+        for (const addrObj of addresses) {
+            const ipStr = addrObj.address;
+            if (ipStr && isPrivateIp(ipStr)) {
+                return callback(new Error(`DNS Rebinding attack detected: ${hostname} resolved to private IP ${ipStr}`));
+            }
+        }
+
+        callback(null, address, family);
+    });
+};
+
+const safeHttpAgent = new http.Agent({ lookup: safeLookup });
+const safeHttpsAgent = new https.Agent({ lookup: safeLookup });
+
 const secretRegex = /(?:AIza[0-9A-Za-z\-_]{35}|sk-(?:proj-)?[a-zA-Z0-9\-_]{32,}|gh[pousr]_[A-Za-z0-9_]{36,255}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9a-zA-Z\-]{10,48}|sk_live_[0-9a-zA-Z]{24,}|-----BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY-----)/g;
 const errorLeakRegex = /(?:ReferenceError|TypeError|SyntaxError|RangeError):\s+[^\n]+|at\s+[A-Za-z0-9_$.]+\s+\([^)]+:\d+:\d+\)|(?:SQL syntax.*MySQL|Warning.*mysql_|PostgreSQL.*ERROR|ORA-\d{5}|SQLite\/JDBCDriver|ROLLBACK\s+FAILED|Deadlock\s+found)/i;
 const debugLogLeakRegex = /(?:console\.debug\(|DEBUG_LOG|\[TRACE\]|webpack:\/\/|sourceMappingURL=.*\.map)/i;
@@ -731,6 +756,8 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             validateStatus: () => true,
             maxContentLength: 5 * 1024 * 1024,
             maxBodyLength: 5 * 1024 * 1024,
+            httpAgent: safeHttpAgent,
+            httpsAgent: safeHttpsAgent,
             headers: {
                 'User-Agent': 'TriScout-Ethical-Passive-Scanner/2.4 (+https://triscout.quarry.dpdns.org)',
                 'Origin': 'https://unauthorized-origin-probe.example'
