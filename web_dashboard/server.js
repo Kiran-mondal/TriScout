@@ -191,7 +191,7 @@ app.post('/api/auth/register-request', async (req, res) => {
     if (!username || !email || !password) {
         return res.status(400).json({ success: false, error: 'Username, Email, and Passkey are required.' });
     }
-    if (!/^[a-zA-Z0-9_-]{3,30}$/.test(username)) {
+    if (!usernameRegex.test(username)) {
         return res.status(400).json({ success: false, error: 'Username must be 3-30 characters (letters, numbers, _ or -).' });
     }
     if (password.length < 6) {
@@ -670,6 +670,12 @@ const isPrivateIp = (ipStr) => {
 const secretRegex = /(?:AIza[0-9A-Za-z\-_]{35}|sk-(?:proj-)?[a-zA-Z0-9\-_]{32,}|gh[pousr]_[A-Za-z0-9_]{36,255}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9a-zA-Z\-]{10,48}|sk_live_[0-9a-zA-Z]{24,}|-----BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY-----)/g;
 const errorLeakRegex = /(?:ReferenceError|TypeError|SyntaxError|RangeError):\s+[^\n]+|at\s+[A-Za-z0-9_$.]+\s+\([^)]+:\d+:\d+\)|(?:SQL syntax.*MySQL|Warning.*mysql_|PostgreSQL.*ERROR|ORA-\d{5}|SQLite\/JDBCDriver|ROLLBACK\s+FAILED|Deadlock\s+found)/i;
 const debugLogLeakRegex = /(?:console\.debug\(|DEBUG_LOG|\[TRACE\]|webpack:\/\/|sourceMappingURL=.*\.map)/i;
+const titleRegex = /<title[^>]*>([^<]+)<\/title>/i;
+const scriptRegex = /<script\b/gi;
+const formRegex = /<form\b/gi;
+const insecureFormRegex = /<form[^>]+action=["']http:\/\/[^"']+["']/i;
+const unsafeInlineRegex = /\bon(?:error|load|mouseover|focus)\s*=\s*["'][^"']*javascript:/i;
+const usernameRegex = /^[a-zA-Z0-9_-]{3,30}$/;
 
 function maskLeakedSecrets(rawHtml) {
     const matches = rawHtml.match(secretRegex);
@@ -732,11 +738,11 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         const headers = response.headers;
         const htmlBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
 
-        const titleMatch = htmlBody.match(/<title[^>]*>([^<]+)<\/title>/i);
+        const titleMatch = htmlBody.match(titleRegex);
         const pageTitle = titleMatch ? cleanInput(titleMatch[1], 80) : 'Untitled Document';
-        const scriptCount = (htmlBody.match(/<script\b/gi) || []).length;
-        const formCount = (htmlBody.match(/<form\b/gi) || []).length;
-        const insecureForms = /<form[^>]+action=["']http:\/\/[^"']+["']/i.test(htmlBody);
+        const scriptCount = (htmlBody.match(scriptRegex) || []).length;
+        const formCount = (htmlBody.match(formRegex) || []).length;
+        const insecureForms = insecureFormRegex.test(htmlBody);
         
         let report = `--- ETHICAL PASSIVE WEB SCRAPER & SECURITY AUDIT FOR: ${target} ---\n`;
         report += `[i] Scraped Page Title: ${pageTitle}\n`;
@@ -788,7 +794,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         }
 
         // ৫. Clean Input & Form Transport Check (টার্গেট ওয়েবসাইটের ইনপুট ফর্ম ও XSS ফিল্টার চেক)
-        const unsafeInlineEvents = /\bon(?:error|load|mouseover|focus)\s*=\s*["'][^"']*javascript:/i.test(htmlBody);
+        const unsafeInlineEvents = unsafeInlineRegex.test(htmlBody);
         if (insecureForms || unsafeInlineEvents) {
             report += `[!] Clean Input & Forms: CRITICAL (Unencrypted HTTP form or unsafe inline input handler!)\n`;
             score -= 15;
