@@ -984,7 +984,8 @@ app.get('/api/auth/github/callback', async (req, res) => {
                 `;
             });
         } catch (dbError) {
-            console.error("[-] Neon Database save failed.");
+            console.error("[-] Neon Database save failed.", dbError);
+            throw dbError;
         }
 
         const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url, provider: 'github' }, JWT_SECRET, { expiresIn: '2h' });

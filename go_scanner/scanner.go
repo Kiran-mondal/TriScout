@@ -80,7 +80,7 @@ func main() {
 func worker(target string, ports chan int, results chan int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for port := range ports {
-		address := net.JoinHostPort(target, strconv.Itoa(port))
+		address := fmt.Sprintf("%s:%d", target, port)
 		conn, err := net.DialTimeout("tcp", address, 1*time.Second)
 		if err == nil {
 			conn.Close()
