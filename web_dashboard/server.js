@@ -721,6 +721,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
     try {
         const response = await axios.get(target, {
             timeout: 10000,
+            maxRedirects: 0,
             validateStatus: () => true,
             maxContentLength: 5 * 1024 * 1024,
             maxBodyLength: 5 * 1024 * 1024,
