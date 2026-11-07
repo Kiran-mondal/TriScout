@@ -21,3 +21,7 @@
 ## 2025-02-14 - Blocking Synchronous File I/O in Hot Paths
 **Learning:** Using `fs.readFileSync` inside Express route handlers blocks the main Node.js thread for every incoming request. This becomes a severe bottleneck for heavily accessed endpoints (like index and dashboard routes).
 **Action:** Always pre-read static files (`fs.readFileSync`) once at the module level during server initialization and serve the cached string in the route handlers.
+
+## 2025-02-14 - Functional Regressions with Regex Short-Circuiting
+**Learning:** Attempting to optimize case-insensitive regular expressions (`/i`) in hot paths by guarding them with case-sensitive `String.prototype.includes()` checks introduces severe functional regressions (false negatives).
+**Action:** Do not use `includes()` to short-circuit case-insensitive regexes unless the string is first converted to a uniform case (which is often more expensive than just running the regex). When hoisting regexes to the module level, rely on the V8 engine's internal regex compilation caching rather than adding manual pre-checks.
