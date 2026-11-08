@@ -22,3 +22,7 @@
 **Vulnerability:** The `/api/scan-headers` endpoint prevented direct SSRF but could be bypassed if the remote server returned an HTTP redirect to an internal IP, because `axios.get` follows redirects by default.
 **Learning:** Checking the initial target IP for SSRF is not enough if the HTTP client automatically follows redirects. An attacker can provide a valid public IP that redirects to an internal network address (e.g. `127.0.0.1`).
 **Prevention:** Always disable automatic redirects in HTTP clients used for fetching user-supplied URLs by explicitly setting `maxRedirects: 0` in `axios`, or manually validating the redirected URL before following it.
+## 2024-11-07 - DNS Rebinding & SSRF Mitigation
+**Vulnerability:** Server-Side Request Forgery via DNS Rebinding and Redirects
+**Learning:** Even with an initial check for private IPs, `axios` resolves domains separately and follows redirects, allowing bypass of URL-based validation via DNS rebinding (changing the IP resolution mid-request) or malicious redirects pointing to private subnets.
+**Prevention:** Implement custom HTTP/HTTPS agents overriding `dns.lookup` to perform OS-level IP validation *after* resolution but *before* TCP connection establishment, combined with disabling automatic redirects (`maxRedirects: 0`).

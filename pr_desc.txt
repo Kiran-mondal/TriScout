@@ -1,0 +1,4 @@
+🎯 **What:** Added an `if __name__ == "__main__":` execution block to `python_processor/processor.py` to allow it to be executed as a script and correctly call `enrich_data()` with command line arguments.
+💡 **Why:** When `processor.py` was executed directly from the terminal (e.g. via `run_all.sh`), the `enrich_data()` logic was defined but never actually called. This change fixes that and allows the module to be safely imported or executed directly.
+✅ **Verification:** Verified the python processor successfully creates `processed.json` and supports formatting like `csv` based on `sys.argv` inputs. Handled no-args by printing standard usage guidelines instead of crashing.
+✨ **Result:** The `python_processor/processor.py` script now correctly executes its enrichment task when executed as the main module.
