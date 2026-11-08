@@ -97,3 +97,14 @@ def export_to_pdf(data):
             for item in data["ports"]:
                 f.write(f"- Port {item['port']}: {item['service']} [{item['severity']}] -> {item['notes']}\n")
         print(f"[!] reportlab not installed. Saved clean TXT report instead: {filename}")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python3 processor.py <input_file.json> [export_format]")
+        print("export_format can be: json, csv, pdf. Default is json.")
+        sys.exit(1)
+
+    input_file_arg = sys.argv[1]
+    export_format_arg = sys.argv[2] if len(sys.argv) > 2 else "json"
+
+    enrich_data(input_file_arg, export_format_arg)

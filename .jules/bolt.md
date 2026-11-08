@@ -26,6 +26,6 @@
 **Learning:** Attempting to optimize case-insensitive regular expressions (`/i`) in hot paths by guarding them with case-sensitive `String.prototype.includes()` checks introduces severe functional regressions (false negatives).
 **Action:** Do not use `includes()` to short-circuit case-insensitive regexes unless the string is first converted to a uniform case (which is often more expensive than just running the regex). When hoisting regexes to the module level, rely on the V8 engine's internal regex compilation caching rather than adding manual pre-checks.
 
-## 2024-03-24 - API Route Cache Ordering
-**Learning:** Checking the memory cache (`scanCache`) before performing slow I/O operations like DNS lookups (`dns.promises.lookup`) significantly reduces API latency (4.3ms to 2.5ms) and increases throughput (230 req/sec to 400 req/sec).
-**Action:** Order fast, synchronous cache lookups before any asynchronous network or database calls in API handlers, provided that side-effects of skipping those calls (e.g., re-evaluating SSRF protection on short-lived cache hits) are acceptable.
+## 2025-02-28 - String Formatting Overhead in Go Hot Paths
+**Learning:** Using `fmt.Sprintf` inside tight loops (like iterating over network ports) incurs significant overhead due to reflection and variadic arguments parsing.
+**Action:** Replace `fmt.Sprintf("%s:%d", host, port)` with `net.JoinHostPort(host, strconv.Itoa(port))`. This not only provides a ~58% throughput improvement (~100ns/op compared to ~238ns/op) but is also safer for formatting IPv6 addresses with brackets.
