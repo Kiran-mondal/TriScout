@@ -174,12 +174,16 @@ function hashPassword(password) {
     return `${salt}:${derived}`;
 }
 
-function verifyPassword(password, storedHash) {
+async function verifyPassword(password, storedHash) {
     if (!storedHash || !storedHash.includes(':')) return false;
     const [salt, key] = storedHash.split(':');
     const keyBuffer = Buffer.from(key, 'hex');
-    const derivedBuffer = crypto.scryptSync(password, salt, 64);
-    return crypto.timingSafeEqual(keyBuffer, derivedBuffer);
+    return new Promise((resolve, reject) => {
+        crypto.scrypt(password, salt, 64, (err, derivedBuffer) => {
+            if (err) return reject(err);
+            resolve(crypto.timingSafeEqual(keyBuffer, derivedBuffer));
+        });
+    });
 }
 
 function generateOTP() {
@@ -338,7 +342,8 @@ app.post('/api/auth/login', async (req, res) => {
 
             const userRecord = rows[0];
             if (userRecord.password_hash) {
-                if (!verifyPassword(password, userRecord.password_hash)) {
+                const isValid = await verifyPassword(password, userRecord.password_hash);
+                if (!isValid) {
                     return { status: 401, error: 'ACCESS DENIED: Incorrect passkey.' };
                 }
             } else {
