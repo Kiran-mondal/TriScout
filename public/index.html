@@ -5,193 +5,794 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TriScout — Ethical Passive Reconnaissance & Security Posture Console</title>
     <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-NGN9WK5Z"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-</script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+    </script>
     <meta name="description" content="TriScout v2.4 TAC-OPS is an on-demand passive cybersecurity reconnaissance dashboard and CLI tool for auditing HTTP security headers, DNS topology, and source leaks." />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     
-    <!-- OpenGraph Tags for Uneed / Product Directories -->
     <meta property="og:title" content="TriScout — Defensive Cyber Reconnaissance Console" />
     <meta property="og:description" content="On-demand ethical security scanner with real-time network topology simulation, HTTP header posture grading, and automated vulnerability reporting." />
     <meta property="og:url" content="https://triscout.quarry.dpdns.org" />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://triscout.quarry.dpdns.org/logo.svg" />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <style>
+        :root {
+            --bp-bg: #154078;
+            --bp-line: rgba(186, 224, 255, 0.78);
+            --bp-grid-major: rgba(186, 224, 255, 0.16);
+            --bp-grid-minor: rgba(186, 224, 255, 0.05);
+        }
+        body.blueprint-canvas {
+            background-color: var(--bp-bg);
+            background-image:
+                linear-gradient(to right, var(--bp-grid-major) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--bp-grid-major) 1px, transparent 1px),
+                linear-gradient(to right, var(--bp-grid-minor) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--bp-grid-minor) 1px, transparent 1px),
+                radial-gradient(circle at 50% 35%, #235aa3 0%, #0e2d56 100%);
+            background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px, 100% 100%;
+            background-position: center center;
+        }
+        .bp-frame {
+            border: 1.5px solid var(--bp-line);
+            box-shadow: 0 0 0 3px rgba(14, 43, 84, 0.65), 0 20px 50px rgba(4, 15, 35, 0.8);
+        }
+        .bp-input {
+            background: rgba(10, 31, 64, 0.8);
+            border: 1.5px solid rgba(186, 224, 255, 0.45);
+            color: #ffffff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .bp-input:focus {
+            border-color: #39ff88;
+            box-shadow: 0 0 10px rgba(57, 255, 136, 0.3);
+            outline: none;
+        }
+        .bp-input::placeholder {
+            color: rgba(186, 224, 255, 0.4);
+        }
+
+        /* 1. Scrolling Parallax Background & Moving Ground Animations */
+        @keyframes scrollGroundTicks {
+            from { transform: translateX(0px); }
+            to { transform: translateX(-60px); }
+        }
+        @keyframes scrollBgSchematic {
+            from { transform: translateX(0px); }
+            to { transform: translateX(-160px); }
+        }
+        .ground-scroll-track {
+            animation: scrollGroundTicks 0.85s linear infinite;
+        }
+        .bg-parallax-track {
+            animation: scrollBgSchematic 5s linear infinite;
+        }
+
+        /* 2. Playful Walking Bounce & Mischievous Body Language */
+        @keyframes naughtyWalkBob {
+            0%, 100% { transform: translateY(0px) rotate(-1.2deg); }
+            25% { transform: translateY(-6px) rotate(1.5deg); }
+            50% { transform: translateY(-1px) rotate(0.8deg); }
+            75% { transform: translateY(-5px) rotate(-1.5deg); }
+        }
+        @keyframes naughtyGiggle {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-3px) rotate(-2deg); }
+            50% { transform: translateY(1px) rotate(2deg); }
+            75% { transform: translateY(-3px) rotate(-1.5deg); }
+        }
+        @keyframes playfulHop {
+            0% { transform: translateY(0) scale(1); }
+            40% { transform: translateY(-16px) rotate(-4deg) scale(1.03); }
+            75% { transform: translateY(2px) rotate(2deg) scale(0.98); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        @keyframes radarSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes legWalkLeft {
+            0%, 100% { transform: rotate(-16deg) translateY(0px); }
+            50% { transform: rotate(18deg) translateY(-6px); }
+        }
+        @keyframes legWalkRight {
+            0%, 100% { transform: rotate(18deg) translateY(-6px); }
+            50% { transform: rotate(-16deg) translateY(0px); }
+        }
+        @keyframes armSwingLeft {
+            0%, 100% { transform: rotate(12deg); }
+            50% { transform: rotate(-14deg); }
+        }
+        @keyframes armSwingRight {
+            0%, 100% { transform: rotate(-12deg); }
+            50% { transform: rotate(14deg); }
+        }
+
+        .mascot-bob {
+            transform-origin: 190px 180px;
+            animation: naughtyWalkBob 1.3s ease-in-out infinite;
+        }
+        .mascot-giggle {
+            animation: naughtyGiggle 0.32s ease-in-out infinite !important;
+        }
+        .mascot-hop {
+            animation: playfulHop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        }
+        .eye-radar {
+            transform-origin: 190px 88px;
+            animation: radarSpin 8s linear infinite;
+        }
+        #mascot-left-leg {
+            transform-origin: 160px 190px;
+            animation: legWalkLeft 0.85s ease-in-out infinite;
+        }
+        #mascot-right-leg {
+            transform-origin: 214px 190px;
+            animation: legWalkRight 0.85s ease-in-out infinite;
+        }
+
+        /* Instant responsive eye tracking */
+        #mascot-pupil-group {
+            transition: transform 0.06s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+        }
+        #pupil-iris-ring {
+            transform-origin: 190px 88px;
+            transition: transform 0.06s linear;
+            will-change: transform;
+        }
+        #eyelid-top, #eyelid-bottom, #eye-closed-line, #eye-peek-line {
+            transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #mascot-left-arm {
+            transform-origin: 128px 112px;
+            animation: armSwingLeft 0.85s ease-in-out infinite;
+            transition: transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        #mascot-right-arm {
+            transform-origin: 252px 112px;
+            animation: armSwingRight 0.85s ease-in-out infinite;
+            transition: transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Quick Mischievous Blink / Wink */
+        .mascot-wink #eyelid-top {
+            transform: translateY(24px);
+        }
+        .mascot-wink #eyelid-bottom {
+            transform: translateY(-20px);
+        }
+
+        /* 1. FULL BOTH-HANDS PRIVACY SHIELD (Tries to be a good boy covering eyes) */
+        .privacy-shield #eyelid-top {
+            transform: translateY(25px);
+        }
+        .privacy-shield #eyelid-bottom {
+            transform: translateY(-25px);
+        }
+        .privacy-shield #eye-closed-line {
+            opacity: 1;
+        }
+        .privacy-shield #mascot-left-arm {
+            animation: none;
+            transform: rotate(-114deg) translate(10px, -8px);
+        }
+        .privacy-shield #mascot-right-arm {
+            animation: none;
+            transform: rotate(114deg) translate(-10px, -8px);
+        }
+
+        /* 2. NAUGHTY KID SNEAK PEEK MODE (Lowers one hand slightly & squints to peek!) */
+        .privacy-peek #eyelid-top {
+            transform: translateY(13px);
+        }
+        .privacy-peek #eyelid-bottom {
+            transform: translateY(-15px);
+        }
+        .privacy-peek #eye-closed-line {
+            opacity: 0;
+        }
+        .privacy-peek #eye-peek-line {
+            opacity: 1;
+        }
+        .privacy-peek #mascot-left-arm {
+            animation: none;
+            transform: rotate(-108deg) translate(8px, -6px);
+        }
+        .privacy-peek #mascot-right-arm {
+            animation: none;
+            transform: rotate(60deg) translate(-4px, 6px);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .ground-scroll-track, .bg-parallax-track, .mascot-bob, .eye-radar, #mascot-left-leg, #mascot-right-leg, #mascot-left-arm, #mascot-right-arm {
+                animation: none;
+            }
+        }
+    </style>
 </head>
-<body class="bg-[#10131b] text-[#e0e2ed] font-['Inter'] min-h-screen flex items-center justify-center p-4 bg-[radial-gradient(#1d2027_1px,transparent_1px)] [background-size:20px_20px]">
+<body class="blueprint-canvas text-[#e6f3ff] font-['JetBrains_Mono'] min-h-screen flex items-center justify-center p-2.5 sm:p-4">
 
-    <div class="max-w-md w-full bg-[#181b23] border border-[#32353d]/60 rounded-2xl p-6 sm:p-8 shadow-2xl">
-        
-        <div class="flex flex-col items-center text-center mb-5">
-            <img src="/logo.svg" alt="TriScout" class="w-14 h-14 mb-2.5 object-contain" />
-            <div class="flex items-center gap-2 mb-1">
-                <h1 class="text-2xl font-bold tracking-tight text-white">TriScout</h1>
-                <span class="font-['JetBrains_Mono'] text-[10px] bg-[#1d2027] text-[#39ff88] border border-[#39ff88]/40 px-2 py-0.5 rounded uppercase font-bold">v2.4 TAC-OPS</span>
-            </div>
-            <p class="text-xs text-[#bacbb9] font-['JetBrains_Mono']">Authorized Defensive Reconnaissance Console</p>
-        </div>
+    <div class="max-w-4xl w-full bg-[#113466]/90 backdrop-blur-md bp-frame rounded-sm overflow-hidden relative">
 
-        <!-- Auth Mode Switcher (Sign In vs Sign Up) -->
-        <div class="grid grid-cols-2 gap-1 p-1 bg-[#10131b] rounded-xl border border-[#32353d]/60 mb-5 font-['JetBrains_Mono'] text-xs">
-            <button id="tab-login-btn" type="button" onclick="switchAuthView('login')" class="py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#39ff88] shadow cursor-pointer">
-                Sign In
-            </button>
-            <button id="tab-register-btn" type="button" onclick="switchAuthView('register')" class="py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white cursor-pointer">
-                Create Account
-            </button>
-        </div>
-
-        <!-- Notification Banner -->
-        <div id="auth-alert" class="hidden mb-4 p-3 rounded-lg font-['JetBrains_Mono'] text-xs border"></div>
-
-        <!-- FORM 1A: SIGN IN (STEP 1 - CREDENTIALS) -->
-        <form id="login-form" onsubmit="handleLoginStep1(event)" class="space-y-3.5 font-['JetBrains_Mono'] text-xs">
-            <div>
-                <label for="login-username" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Operator Username or Email</label>
-                <input type="text" id="login-username" required placeholder="Enter Username or Email" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
-            </div>
-            <div id="legacy-email-box" class="hidden">
-                <label for="login-legacy-email" class="block text-[10px] text-[#aeecff] uppercase mb-1">Link Email Address (For Sign-In OTP)</label>
-                <input type="email" id="login-legacy-email" placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#aeecff] text-white focus:outline-none"/>
-            </div>
-            <div>
-                <div class="flex items-center justify-between mb-1">
-                    <label for="login-password" class="text-[10px] text-[#bacbb9] uppercase">Access Passkey</label>
-                    <button type="button" onclick="switchAuthView('forgot')" class="text-[10px] text-[#aeecff] hover:underline cursor-pointer">Forgot Passkey?</button>
+        <!-- Compact Top Header (High-Contrast Badge for Black Logo) -->
+        <div class="border-b border-[#bae0ff]/70 px-4 py-2 flex items-center justify-between text-[11px] uppercase bg-[#0d2a54]/95">
+            <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded bg-[#e6f3ff] border border-[#39ff88] p-1 flex items-center justify-center shadow-[0_0_10px_rgba(124,224,255,0.4)]">
+                    <img src="/logo.svg" alt="TriScout" class="w-full h-full object-contain" />
                 </div>
-                <input type="password" id="login-password" required placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
+                <span class="font-bold text-white tracking-wider text-xs sm:text-sm">TRISCOUT</span>
+                <span class="px-1.5 py-0.5 border border-[#39ff88]/60 text-[#39ff88] text-[9px] font-bold">v2.4 TAC-OPS</span>
             </div>
-            <button id="login-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer mt-2">
-                Authenticate Session
-            </button>
-        </form>
-
-        <!-- FORM 1B: SIGN IN (STEP 2 - 2FA EMAIL OTP VERIFICATION) -->
-        <form id="login-otp-form" onsubmit="handleLoginStep2(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
-            <div class="p-3 rounded-lg bg-[#10131b] border border-[#32353d] text-[#bacbb9] leading-relaxed">
-                Enter the 6-digit Sign-In OTP sent to <span id="login-otp-target-email" class="text-[#39ff88] font-bold"></span>
+            <div class="flex items-center gap-3 text-[10px] text-[#bae0ff]">
+                <span id="mascot-state-badge" class="text-[#7ce0ff] font-bold">UNIT: PATROLLING</span>
+                <span class="hidden sm:inline text-[#bae0ff]/60">|</span>
+                <span id="bp-cursor-coords" class="hidden sm:inline text-[#bae0ff]">ANG: 0°</span>
             </div>
-            <div>
-                <label for="login-otp-code" class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Sign-In OTP</label>
-                <input type="text" id="login-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-center text-lg tracking-[0.4em] text-[#39ff88] font-bold focus:outline-none focus:border-[#39ff88]"/>
-            </div>
-            <button id="login-verify-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
-                Verify Sign-In OTP
-            </button>
-            <button type="button" onclick="switchAuthView('login')" class="w-full py-2 text-[#bacbb9] hover:text-white text-[11px] uppercase cursor-pointer">
-                &larr; Back to Sign In
-            </button>
-        </form>
-
-        <!-- FORM 2A: CREATE ACCOUNT (STEP 1 - USER DETAILS) -->
-        <form id="register-form" onsubmit="handleRegisterStep1(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
-            <div>
-                <label for="reg-username" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Choose Unique Operator Username</label>
-                <input type="text" id="reg-username" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_\-]+" title="Letters, numbers, underscores, and hyphens only" placeholder="e.g. cyber_sentinel" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
-            </div>
-            <div>
-                <label for="reg-email" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Email Address (Max 5 OTPs/min)</label>
-                <input type="email" id="reg-email" required placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
-            </div>
-            <div>
-                <label for="reg-password" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Create Passkey (Min 6 chars)</label>
-                <input type="password" id="reg-password" required minlength="6" placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
-            </div>
-            <button id="reg-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#aeecff] hover:bg-[#00d9ff] text-[#003918] font-bold uppercase tracking-wider transition-all shadow-[0_0_16px_rgba(174,236,255,0.3)] cursor-pointer mt-2">
-                Send Verification Code
-            </button>
-        </form>
-
-        <!-- FORM 2B: CREATE ACCOUNT (STEP 2 - EMAIL OTP VERIFICATION) -->
-        <form id="register-otp-form" onsubmit="handleRegisterStep2(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
-            <div class="p-3 rounded-lg bg-[#10131b] border border-[#32353d] text-[#bacbb9] leading-relaxed">
-                Enter the 6-digit verification code sent to <span id="otp-target-email" class="text-[#aeecff] font-bold"></span>
-            </div>
-            <div>
-                <label for="reg-otp-code" class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Email Verification Code</label>
-                <input type="text" id="reg-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-center text-lg tracking-[0.4em] text-[#39ff88] font-bold focus:outline-none focus:border-[#39ff88]"/>
-            </div>
-            <button id="reg-verify-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
-                Verify &amp; Activate Account
-            </button>
-            <button type="button" onclick="switchAuthView('register')" class="w-full py-2 text-[#bacbb9] hover:text-white text-[11px] uppercase cursor-pointer">
-                &larr; Back / Change Details
-            </button>
-        </form>
-
-        <!-- FORM 3A: FORGOT PASSKEY (STEP 1 - REQUEST RESET CODE) -->
-        <form id="forgot-form" onsubmit="handleForgotStep1(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
-            <div class="text-xs text-[#bacbb9] leading-relaxed mb-1">
-                Enter your registered username or email address to receive a 6-digit passkey reset code (Max 5 requests/min).
-            </div>
-            <div>
-                <label for="forgot-identifier" class="block text-[10px] text-[#bacbb9] uppercase mb-1">Registered Email or Username</label>
-                <input type="text" id="forgot-identifier" required placeholder="operator@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#aeecff]"/>
-            </div>
-            <button id="forgot-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#aeecff] hover:bg-[#00d9ff] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
-                Send Reset Code
-            </button>
-            <button type="button" onclick="switchAuthView('login')" class="w-full py-2 text-[#bacbb9] hover:text-white text-[11px] uppercase cursor-pointer">
-                &larr; Back to Sign In
-            </button>
-        </form>
-
-        <!-- FORM 3B: FORGOT PASSKEY (STEP 2 - VERIFY OTP & SET NEW PASSKEY) -->
-        <form id="reset-form" onsubmit="handleForgotStep2(event)" class="hidden space-y-3.5 font-['JetBrains_Mono'] text-xs">
-            <div>
-                <label for="reset-otp-code" class="block text-[10px] text-[#bacbb9] uppercase mb-1">6-Digit Reset Code</label>
-                <input type="text" id="reset-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-center text-lg tracking-[0.4em] text-[#aeecff] font-bold focus:outline-none focus:border-[#aeecff]"/>
-            </div>
-            <div>
-                <label for="reset-new-password" class="block text-[10px] text-[#bacbb9] uppercase mb-1">New Passkey (Min 6 chars)</label>
-                <input type="password" id="reset-new-password" required minlength="6" placeholder="••••••••••••" class="w-full px-3.5 py-2.5 rounded-lg bg-[#10131b] border border-[#32353d] text-white focus:outline-none focus:border-[#39ff88]"/>
-            </div>
-            <button id="reset-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
-                Update Passkey
-            </button>
-            <button type="button" onclick="switchAuthView('login')" class="w-full py-2 text-[#bacbb9] hover:text-white text-[11px] uppercase cursor-pointer">
-                &larr; Cancel
-            </button>
-        </form>
-
-        <div class="relative flex py-4 items-center">
-            <div class="flex-grow border-t border-[#32353d]"></div>
-            <span class="flex-shrink mx-3 text-[#849584] font-['JetBrains_Mono'] text-[10px] uppercase">OR EXTERNAL OAUTH</span>
-            <div class="flex-grow border-t border-[#32353d]"></div>
         </div>
 
-        <!-- GitHub OAuth Login Button -->
-        <a href="/api/auth/github" class="w-full py-3 px-4 rounded-xl bg-[#272a32] hover:bg-[#32353d] text-white font-['JetBrains_Mono'] text-xs uppercase font-bold flex items-center justify-center gap-2.5 border border-[#32353d] transition-all">
-            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            <span>Continue with GitHub</span>
-        </a>
+        <!-- Compact Split Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-12 items-center">
+
+            <!-- LEFT: Interactive Walking Mascot with Moving Background & Ground -->
+            <div id="mascot-stage" class="md:col-span-5 p-3 sm:p-4 border-b md:border-b-0 md:border-r border-[#bae0ff]/60 flex flex-col items-center justify-center bg-[#154078]/40 relative select-none overflow-hidden">
+                <svg id="mascot-svg" class="w-full max-w-[260px] h-44 sm:h-60 select-none overflow-hidden cursor-pointer" viewBox="60 15 280 285" fill="none" xmlns="http://www.w3.org/2000/svg" title="Tap me!">
+                    <defs>
+                        <clipPath id="eye-clip">
+                            <circle cx="190" cy="88" r="24"/>
+                        </clipPath>
+                        <clipPath id="stage-clip">
+                            <rect x="60" y="15" width="280" height="285"/>
+                        </clipPath>
+                    </defs>
+
+                    <g clip-path="url(#stage-clip)">
+                        <!-- MOVING PARALLAX BACKGROUND LAYER (Gives the illusion of walking forward) -->
+                        <g class="bg-parallax-track" opacity="0.28">
+                            <!-- Repeating Blueprint Pillars, Data Nodes & Distance Markers -->
+                            <line x1="90" y1="25" x2="90" y2="286" stroke="#bae0ff" stroke-width="1" stroke-dasharray="4 6"/>
+                            <circle cx="90" cy="70" r="3" stroke="#7ce0ff" stroke-width="1"/>
+                            <text x="95" y="275" fill="#bae0ff" font-family="JetBrains Mono" font-size="8">01m</text>
+
+                            <line x1="170" y1="25" x2="170" y2="286" stroke="#bae0ff" stroke-width="1" stroke-dasharray="4 6"/>
+                            <rect x="166" y="120" width="8" height="8" stroke="#7ce0ff" stroke-width="1"/>
+                            <text x="175" y="275" fill="#bae0ff" font-family="JetBrains Mono" font-size="8">02m</text>
+
+                            <line x1="250" y1="25" x2="250" y2="286" stroke="#bae0ff" stroke-width="1" stroke-dasharray="4 6"/>
+                            <circle cx="250" cy="70" r="3" stroke="#7ce0ff" stroke-width="1"/>
+                            <text x="255" y="275" fill="#bae0ff" font-family="JetBrains Mono" font-size="8">03m</text>
+
+                            <line x1="330" y1="25" x2="330" y2="286" stroke="#bae0ff" stroke-width="1" stroke-dasharray="4 6"/>
+                            <rect x="326" y="120" width="8" height="8" stroke="#7ce0ff" stroke-width="1"/>
+                            <text x="335" y="275" fill="#bae0ff" font-family="JetBrains Mono" font-size="8">04m</text>
+
+                            <line x1="410" y1="25" x2="410" y2="286" stroke="#bae0ff" stroke-width="1" stroke-dasharray="4 6"/>
+                            <circle cx="410" cy="70" r="3" stroke="#7ce0ff" stroke-width="1"/>
+                            <text x="415" y="275" fill="#bae0ff" font-family="JetBrains Mono" font-size="8">05m</text>
+
+                            <line x1="490" y1="25" x2="490" y2="286" stroke="#bae0ff" stroke-width="1" stroke-dasharray="4 6"/>
+                        </g>
+
+                        <!-- MOVING GROUND LINE & SCROLLING HATCH TICKS -->
+                        <line x1="60" y1="286" x2="340" y2="286" stroke="#bae0ff" stroke-width="1.8" stroke-opacity="0.9"/>
+                        <g class="ground-scroll-track" stroke="#bae0ff" stroke-width="1.2" stroke-opacity="0.65">
+                            <line x1="60" y1="286" x2="52" y2="295"/><line x1="80" y1="286" x2="72" y2="295"/>
+                            <line x1="100" y1="286" x2="92" y2="295"/><line x1="120" y1="286" x2="112" y2="295"/>
+                            <line x1="140" y1="286" x2="132" y2="295"/><line x1="160" y1="286" x2="152" y2="295"/>
+                            <line x1="180" y1="286" x2="172" y2="295"/><line x1="200" y1="286" x2="192" y2="295"/>
+                            <line x1="220" y1="286" x2="212" y2="295"/><line x1="240" y1="286" x2="232" y2="295"/>
+                            <line x1="260" y1="286" x2="252" y2="295"/><line x1="280" y1="286" x2="272" y2="295"/>
+                            <line x1="300" y1="286" x2="292" y2="295"/><line x1="320" y1="286" x2="312" y2="295"/>
+                            <line x1="340" y1="286" x2="332" y2="295"/><line x1="360" y1="286" x2="352" y2="295"/>
+                            <line x1="380" y1="286" x2="372" y2="295"/><line x1="400" y1="286" x2="392" y2="295"/>
+                        </g>
+                    </g>
+
+                    <!-- Blueprint Callouts (Unchanged) -->
+                    <line x1="205" y1="70" x2="240" y2="26" stroke="#bae0ff" stroke-width="1" stroke-opacity="0.8"/>
+                    <text x="232" y="22" fill="#e6f3ff" font-family="JetBrains Mono" font-size="10" font-weight="bold">EYE Ø 0.23</text>
+
+                    <line x1="280" y1="36" x2="280" y2="192" stroke="#e6f3ff" stroke-width="1" stroke-opacity="0.7"/>
+                    <text x="288" y="116" fill="#e6f3ff" font-family="JetBrains Mono" font-size="10" font-weight="bold">H 1.00</text>
+
+                    <text x="64" y="242" fill="#bae0ff" font-family="JetBrains Mono" font-size="9.5" font-weight="bold">LEG 0.57</text>
+
+                    <!-- Mascot Body Group (Exact Same Shape, Naughty Kid Personality) -->
+                    <g id="mascot-body-root" class="mascot-bob">
+                        <!-- Animated Left Leg -->
+                        <g id="mascot-left-leg">
+                            <path d="M158 188 C146 216, 150 242, 160 262" stroke="#e6f3ff" stroke-width="13" stroke-linecap="round" fill="none"/>
+                            <path d="M158 188 C146 216, 150 242, 160 262" stroke="#18498a" stroke-width="9" stroke-linecap="round" fill="none"/>
+                            <ellipse cx="160" cy="268" rx="13" ry="7.5" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+                        </g>
+
+                        <!-- Animated Right Leg -->
+                        <g id="mascot-right-leg">
+                            <path d="M214 188 L218 272" stroke="#e6f3ff" stroke-width="13" stroke-linecap="round"/>
+                            <path d="M214 188 L218 272" stroke="#18498a" stroke-width="9" stroke-linecap="round"/>
+                            <ellipse cx="220" cy="277" rx="14" ry="7" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+                        </g>
+
+                        <!-- Main Torso (Unchanged) -->
+                        <rect x="124" y="36" width="132" height="156" rx="38" fill="#174786" stroke="#e6f3ff" stroke-width="2.4"/>
+                        <rect x="133" y="45" width="114" height="138" rx="30" fill="none" stroke="#bae0ff" stroke-width="1.1" stroke-dasharray="4 4" stroke-opacity="0.7"/>
+
+                        <!-- Outer Radar Ring Around Eye -->
+                        <circle class="eye-radar" cx="190" cy="88" r="29" fill="none" stroke="#7ce0ff" stroke-width="1" stroke-dasharray="5 4" stroke-opacity="0.65"/>
+
+                        <!-- Cyclops Eye Socket -->
+                        <g clip-path="url(#eye-clip)">
+                            <circle cx="190" cy="88" r="24" fill="#d8ecff"/>
+                            <line x1="164" y1="88" x2="216" y2="88" stroke="#154078" stroke-width="0.7" stroke-opacity="0.3"/>
+                            <line x1="190" y1="62" x2="190" y2="114" stroke="#154078" stroke-width="0.7" stroke-opacity="0.3"/>
+
+                            <!-- Pupil + Cursor-Rotation Iris Group -->
+                            <g id="mascot-pupil-group">
+                                <circle cx="190" cy="88" r="12" fill="#102a4c"/>
+                                <g id="pupil-iris-ring">
+                                    <circle cx="190" cy="88" r="9.2" fill="none" stroke="#7ce0ff" stroke-width="1.5" stroke-dasharray="4 3"/>
+                                    <polygon points="190,75 187.5,80 192.5,80" fill="#39ff88"/>
+                                </g>
+                                <circle id="pupil-core" cx="190" cy="88" r="5" fill="#00d9ff"/>
+                                <circle cx="194" cy="84" r="2.8" fill="#ffffff"/>
+                            </g>
+
+                            <!-- Mechanical Blueprint Eyelid Shutters -->
+                            <rect id="eyelid-top" x="160" y="38" width="60" height="26" fill="#133b70" stroke="#bae0ff" stroke-width="1.5"/>
+                            <rect id="eyelid-bottom" x="160" y="112" width="60" height="26" fill="#133b70" stroke="#bae0ff" stroke-width="1.5"/>
+                            <line id="eye-closed-line" x1="166" y1="88" x2="214" y2="88" stroke="#39ff88" stroke-width="2.2" opacity="0"/>
+                            <line id="eye-peek-line" x1="168" y1="81" x2="212" y2="81" stroke="#7ce0ff" stroke-width="1.2" stroke-dasharray="3 2" opacity="0"/>
+                        </g>
+
+                        <!-- Eye Rim Border -->
+                        <circle id="eye-rim" cx="190" cy="88" r="24" fill="none" stroke="#e6f3ff" stroke-width="2.2"/>
+
+                        <!-- Left Arm -->
+                        <g id="mascot-left-arm">
+                            <path d="M128 112 L98 180" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
+                            <path d="M128 112 L98 180" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
+                            <circle cx="96" cy="186" r="11" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+                        </g>
+
+                        <!-- Right Arm -->
+                        <g id="mascot-right-arm">
+                            <path d="M252 112 L282 180" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
+                            <path d="M252 112 L282 180" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
+                            <circle cx="284" cy="186" r="11" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+                        </g>
+                    </g>
+                </svg>
+
+                <div class="text-[10px] text-[#bae0ff]/80 text-center">
+                    Passive Recon Console • RLS Protected
+                </div>
+            </div>
+
+            <!-- RIGHT: Compact Authentication Forms -->
+            <div class="md:col-span-7 p-4 sm:p-6 bg-[#0d2850]/90">
+                <!-- Auth Mode Switcher -->
+                <div class="grid grid-cols-2 gap-1.5 p-1 bg-[#091e3d] border border-[#bae0ff]/50 mb-4 text-xs">
+                    <button id="tab-login-btn" type="button" onclick="switchAuthView('login')" class="py-1.5 font-bold uppercase tracking-wider transition-all bg-[#1c539e] text-white border border-[#bae0ff]/80 cursor-pointer">
+                        Sign In
+                    </button>
+                    <button id="tab-register-btn" type="button" onclick="switchAuthView('register')" class="py-1.5 font-bold uppercase tracking-wider transition-all text-[#bae0ff] hover:text-white cursor-pointer">
+                        Create Account
+                    </button>
+                </div>
+
+                <!-- Alert Box -->
+                <div id="auth-alert" class="hidden mb-3 p-2.5 text-xs border"></div>
+
+                <!-- FORM 1A: SIGN IN -->
+                <form id="login-form" onsubmit="handleLoginStep1(event)" class="space-y-3 text-xs">
+                    <div>
+                        <label for="login-username" class="block text-[10px] text-[#bae0ff] uppercase mb-1">Username or Email</label>
+                        <input type="text" id="login-username" required placeholder="Enter Username or Email" class="w-full px-3 py-2 bp-input"/>
+                    </div>
+                    <div id="legacy-email-box" class="hidden">
+                        <label for="login-legacy-email" class="block text-[10px] text-[#7ce0ff] uppercase mb-1">Link Email (For 2FA OTP)</label>
+                        <input type="email" id="login-legacy-email" placeholder="operator@domain.com" class="w-full px-3 py-2 bp-input border-[#7ce0ff]"/>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="login-password" class="text-[10px] text-[#bae0ff] uppercase">Access Passkey</label>
+                            <button type="button" onclick="switchAuthView('forgot')" class="text-[10px] text-[#7ce0ff] hover:underline cursor-pointer">Forgot Passkey?</button>
+                        </div>
+                        <div class="relative flex items-center">
+                            <input type="password" id="login-password" required placeholder="••••••••••••" class="w-full pl-3 pr-10 py-2 bp-input passkey-field"/>
+                            <button type="button" onclick="togglePasskeyPeek('login-password', this)" class="absolute right-2.5 text-[#bae0ff] hover:text-[#39ff88] cursor-pointer p-1" title="Show / Hide Passkey">
+                                <svg class="w-4 h-4 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="login-submit-btn" type="submit" class="w-full py-2.5 bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider transition-all cursor-pointer">
+                        Authenticate Session &rarr;
+                    </button>
+                </form>
+
+                <!-- FORM 1B: SIGN IN 2FA OTP -->
+                <form id="login-otp-form" onsubmit="handleLoginStep2(event)" class="hidden space-y-3 text-xs">
+                    <div class="p-2.5 bg-[#091e3d] border border-[#bae0ff]/50 text-[#bae0ff]">
+                        OTP sent to <span id="login-otp-target-email" class="text-[#39ff88] font-bold"></span>
+                    </div>
+                    <div>
+                        <label for="login-otp-code" class="block text-[10px] text-[#bae0ff] uppercase mb-1">6-Digit Sign-In OTP</label>
+                        <input type="text" id="login-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3 py-2 bp-input text-center text-base tracking-[0.4em] text-[#39ff88] font-bold"/>
+                    </div>
+                    <button id="login-verify-btn" type="submit" class="w-full py-2.5 bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider cursor-pointer">
+                        Verify Sign-In OTP
+                    </button>
+                    <button type="button" onclick="switchAuthView('login')" class="w-full py-1 text-[#bae0ff] hover:text-white text-[11px] uppercase cursor-pointer">
+                        &larr; Back
+                    </button>
+                </form>
+
+                <!-- FORM 2A: CREATE ACCOUNT -->
+                <form id="register-form" onsubmit="handleRegisterStep1(event)" class="hidden space-y-2.5 text-xs">
+                    <div>
+                        <label for="reg-username" class="block text-[10px] text-[#bae0ff] uppercase mb-1">Operator Username</label>
+                        <input type="text" id="reg-username" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_\-]+" placeholder="e.g. cyber_sentinel" class="w-full px-3 py-2 bp-input"/>
+                    </div>
+                    <div>
+                        <label for="reg-email" class="block text-[10px] text-[#bae0ff] uppercase mb-1">Email Address</label>
+                        <input type="email" id="reg-email" required placeholder="operator@domain.com" class="w-full px-3 py-2 bp-input"/>
+                    </div>
+                    <div>
+                        <label for="reg-password" class="block text-[10px] text-[#bae0ff] uppercase mb-1">Create Passkey (Min 6 chars)</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="reg-password" required minlength="6" placeholder="••••••••••••" class="w-full pl-3 pr-10 py-2 bp-input passkey-field"/>
+                            <button type="button" onclick="togglePasskeyPeek('reg-password', this)" class="absolute right-2.5 text-[#bae0ff] hover:text-[#39ff88] cursor-pointer p-1" title="Show / Hide Passkey">
+                                <svg class="w-4 h-4 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="reg-submit-btn" type="submit" class="w-full py-2.5 bg-[#7ce0ff] hover:bg-white text-[#0d2850] font-bold uppercase tracking-wider transition-all cursor-pointer">
+                        Send Verification Code &rarr;
+                    </button>
+                </form><!-- FORM 2B: VERIFY ACCOUNT OTP -->
+                <form id="register-otp-form" onsubmit="handleRegisterStep2(event)" class="hidden space-y-3 text-xs">
+                    <div class="p-2.5 bg-[#091e3d] border border-[#bae0ff]/50 text-[#bae0ff]">
+                        Code sent to <span id="otp-target-email" class="text-[#7ce0ff] font-bold"></span>
+                    </div>
+                    <div>
+                        <label for="reg-otp-code" class="block text-[10px] text-[#bae0ff] uppercase mb-1">6-Digit Verification Code</label>
+                        <input type="text" id="reg-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3 py-2 bp-input text-center text-base tracking-[0.4em] text-[#39ff88] font-bold"/>
+                    </div>
+                    <button id="reg-verify-btn" type="submit" class="w-full py-2.5 bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider cursor-pointer">
+                        Verify &amp; Activate
+                    </button>
+                    <button type="button" onclick="switchAuthView('register')" class="w-full py-1 text-[#bae0ff] hover:text-white text-[11px] uppercase cursor-pointer">
+                        &larr; Back
+                    </button>
+                </form>
+
+                <!-- FORM 3A: FORGOT PASSKEY -->
+                <form id="forgot-form" onsubmit="handleForgotStep1(event)" class="hidden space-y-3 text-xs">
+                    <div>
+                        <label for="forgot-identifier" class="block text-[10px] text-[#bae0ff] uppercase mb-1">Registered Email or Username</label>
+                        <input type="text" id="forgot-identifier" required placeholder="operator@domain.com" class="w-full px-3 py-2 bp-input"/>
+                    </div>
+                    <button id="forgot-submit-btn" type="submit" class="w-full py-2.5 bg-[#7ce0ff] hover:bg-white text-[#0d2850] font-bold uppercase tracking-wider cursor-pointer">
+                        Send Reset Code
+                    </button>
+                    <button type="button" onclick="switchAuthView('login')" class="w-full py-1 text-[#bae0ff] hover:text-white text-[11px] uppercase cursor-pointer">
+                        &larr; Back to Sign In
+                    </button>
+                </form>
+
+                <!-- FORM 3B: RESET PASSKEY -->
+                <form id="reset-form" onsubmit="handleForgotStep2(event)" class="hidden space-y-3 text-xs">
+                    <div>
+                        <label for="reset-otp-code" class="block text-[10px] text-[#bae0ff] uppercase mb-1">6-Digit Reset Code</label>
+                        <input type="text" id="reset-otp-code" required maxlength="6" pattern="\d{6}" placeholder="123456" class="w-full px-3 py-2 bp-input text-center text-base tracking-[0.4em] text-[#7ce0ff] font-bold"/>
+                    </div>
+                    <div>
+                        <label for="reset-new-password" class="block text-[10px] text-[#bae0ff] uppercase mb-1">New Passkey</label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="reset-new-password" required minlength="6" placeholder="••••••••••••" class="w-full pl-3 pr-10 py-2 bp-input passkey-field"/>
+                            <button type="button" onclick="togglePasskeyPeek('reset-new-password', this)" class="absolute right-2.5 text-[#bae0ff] hover:text-[#39ff88] cursor-pointer p-1" title="Show / Hide Passkey">
+                                <svg class="w-4 h-4 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="reset-submit-btn" type="submit" class="w-full py-2.5 bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] font-bold uppercase tracking-wider cursor-pointer">
+                        Update Passkey
+                    </button>
+                    <button type="button" onclick="switchAuthView('login')" class="w-full py-1 text-[#bae0ff] hover:text-white text-[11px] uppercase cursor-pointer">
+                        &larr; Cancel
+                    </button>
+                </form>
+
+                <!-- Compact Divider & GitHub OAuth -->
+                <div class="relative flex py-3 items-center">
+                    <div class="flex-grow border-t border-[#bae0ff]/35"></div>
+                    <span class="flex-shrink mx-2 text-[#bae0ff]/75 text-[9px] uppercase">OR OAUTH</span>
+                    <div class="flex-grow border-t border-[#bae0ff]/35"></div>
+                </div>
+
+                <a href="/api/auth/github" class="w-full py-2 px-4 bg-[#154078] hover:bg-[#1e57a0] text-white text-xs uppercase font-bold flex items-center justify-center gap-2 border border-[#bae0ff]/70 transition-all">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    <span>Continue with GitHub</span>
+                </a>
+            </div>
+
+        </div>
     </div>
 
     <script>
         let pendingLoginEmail = '';
         let pendingVerifyEmail = '';
         let pendingResetEmail = '';
+        let isPasswordFocused = false;
+        let isPeekingPassword = false;
+        let naughtySneakTimer = null;
+        let lastInteractionTime = Date.now();
+
+        function updateMascotPrivacyState() {
+            const svgEl = document.getElementById('mascot-svg');
+            const bodyRoot = document.getElementById('mascot-body-root');
+            const stateBadge = document.getElementById('mascot-state-badge');
+            if (!svgEl) return;
+
+            svgEl.classList.remove('privacy-shield', 'privacy-peek');
+            if (bodyRoot) bodyRoot.classList.remove('mascot-giggle');
+
+            if (isPasswordFocused) {
+                if (isPeekingPassword) {
+                    svgEl.classList.add('privacy-peek');
+                    if (bodyRoot) bodyRoot.classList.add('mascot-giggle');
+                    if (stateBadge) {
+                        stateBadge.innerText = 'UNIT: HEHE PEEKING!';
+                        stateBadge.className = 'text-[#39ff88] font-bold';
+                    }
+                } else {
+                    svgEl.classList.add('privacy-shield');
+                    if (stateBadge) {
+                        stateBadge.innerText = 'UNIT: EYES COVERED';
+                        stateBadge.className = 'text-[#7ce0ff] font-bold';
+                    }
+                }
+            } else {
+                if (stateBadge) {
+                    stateBadge.innerText = 'UNIT: PATROLLING';
+                    stateBadge.className = 'text-[#7ce0ff] font-bold';
+                }
+            }
+        }
+
+        // Naughty Boy Behavior: Briefly sneaks a peek while typing password even when hidden!
+        function triggerNaughtySneakPeek(inp) {
+            if (!isPasswordFocused || isPeekingPassword) return;
+            const svgEl = document.getElementById('mascot-svg');
+            const bodyRoot = document.getElementById('mascot-body-root');
+            const stateBadge = document.getElementById('mascot-state-badge');
+            if (!svgEl) return;
+
+            svgEl.classList.remove('privacy-shield');
+            svgEl.classList.add('privacy-peek');
+            if (bodyRoot) bodyRoot.classList.add('mascot-giggle');
+            if (stateBadge) {
+                stateBadge.innerText = 'UNIT: SNEAK PEEKING ;)';
+                stateBadge.className = 'text-[#39ff88] font-bold';
+            }
+
+            if (inp) {
+                const r = inp.getBoundingClientRect();
+                pointEyeAt(r.left + r.width * 0.5, r.top + r.height * 0.5, false, true);
+            }
+
+            clearTimeout(naughtySneakTimer);
+            naughtySneakTimer = setTimeout(() => {
+                if (isPasswordFocused && !isPeekingPassword) {
+                    updateMascotPrivacyState();
+                }
+            }, 650);
+        }
+
+        function togglePasskeyPeek(inputId, btnEl) {
+            const inp = document.getElementById(inputId);
+            if (!inp) return;
+
+            if (inp.type === 'password') {
+                inp.type = 'text';
+                isPeekingPassword = true;
+                btnEl.innerHTML = `<svg class="w-4 h-4 fill-none stroke-[#39ff88]" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+            } else {
+                inp.type = 'password';
+                isPeekingPassword = false;
+                btnEl.innerHTML = `<svg class="w-4 h-4 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+            }
+
+            isPasswordFocused = true;
+            inp.focus();
+            updateMascotPrivacyState();
+
+            if (isPeekingPassword) {
+                const r = inp.getBoundingClientRect();
+                pointEyeAt(r.left + r.width * 0.5, r.top + r.height * 0.5, true, true);
+            }
+        }
+
+        function pointEyeAt(clientX, clientY, isClickPulse = false, allowDuringPeek = false) {
+            const svgEl = document.getElementById('mascot-svg');
+            const pupilGroup = document.getElementById('mascot-pupil-group');
+            const irisRing = document.getElementById('pupil-iris-ring');
+            const pupilCore = document.getElementById('pupil-core');
+            const coordsEl = document.getElementById('bp-cursor-coords');
+
+            if (!svgEl || !pupilGroup) return;
+            if (isPasswordFocused && !isPeekingPassword && !allowDuringPeek) return;
+
+            const rect = svgEl.getBoundingClientRect();
+            const eyeScreenX = rect.left + rect.width * 0.46;
+            const eyeScreenY = rect.top + rect.height * 0.26;
+
+            const deltaX = clientX - eyeScreenX;
+            const deltaY = clientY - eyeScreenY;
+            const angleRad = Math.atan2(deltaY, deltaX);
+            const angleDeg = Math.round((angleRad * 180) / Math.PI);
+
+            const maxRadius = (isPeekingPassword || allowDuringPeek) ? 4.5 : 10.5;
+            const distance = Math.min(maxRadius, Math.hypot(deltaX, deltaY) / 14);
+
+            const tx = Math.cos(angleRad) * distance;
+            const ty = Math.sin(angleRad) * distance;
+
+            pupilGroup.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px)`;
+
+            if (irisRing) {
+                irisRing.style.transform = `rotate(${angleDeg + 90}deg)`;
+            }
+
+            if (coordsEl) {
+                coordsEl.innerText = `ANG: ${angleDeg}°`;
+            }
+
+            if (isClickPulse && pupilCore) {
+                pupilCore.setAttribute('fill', '#39ff88');
+                pupilCore.setAttribute('r', '6.5');
+                setTimeout(() => {
+                    pupilCore.setAttribute('fill', '#00d9ff');
+                    pupilCore.setAttribute('r', '5');
+                }, 220);
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             if (window.Telegram && window.Telegram.WebApp) {
                 window.Telegram.WebApp.expand();
                 window.Telegram.WebApp.ready();
             }
+
+            const svgEl = document.getElementById('mascot-svg');
+            const bodyRoot = document.getElementById('mascot-body-root');
+
+            // Playful Wink & Hop when someone clicks/taps the mascot directly
+            if (svgEl && bodyRoot) {
+                svgEl.addEventListener('pointerdown', () => {
+                    if (isPasswordFocused) return;
+                    svgEl.classList.add('mascot-wink');
+                    bodyRoot.classList.add('mascot-hop');
+                    setTimeout(() => svgEl.classList.remove('mascot-wink'), 220);
+                    setTimeout(() => bodyRoot.classList.remove('mascot-hop'), 460);
+                });
+            } // 1. Mouse & Stylus Pointer Move
+            window.addEventListener('pointermove', (e) => {
+                lastInteractionTime = Date.now();
+                pointEyeAt(e.clientX, e.clientY, false);
+            }, { passive: true });
+
+            // 2. Mobile Finger Touch Drag
+            window.addEventListener('touchstart', (e) => {
+                if (e.touches && e.touches.length > 0) {
+                    lastInteractionTime = Date.now();
+                    pointEyeAt(e.touches[0].clientX, e.touches[0].clientY, true);
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches && e.touches.length > 0) {
+                    lastInteractionTime = Date.now();
+                    pointEyeAt(e.touches[0].clientX, e.touches[0].clientY, false);
+                }
+            }, { passive: true });
+
+            // 3. Click / Tap Pointing
+            window.addEventListener('pointerdown', (e) => {
+                lastInteractionTime = Date.now();
+                pointEyeAt(e.clientX, e.clientY, true);
+            }, { passive: true });
+
+            // 4. Naughty Kid Fidgeting: Random darts, quick winks & sneaky peeks when idle
+            setInterval(() => {
+                if (isPasswordFocused && !isPeekingPassword) {
+                    // 30% chance to naughtily peek through fingers even while waiting on password field!
+                    if (Math.random() < 0.3) {
+                        triggerNaughtySneakPeek(document.activeElement);
+                    }
+                    return;
+                }
+                if (Date.now() - lastInteractionTime < 2200) return;
+
+                const randomX = Math.random() * window.innerWidth;
+                const randomY = Math.random() * window.innerHeight;
+                pointEyeAt(randomX, randomY, Math.random() < 0.35);
+
+                // Occasional mischievous quick blink
+                if (svgEl && Math.random() < 0.28) {
+                    svgEl.classList.add('mascot-wink');
+                    setTimeout(() => svgEl.classList.remove('mascot-wink'), 150);
+                }
+            }, 1400);
+
+            // 5. Input Focus & Mischievous Password Behavior
+            document.querySelectorAll('input').forEach((inp) => {
+                const isPass = inp.classList.contains('passkey-field');
+
+                inp.addEventListener('focus', () => {
+                    lastInteractionTime = Date.now();
+                    if (isPass) {
+                        isPasswordFocused = true;
+                        isPeekingPassword = (inp.type === 'text');
+                        updateMascotPrivacyState();
+                    } else {
+                        isPasswordFocused = false;
+                        updateMascotPrivacyState();
+                        const r = inp.getBoundingClientRect();
+                        pointEyeAt(r.left + r.width / 2, r.top + r.height / 2, true);
+                    }
+                });
+
+                inp.addEventListener('input', () => {
+                    lastInteractionTime = Date.now();
+                    if (isPass && !isPeekingPassword) {
+                        // Every few keystrokes, the naughty mascot sneaks a quick peek at the password!
+                        if (inp.value.length > 0 && inp.value.length % 4 === 0) {
+                            triggerNaughtySneakPeek(inp);
+                        }
+                    } else {
+                        const r = inp.getBoundingClientRect();
+                        const progress = Math.min(1, inp.value.length / 22);
+                        pointEyeAt(r.left + 20 + progress * (r.width * 0.65), r.top + r.height / 2, false, true);
+                    }
+                });
+
+                inp.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        const active = document.activeElement;
+                        if (!active || !active.classList.contains('passkey-field')) {
+                            isPasswordFocused = false;
+                            updateMascotPrivacyState();
+                        }
+                    }, 120);
+                });
+            });
         });
 
         function showAlert(msg, isError) {
             const box = document.getElementById('auth-alert');
-            box.classList.remove('hidden', 'bg-red-950/40', 'border-red-500/50', 'text-red-300', 'bg-emerald-950/40', 'border-emerald-500/50', 'text-emerald-300');
+            box.classList.remove('hidden', 'bg-red-950/60', 'border-red-400', 'text-red-200', 'bg-emerald-950/60', 'border-[#39ff88]', 'text-[#39ff88]');
             if (isError) {
-                box.classList.add('bg-red-950/40', 'border-red-500/50', 'text-red-300');
+                box.classList.add('bg-red-950/60', 'border-red-400', 'text-red-200');
             } else {
-                box.classList.add('bg-emerald-950/40', 'border-emerald-500/50', 'text-emerald-300');
+                box.classList.add('bg-emerald-950/60', 'border-[#39ff88]', 'text-[#39ff88]');
             }
             box.innerText = msg;
         }
@@ -201,13 +802,17 @@
             views.forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById('auth-alert').classList.add('hidden');
 
+            isPasswordFocused = false;
+            isPeekingPassword = false;
+            updateMascotPrivacyState();
+
             const loginBtn = document.getElementById('tab-login-btn');
             const regBtn = document.getElementById('tab-register-btn');
 
             if (view === 'register' || view === 'register-otp') {
                 document.getElementById(view === 'register' ? 'register-form' : 'register-otp-form').classList.remove('hidden');
-                regBtn.className = "py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#aeecff] shadow cursor-pointer";
-                loginBtn.className = "py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white cursor-pointer";
+                regBtn.className = "py-1.5 font-bold uppercase tracking-wider transition-all bg-[#1c539e] text-white border border-[#bae0ff]/80 cursor-pointer";
+                loginBtn.className = "py-1.5 font-bold uppercase tracking-wider transition-all text-[#bae0ff] hover:text-white cursor-pointer";
             } else if (view === 'forgot') {
                 document.getElementById('forgot-form').classList.remove('hidden');
             } else if (view === 'reset') {
@@ -216,8 +821,8 @@
                 document.getElementById('login-otp-form').classList.remove('hidden');
             } else {
                 document.getElementById('login-form').classList.remove('hidden');
-                loginBtn.className = "py-2 rounded-lg font-bold uppercase transition-all bg-[#272a32] text-[#39ff88] shadow cursor-pointer";
-                regBtn.className = "py-2 rounded-lg font-bold uppercase transition-all text-[#bacbb9] hover:text-white cursor-pointer";
+                loginBtn.className = "py-1.5 font-bold uppercase tracking-wider transition-all bg-[#1c539e] text-white border border-[#bae0ff]/80 cursor-pointer";
+                regBtn.className = "py-1.5 font-bold uppercase tracking-wider transition-all text-[#bae0ff] hover:text-white cursor-pointer";
             }
         }
 
@@ -257,14 +862,14 @@
                 } else if (data.token) {
                     localStorage.setItem('token', data.token);
                     sessionStorage.setItem('active_session', '1');
-                    showAlert('ACCESS GRANTED. Redirecting to Command Center...', false);
+                    showAlert('ACCESS GRANTED. Redirecting...', false);
                     setTimeout(() => { window.location.href = '/dashboard'; }, 400);
                 }
             } catch (err) {
                 showAlert('Server connection failed. Please try again.', true);
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'Authenticate Session';
+                btn.innerText = 'Authenticate Session →';
             }
         }
 
@@ -289,39 +894,7 @@
                 } else if (data.token) {
                     localStorage.setItem('token', data.token);
                     sessionStorage.setItem('active_session', '1');
-                    showAlert('2FA VERIFIED! Redirecting to Command Center...', false);
-                    setTimeout(() => { window.location.href = '/dashboard'; }, 400);
-                }
-            } catch (err) {
-                showAlert('Server connection failed. Please try again.', true);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'Authenticate Session';
-            }
-        }
-
-        async function handleLoginStep2(e) {
-            e.preventDefault();
-            const btn = document.getElementById('login-verify-btn');
-            const otp = document.getElementById('login-otp-code').value.trim();
-
-            btn.disabled = true;
-            btn.innerText = 'VERIFYING OTP...';
-
-            try {
-                const res = await fetch('/api/auth/login-verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: pendingLoginEmail, otp })
-                });
-                const data = await res.json();
-
-                if (!data.success) {
-                    showAlert(data.error || 'Invalid Sign-In OTP.', true);
-                } else if (data.token) {
-                    localStorage.setItem('token', data.token);
-                    sessionStorage.setItem('active_session', '1');
-                    showAlert('2FA VERIFIED! Redirecting to Command Center...', false);
+                    showAlert('2FA VERIFIED! Redirecting...', false);
                     setTimeout(() => { window.location.href = '/dashboard'; }, 400);
                 }
             } catch (err) {
@@ -340,7 +913,7 @@
             const password = document.getElementById('reg-password').value;
 
             btn.disabled = true;
-            btn.innerText = 'CHECKING & SENDING CODE...';
+            btn.innerText = 'SENDING CODE...';
 
             try {
                 const res = await fetch('/api/auth/register-request', {
@@ -362,11 +935,9 @@
                 showAlert('Network error while requesting verification code.', true);
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'Send Verification Code';
+                btn.innerText = 'Send Verification Code →';
             }
-        }
-
-        async function handleRegisterStep2(e) {
+        }async function handleRegisterStep2(e) {
             e.preventDefault();
             const btn = document.getElementById('reg-verify-btn');
             const otp = document.getElementById('reg-otp-code').value.trim();
@@ -387,14 +958,14 @@
                 } else if (data.token) {
                     localStorage.setItem('token', data.token);
                     sessionStorage.setItem('active_session', '1');
-                    showAlert('EMAIL VERIFIED! Redirecting to Command Center...', false);
+                    showAlert('EMAIL VERIFIED! Redirecting...', false);
                     setTimeout(() => { window.location.href = '/dashboard'; }, 500);
                 }
             } catch (err) {
                 showAlert('Verification request failed.', true);
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'Verify & Activate Account';
+                btn.innerText = 'Verify & Activate';
             }
         }
 
@@ -404,7 +975,7 @@
             const identifier = document.getElementById('forgot-identifier').value.trim();
 
             btn.disabled = true;
-            btn.innerText = 'DISPATCHING CODE...';
+            btn.innerText = 'DISPATCHING...';
 
             try {
                 const res = await fetch('/api/auth/forgot-password', {
@@ -436,7 +1007,7 @@
             const newPassword = document.getElementById('reset-new-password').value;
 
             btn.disabled = true;
-            btn.innerText = 'UPDATING PASSKEY...';
+            btn.innerText = 'UPDATING...';
 
             try {
                 const res = await fetch('/api/auth/reset-password', {
