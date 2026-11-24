@@ -5,6 +5,43 @@ Allow: /project
 Allow: /about
 Allow: /dashboard
 Allow: /reports
+Allow: /llms.txt
+Disallow: /profile
+Disallow: /api/
+
+# Search & AI Citation / Live-Fetch Crawlers
+User-agent: Googlebot
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
+User-agent: Perplexity-User
+Allow: /
 Disallow: /profile
 Disallow: /api/
 
