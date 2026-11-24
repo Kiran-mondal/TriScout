@@ -30,16 +30,22 @@
       "dest": "/api/processor.py"
     },
     {
-      "src": "/(style\\.css|logo\\.svg|sitemap\\.xml|robots\\.txt)",
+      "src": "/(style\\.css|logo\\.svg|sitemap\\.xml|robots\\.txt|llms\\.txt)",
       "headers": {
-        "Cache-Control": "public, max-age=3600"
+        "Cache-Control": "public, max-age=3600",
+        "X-Content-Type-Options": "nosniff"
       },
       "dest": "/web_dashboard/server.js"
     },
     {
       "src": "/(.*)",
       "headers": {
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate"
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Vary": "Accept",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload"
       },
       "dest": "/web_dashboard/server.js"
     }
