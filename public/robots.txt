@@ -45,4 +45,20 @@ Allow: /
 Disallow: /profile
 Disallow: /api/
 
+# AI Model Training Crawlers (Public Pages Only)
+User-agent: GPTBot
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /profile
+Disallow: /api/
+
 Sitemap: https://triscout.quarry.dpdns.org/sitemap.xml
