@@ -8,20 +8,27 @@ function getEnv(key) {
     return foundKey ? process.env[foundKey].trim() : undefined;
 }
 
-// যদি কোনো কারণে Vercel থেকে JWT_SECRET না পায়, তবে DATABASE_URL থেকে একটি স্থায়ী (Static) হ্যাশ তৈরি করে নেবে। 
-// ফলে সার্ভার রিস্টার্ট বা দুই ফাইলের মধ্যে কখনোই Secret অমিল হবে না!
-const fallbackSecret = crypto.createHash('sha256').update(getEnv('DATABASE_URL') || 'triscout_prod_fallback_key').digest('hex');
-const JWT_SECRET = getEnv('JWT_SECRET') || fallbackSecret;
+const configuredSecret = getEnv('JWT_SECRET');
+const dbUrl = getEnv('DATABASE_URL');
+
+if (!configuredSecret) {
+    console.warn('[SECURITY WARN] JWT_SECRET is not set in environment variables. Configure a dedicated JWT_SECRET in production.');
+}
+
+const JWT_SECRET = configuredSecret
+    || (dbUrl ? crypto.createHash('sha256').update(dbUrl).digest('hex') : crypto.randomBytes(32).toString('hex'));
+
+const VERIFY_OPTS = { algorithms: ['HS256'] };
 
 function requireHTTPAuth(req, res, next) {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
 
     if (!token) {
         return res.status(401).json({ error: 'Access Denied: Missing secure pipeline token.' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
+    jwt.verify(token, JWT_SECRET, VERIFY_OPTS, (err, user) => {
         if (err) {
             return res.status(403).json({ error: 'Session expired or token invalid.' });
         }
@@ -32,11 +39,10 @@ function requireHTTPAuth(req, res, next) {
 
 function verifyWSToken(token) {
     try {
-        return jwt.verify(token, JWT_SECRET);
+        return jwt.verify(token, JWT_SECRET, VERIFY_OPTS);
     } catch (err) {
         return null;
     }
 }
 
-// এখানে JWT_SECRET এক্সপোর্ট করা হলো যাতে server.js হুবহু একই সিক্রেট ব্যবহার করে
 module.exports = { requireHTTPAuth, verifyWSToken, JWT_SECRET, getEnv };
