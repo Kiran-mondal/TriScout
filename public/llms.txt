@@ -1,0 +1,20 @@
+# TriScout v2.4 TAC-OPS
+
+> On-demand ethical passive cybersecurity reconnaissance console and global NPM CLI toolkit for auditing HTTP security headers, DNS topology, and source/credential leaks.
+
+## Core Pages
+- [Landing & Auth Portal](https://triscout.quarry.dpdns.org/): Operator authentication with 2FA email OTP and GitHub OAuth.
+- [Command Center](https://triscout.quarry.dpdns.org/dashboard): Interactive 11-node DMZ network topology HUD and on-demand target scanner.
+- [Reports & Export](https://triscout.quarry.dpdns.org/reports): Export passive audit findings to PDF, JSON, CSV, or email via SMTP.
+- [CLI Tool](https://triscout.quarry.dpdns.org/cli): Global NPM CLI usage (`npx @kiran-mondal/triscout`).
+- [About & Architecture](https://triscout.quarry.dpdns.org/about): Node.js, Express, Neon Serverless PostgreSQL (RLS), and SSRF guardrail overview.
+- [Projects](https://triscout.quarry.dpdns.org/project): Maintainer portfolio by Kiran Mondal.
+
+## Capabilities
+- 12-point passive HTTP security header and DOM audit (HSTS, CSP, X-Frame-Options, MIME sniffing, cookie flags, CORS).
+- Passive detection of exposed API keys and raw stack trace / SQL error leaks.
+- Multi-tenant Neon PostgreSQL Row-Level Security (RLS) across `users`, `auth_otps`, and `scan_logs`.
+- Token Bucket rate limiting for OTP and scanner requests.
+
+## Responsible Use
+TriScout is intended strictly for defensive security testing on systems you own or have explicit authorization to assess.
