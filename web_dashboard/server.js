@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
-const axios = require('axios'); 
+const axios = require('axios');
 const { neon } = require('@neondatabase/serverless');
 require('dotenv').config();
 
@@ -15,6 +15,7 @@ const https = require('https');
 const { requireHTTPAuth, JWT_SECRET, getEnv } = require('./middleware/auth.js');
 
 const app = express();
+app.disable('x-powered-by');
 
 const DATABASE_URL = getEnv('DATABASE_URL');
 const GITHUB_CLIENT_ID = getEnv('GITHUB_CLIENT_ID');
@@ -22,21 +23,199 @@ const GITHUB_CLIENT_SECRET = getEnv('GITHUB_CLIENT_SECRET');
 const ADMIN_USER = getEnv('ADMIN_USERNAME');
 const ADMIN_PASS = getEnv('ADMIN_PASSWORD');
 
-const sql = DATABASE_URL ? neon(DATABASE_URL) : async () => { throw new Error("Database URL not configured"); };
+const sql = DATABASE_URL ? neon(DATABASE_URL) : async () => { throw new Error('Database URL not configured'); };
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Module-level compiled regexes
+const secretRegex = /(?:AIza[0-9A-Za-z\-_]{35}|sk-(?:proj-)?[a-zA-Z0-9\-_]{32,}|gh[pousr]_[A-Za-z0-9_]{36,255}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9a-zA-Z\-]{10,48}|sk_live_[0-9a-zA-Z]{24,}|-----BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY-----)/g;
+const errorLeakRegex = /(?:ReferenceError|TypeError|SyntaxError|RangeError):\s+[^\n]+|at\s+[A-Za-z0-9_$.]+\s+\([^)]+:\d+:\d+\)|(?:SQL syntax.*MySQL|Warning.*mysql_|PostgreSQL.*ERROR|ORA-\d{5}|SQLite\/JDBCDriver|ROLLBACK\s+FAILED|Deadlock\s+found)/i;
+const debugLogLeakRegex = /(?:console\.debug\(|DEBUG_LOG|\[TRACE\]|webpack:\/\/|sourceMappingURL=.*\.map)/i;
+const titleRegex = /<title[^>]*>([^<]+)<\/title>/i;
+const scriptRegex = /<script\b/gi;
+const formRegex = /<form\b/gi;
+const insecureFormRegex = /<form[^>]+action=["']http:\/\/[^"']+["']/i;
+const unsafeInlineRegex = /\bon(?:error|load|mouseover|focus)\s*=\s*["'][^"']*javascript:/i;
+const usernameRegex = /^[a-zA-Z0-9_-]{3,30}$/;
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-// ১. লগইন ও সাইন-আপ পেজ (public/index.html) সার্ভ করা - ক্যাশমুক্ত
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+function logFlow(level, event, meta = {}) {
+    console.log(JSON.stringify({ timestamp: new Date().toISOString(), level, event, ...meta }));
+}
+
+function cleanInput(val, maxLen = 2048) {
+    if (typeof val !== 'string') return '';
+    return val.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, maxLen);
+}
+
+// ============================================================================
+// 0. Global Security Headers, CSP & Locked Origin Guardrails
+// ============================================================================
+const ALLOWED_ORIGINS = new Set([
+    'https://triscout.quarry.dpdns.org',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000'
+]);
+
+const ALLOWED_OAUTH_HOSTS = new Set([
+    'triscout.quarry.dpdns.org',
+    'localhost:3000',
+    '127.0.0.1:3000'
+]);
+
+const CSP_POLICY = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://telegram.org https://www.googletagmanager.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: https://github.com https://avatars.githubusercontent.com https://www.googletagmanager.com",
+    "connect-src 'self' https://dns.google https://www.google-analytics.com https://www.googletagmanager.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'"
+].join('; ');
+
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+    res.setHeader('Content-Security-Policy', CSP_POLICY);
+
+    const origin = req.headers.origin;
+    const hostOrigin = req.headers.host ? `https://${req.headers.host}` : '';
+
+    if (origin) {
+        if (ALLOWED_ORIGINS.has(origin) || origin === hostOrigin) {
+            res.setHeader('Access-Control-Allow-Origin', origin);
+            res.setHeader('Vary', 'Origin');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        } else if (req.path.startsWith('/api/')) {
+            logFlow('WARN', 'LOCKED_ORIGIN_BLOCKED', { origin, path: req.path });
+            return res.status(403).json({ success: false, error: 'Locked Origin Policy: Cross-origin request denied.' });
+        }
+    }
+    if (req.method === 'OPTIONS') return res.sendStatus(204);
+    next();
+});
+
+// ============================================================================
+// 1. GEO Content Negotiation (Accept: text/markdown + Vary: Accept) & Static Pages
+// ============================================================================
 const authHtmlPath = path.join(__dirname, '../public/index.html');
 const AUTH_HTML_CONTENT = fs.readFileSync(authHtmlPath, 'utf8');
+
+const dashboardHtmlPath = path.join(__dirname, 'views', 'index.html');
+const DASHBOARD_HTML_CONTENT = fs.readFileSync(dashboardHtmlPath, 'utf8');
+
+const llmsTxtPath = path.join(__dirname, '../public/llms.txt');
+let LLMS_TXT_CONTENT = `# TriScout v2.4 TAC-OPS\n\n> On-demand ethical passive cybersecurity reconnaissance console and global NPM CLI toolkit.\n\n- Console: https://triscout.quarry.dpdns.org/\n- Dashboard: https://triscout.quarry.dpdns.org/dashboard\n- CLI: npx @kiran-mondal/triscout\n`;
+try {
+    LLMS_TXT_CONTENT = fs.readFileSync(llmsTxtPath, 'utf8');
+} catch (e) {}
+
+const ROUTE_MARKDOWN_MAP = {
+    '/': `# TriScout v2.4 TAC-OPS — Ethical Passive Reconnaissance & Security Posture Console\n\nOn-demand passive cybersecurity reconnaissance dashboard and CLI tool for auditing HTTP security headers, DNS topology, and source leaks.\n\n- **Console URL:** https://triscout.quarry.dpdns.org/\n- **CLI Package:** \`npx @kiran-mondal/triscout\`\n- **Authentication:** Operator Sign-In with 2FA Email OTP or GitHub OAuth\n- **Security Controls:** Neon PostgreSQL Row-Level Security (RLS), Token Bucket rate limiting, and SSRF guardrails\n`,
+    '/login': `# TriScout Operator Sign-In\n\nAuthenticate via operator credentials (with 2FA Email OTP) or GitHub OAuth at https://triscout.quarry.dpdns.org/.\n`,
+    '/dashboard': `# TriScout Command Center & Passive Recon Scanner HUD\n\nInteractive 11-node DMZ network topology HUD and on-demand 12-point passive security scanner.\n\n- Evaluates HSTS, CSP, X-Frame-Options, MIME sniffing, cookie flags, CORS, and source/credential leaks.\n- Live Console: https://triscout.quarry.dpdns.org/dashboard\n`,
+    '/reports': `# TriScout Security Reports & Export\n\nGenerate security posture grades (0-100) and export findings as PDF, JSON, CSV, or email via SMTP relay.\n\n- URL: https://triscout.quarry.dpdns.org/reports\n`,
+    '/cli': `# TriScout CLI Edition\n\nRun passive security header and leak checks directly from your terminal or CI/CD pipeline:\n\n\`\`\`bash\nnpm install -g @kiran-mondal/triscout\ntriscout example.com\n\`\`\`\n`,
+    '/about': `# TriScout System Architecture\n\n- **Engine Build:** TriScout v2.4 TAC-OPS (On-Demand Zero-Preload)\n- **Core Stack:** Node.js, Express, Axios, Neon Serverless PostgreSQL (RLS)\n- **Capabilities:** HTTP Header Audit, Source Leak Regex, Google DoH DNS, SSRF Guardrail\n- **Maintainer:** Kiran Mondal (https://github.com/Kiran-mondal)\n`,
+    '/project': `# Kiran Mondal — Projects & Portfolio\n\n- **TriScout:** https://triscout.quarry.dpdns.org\n- **Password Guard:** https://passwordguard.quarry.dpdns.org\n- **ZenDrift:** https://zendrift.quarry.dpdns.org\n- **Omlang:** https://omlang.quarry.dpdns.org\n- **Chaturanga:** https://chaturanga.quarry.dpdns.org\n- **Pachisi:** https://pachisi.quarry.dpdns.org\n`,
+    '/privacy': `# TriScout Privacy Policy\n\n- **Data Collected:** Operator username, email address, salted scrypt password hash, and authorized target scan logs.\n- **Isolation:** Multi-tenant Neon PostgreSQL Row-Level Security (RLS) isolates each operator's records.\n- **Third-Party Services:** Gmail SMTP relay (for OTP and user-requested reports), GitHub OAuth (optional sign-in), Google DoH DNS, and Google Tag Manager.\n- **Data Deletion:** Operators can permanently delete their account and all associated scan logs anytime via Account & System -> Delete Account Data (\`POST /api/account/delete\`).\n`,
+    '/terms': `# TriScout Terms of Responsible Use\n\n- TriScout is provided strictly for legitimate defensive security research, auditing, and educational purposes.\n- You may only scan domains and systems that you own or have explicit written authorization to assess.\n- Scanning private, internal, or loopback infrastructure is prohibited.\n`
+};
+
+function wantsMarkdown(req) {
+    const accept = String(req.headers['accept'] || '').toLowerCase();
+    if (!accept.includes('text/markdown')) return false;
+    const mdIdx = accept.indexOf('text/markdown');
+    const htmlIdx = accept.indexOf('text/html');
+    return htmlIdx === -1 || mdIdx < htmlIdx;
+}
+
+function renderLegalHtml(title, heading, items) {
+    const listHtml = items.map(i => `<li class="mb-2"><strong class="text-[#39ff88]">${i.label}:</strong> ${i.text}</li>`).join('');
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${title} — TriScout</title>
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0d2850] text-[#e6f3ff] font-mono min-h-screen flex items-center justify-center p-4">
+  <main class="max-w-2xl w-full bg-[#113466] border border-[#bae0ff]/60 p-6 sm:p-8 rounded-sm shadow-2xl">
+    <div class="flex items-center justify-between border-b border-[#bae0ff]/40 pb-3 mb-4">
+      <h1 class="text-lg sm:text-xl font-bold text-white uppercase">${heading}</h1>
+      <a href="/" class="text-xs text-[#39ff88] hover:underline">&larr; Back to TriScout</a>
+    </div>
+    <ul class="text-xs sm:text-sm leading-relaxed text-[#bae0ff] list-disc pl-5">${listHtml}</ul>
+    <div class="mt-6 pt-3 border-t border-[#bae0ff]/30 flex justify-between text-[11px] text-[#bae0ff]/70">
+      <span>TriScout v2.4 TAC-OPS</span>
+      <span><a href="/privacy" class="hover:text-white">Privacy</a> | <a href="/terms" class="hover:text-white">Terms</a></span>
+    </div>
+  </main>
+</body>
+</html>`;
+}
+
+app.get('/llms.txt', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Vary', 'Accept');
+    res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+    res.status(200).send(LLMS_TXT_CONTENT);
+});
 
 app.get(['/', '/login', '/index.html'], (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
+    res.setHeader('Vary', 'Accept');
+
+    if (wantsMarkdown(req)) {
+        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+        return res.status(200).send(ROUTE_MARKDOWN_MAP['/']);
+    }
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(200).send(AUTH_HTML_CONTENT);
+});
+
+app.get('/privacy', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Vary', 'Accept');
+    if (wantsMarkdown(req)) {
+        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+        return res.status(200).send(ROUTE_MARKDOWN_MAP['/privacy']);
+    }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.status(200).send(renderLegalHtml('Privacy Policy', 'TriScout Privacy Policy', [
+        { label: 'Data Collected', text: 'Operator username, email address, salted scrypt password hash, and authorized scan logs.' },
+        { label: 'Database Isolation', text: 'Multi-tenant Neon PostgreSQL Row-Level Security (RLS) isolates every user account.' },
+        { label: 'Email & OAuth', text: 'Gmail SMTP delivers 2FA OTPs and requested scan reports; GitHub OAuth is optional.' },
+        { label: 'Account Deletion', text: 'Permanently delete your account and scan logs anytime from Account & System -> Delete Account Data.' }
+    ]));
+});
+
+app.get('/terms', (req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Vary', 'Accept');
+    if (wantsMarkdown(req)) {
+        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+        return res.status(200).send(ROUTE_MARKDOWN_MAP['/terms']);
+    }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.status(200).send(renderLegalHtml('Terms of Use', 'Terms of Responsible Use', [
+        { label: 'Authorized Scope Only', text: 'Only assess domains and systems that you own or have explicit permission to test.' },
+        { label: 'No Internal Scanning', text: 'Probing private, loopback, or internal network ranges is strictly prohibited.' },
+        { label: 'Passive Assessment', text: 'TriScout performs non-intrusive HTTP header, DNS, and public source posture audits.' }
+    ]));
 });
 
 app.use(express.static(path.join(__dirname, '../public'), { index: false }));
@@ -45,25 +224,63 @@ app.get('/favicon.ico', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/logo.svg'));
 });
 
+// ============================================================================
+// Health Check Endpoint (Check 38)
+// ============================================================================
+app.get(['/health', '/api/health'], async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!DATABASE_URL) {
+        return res.status(503).json({
+            status: 'degraded',
+            service: 'triscout-web-dashboard',
+            db: 'unconfigured',
+            timestamp: new Date().toISOString()
+        });
+    }
+    try {
+        await Promise.race([
+            sql`SELECT 1 AS ok`,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('DB health timeout')), 3000))
+        ]);
+        return res.status(200).json({
+            status: 'ok',
+            service: 'triscout-web-dashboard',
+            version: '2.4.0',
+            db: 'connected',
+            uptimeSec: Math.round(process.uptime()),
+            timestamp: new Date().toISOString()
+        });
+    } catch (err) {
+        logFlow('ERROR', 'HEALTH_CHECK_FAILED', { message: err.message });
+        return res.status(503).json({
+            status: 'degraded',
+            service: 'triscout-web-dashboard',
+            db: 'unreachable',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: { user: getEnv('GMAIL_USER'), pass: getEnv('GMAIL_PASS') }
-}); 
+});
 
-// ২. Token Bucket ও OTP Rate Limiter (প্রতি মিনিটে সর্বোচ্চ ৫টি ওটিপি এবং প্রতি টোকেন রিফিল)
+// ============================================================================
+// 2. Token Bucket & OTP Rate Limiter
+// ============================================================================
 const tokenBuckets = new Map();
-const CAPACITY = 5;          // একটি বালতিতে সর্বোচ্চ ৫টি টোকেন থাকতে পারবে
-const REFILL_RATE_MS = 60000; // প্রতি ১ মিনিটে (৬০ সেকেন্ডে) বালতি ফুল রিফিল হবে
+const CAPACITY = 5;
+const REFILL_RATE_MS = 60000;
 
 function checkTokenBucket(key) {
     const now = Date.now();
     const cleanKey = String(key || 'anon').toLowerCase();
-    
+
     let bucket = tokenBuckets.get(cleanKey);
     if (!bucket) {
         bucket = { tokens: CAPACITY, lastRefill: now };
     } else {
-        // সময়ের সাথে সাথে টোকেন রিফিল হিসাব করা
         const elapsed = now - bucket.lastRefill;
         if (elapsed > REFILL_RATE_MS) {
             bucket.tokens = CAPACITY;
@@ -76,12 +293,14 @@ function checkTokenBucket(key) {
         return { allowed: false, waitSec: Math.ceil((REFILL_RATE_MS - (now - bucket.lastRefill)) / 1000) };
     }
 
-    bucket.tokens -= 1; // একটি টোকেন খরচ করা হলো
+    bucket.tokens -= 1;
     tokenBuckets.set(cleanKey, bucket);
     return { allowed: true, remaining: bucket.tokens };
 }
 
-// ৩. ডাটাবেস টেবিল ও Row-Level Security (RLS) কনফিগারেশন
+// ============================================================================
+// 3. Database Tables & Row-Level Security (RLS)
+// ============================================================================
 let isDbInitialized = false;
 async function ensureUsersTable() {
     if (isDbInitialized) return;
@@ -181,6 +400,7 @@ async function verifyPassword(password, storedHash) {
     return new Promise((resolve, reject) => {
         crypto.scrypt(password, salt, 64, (err, derivedBuffer) => {
             if (err) return reject(err);
+            if (keyBuffer.length !== derivedBuffer.length) return resolve(false);
             resolve(crypto.timingSafeEqual(keyBuffer, derivedBuffer));
         });
     });
@@ -190,7 +410,9 @@ function generateOTP() {
     return String(crypto.randomInt(100000, 999999));
 }
 
-// ৪A. সাইন-আপ ধাপ ১: Token Bucket রেট লিমিট সহ ইমেইলে OTP পাঠানো
+// ============================================================================
+// 4. Registration & OTP Verification
+// ============================================================================
 app.post('/api/auth/register-request', async (req, res) => {
     const username = (req.body.username || '').trim();
     const email = (req.body.email || '').trim().toLowerCase();
@@ -202,6 +424,9 @@ app.post('/api/auth/register-request', async (req, res) => {
     if (!usernameRegex.test(username)) {
         return res.status(400).json({ success: false, error: 'Username must be 3-30 characters (letters, numbers, _ or -).' });
     }
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ success: false, error: 'Please enter a valid email address.' });
+    }
     if (password.length < 6) {
         return res.status(400).json({ success: false, error: 'Passkey must be at least 6 characters long.' });
     }
@@ -209,7 +434,6 @@ app.post('/api/auth/register-request', async (req, res) => {
         return res.status(409).json({ success: false, error: 'This username is reserved. Please choose a different name.' });
     }
 
-    // Token Bucket রেট লিমিট চেক (প্রতি মিনিটে সর্বোচ্চ ৫টি টোকেন)
     const bucketCheck = checkTokenBucket(email);
     if (!bucketCheck.allowed) {
         return res.status(429).json({
@@ -225,7 +449,7 @@ app.post('/api/auth/register-request', async (req, res) => {
 
         const existingError = await runWithRlsUser('__SYSTEM_AUTH__', async () => {
             const existingUser = await sql`
-                SELECT username, email FROM users 
+                SELECT username, email FROM users
                 WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${email})
                 LIMIT 1
             `;
@@ -266,7 +490,6 @@ app.post('/api/auth/register-request', async (req, res) => {
     }
 });
 
-// ৪B. সাইন-আপ ধাপ ২: ইমেইল OTP ভেরিফিকেশন
 app.post('/api/auth/register-verify', async (req, res) => {
     const email = (req.body.email || '').trim().toLowerCase();
     const otp = (req.body.otp || '').trim();
@@ -279,7 +502,7 @@ app.post('/api/auth/register-verify', async (req, res) => {
         await ensureUsersTable();
         const result = await runWithRlsUser('__SYSTEM_AUTH__', async () => {
             const records = await sql`
-                SELECT * FROM auth_otps 
+                SELECT * FROM auth_otps
                 WHERE LOWER(email) = LOWER(${email}) AND purpose = 'register' AND expires_at > NOW()
                 LIMIT 1
             `;
@@ -305,14 +528,20 @@ app.post('/api/auth/register-verify', async (req, res) => {
             return res.status(result.status).json({ success: false, error: result.error });
         }
 
-        const token = jwt.sign({ user: result.user, email: result.email, provider: 'registered' }, JWT_SECRET, { expiresIn: '2h' });
+        const token = jwt.sign(
+            { user: result.user, email: result.email, provider: 'registered' },
+            JWT_SECRET,
+            { expiresIn: '2h', algorithm: 'HS256' }
+        );
         res.json({ success: true, token });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Could not complete registration.' });
     }
 });
 
-// ৫A. সাইন-ইন ধাপ ১: পাসওয়ার্ড চেক ও Token Bucket রেট লিমিট সহ 2FA OTP পাঠানো
+// ============================================================================
+// 5. Sign-In & 2FA OTP
+// ============================================================================
 app.post('/api/auth/login', async (req, res) => {
     const username = (req.body.username || '').trim();
     const password = req.body.password || '';
@@ -323,7 +552,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
-        const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '2h' });
+        const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '2h', algorithm: 'HS256' });
         return res.json({ success: true, token });
     }
 
@@ -359,7 +588,6 @@ app.post('/api/auth/login', async (req, res) => {
                 };
             }
 
-            // Token Bucket রেট লিমিট চেক (সাইন ইনের ক্ষেত্রেও ওটিপি স্প্যামিং রোধে)
             const bucketCheck = checkTokenBucket(targetEmail);
             if (!bucketCheck.allowed) {
                 return {
@@ -411,7 +639,6 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
-// ৫B. সাইন-ইন ধাপ ২: ওটিপি ভেরিফাই করে লগইন সম্পন্ন করা
 app.post('/api/auth/login-verify', async (req, res) => {
     const email = (req.body.email || '').trim().toLowerCase();
     const otp = (req.body.otp || '').trim();
@@ -455,7 +682,7 @@ app.post('/api/auth/login-verify', async (req, res) => {
         const token = jwt.sign(
             { user: u.username, email: u.email || email, avatar: u.avatar_url, provider: u.provider || 'registered' },
             JWT_SECRET,
-            { expiresIn: '2h' }
+            { expiresIn: '2h', algorithm: 'HS256' }
         );
         res.json({ success: true, token });
     } catch (err) {
@@ -463,7 +690,9 @@ app.post('/api/auth/login-verify', async (req, res) => {
     }
 });
 
-// ৬A. ফরগট পাসওয়ার্ড: Token Bucket রেট লিমিট সহ রিসেট কোড পাঠানো
+// ============================================================================
+// 6. Forgot & Reset Passkey
+// ============================================================================
 app.post('/api/auth/forgot-password', async (req, res) => {
     const identifier = (req.body.identifier || '').trim();
     if (!identifier) {
@@ -520,7 +749,6 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     }
 });
 
-// ৬B. ফরগট পাসওয়ার্ড: নতুন পাসওয়ার্ড সেট করা
 app.post('/api/auth/reset-password', async (req, res) => {
     const email = (req.body.email || '').trim().toLowerCase();
     const otp = (req.body.otp || '').trim();
@@ -564,50 +792,13 @@ app.post('/api/auth/reset-password', async (req, res) => {
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     if (ADMIN_USER && ADMIN_PASS && username === ADMIN_USER && password === ADMIN_PASS) {
-        const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '2h' });
-        return res.send(`<script>localStorage.setItem('token', '${token}'); sessionStorage.setItem('active_session', '1'); window.location.href = '/dashboard';</script>`);
+        const token = jwt.sign({ user: ADMIN_USER, provider: 'local' }, JWT_SECRET, { expiresIn: '2h', algorithm: 'HS256' });
+        return res.send(`<script>localStorage.setItem('token', ${JSON.stringify(token)}); sessionStorage.setItem('active_session', '1'); window.location.href = '/dashboard';</script>`);
     }
-    res.send(`<script>alert("ACCESS DENIED: Invalid credentials."); window.location.href="/";</script>`);
+    res.status(401).send(`<script>alert("ACCESS DENIED: Invalid credentials."); window.location.href="/";</script>`);
 });
 
-// ============================================================================
-// ৭. TriScout Server Guardrails: Locked Origin, Clean Input & Log Flowing
-// ============================================================================
-const ALLOWED_ORIGINS = new Set([
-    'https://triscout.quarry.dpdns.org',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000'
-]);
-
-function logFlow(level, event, meta = {}) {
-    console.log(JSON.stringify({ timestamp: new Date().toISOString(), level, event, ...meta }));
-}
-
-function cleanInput(val, maxLen = 2048) {
-    if (typeof val !== 'string') return '';
-    return val.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, maxLen);
-}
-
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    const hostOrigin = req.headers.host ? `https://${req.headers.host}` : '';
-
-    if (origin) {
-        if (ALLOWED_ORIGINS.has(origin) || origin === hostOrigin) {
-            res.setHeader('Access-Control-Allow-Origin', origin);
-            res.setHeader('Vary', 'Origin');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        } else if (req.path.startsWith('/api/')) {
-            logFlow('WARN', 'LOCKED_ORIGIN_BLOCKED', { origin, path: req.path });
-            return res.status(403).json({ success: false, error: 'Locked Origin Policy: Cross-origin request denied.' });
-        }
-    }
-    if (req.method === 'OPTIONS') return res.sendStatus(204);
-    next();
-});
-
-// Database Indexes & Expired OTP/Link Cleanup
+// Database Indexes & Expired OTP Cleanup
 let areIndexesCreated = false;
 async function ensureDatabaseIndexesAndCleanup() {
     await ensureUsersTable();
@@ -623,20 +814,27 @@ async function ensureDatabaseIndexesAndCleanup() {
     });
 }
 
-// ৭. ড্যাশবোর্ড HTML সার্ভ করা
-const dashboardHtmlPath = path.join(__dirname, 'views', 'index.html');
-const DASHBOARD_HTML_CONTENT = fs.readFileSync(dashboardHtmlPath, 'utf8');
-
+// ============================================================================
+// 7. Dashboard & Public Views (HTML or Negotiated Markdown)
+// ============================================================================
 app.get(['/dashboard', '/reports', '/cli', '/about', '/project', '/profile'], (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
+    res.setHeader('Vary', 'Accept');
+
+    if (req.path !== '/profile' && wantsMarkdown(req)) {
+        const md = ROUTE_MARKDOWN_MAP[req.path] || ROUTE_MARKDOWN_MAP['/dashboard'];
+        res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+        return res.status(200).send(md);
+    }
+
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.status(200).send(DASHBOARD_HTML_CONTENT);
 });
 
 // ============================================================================
-// ৮. টার্গেট ওয়েবসাইট স্ক্যানার ইঞ্জিন (Website Scanner with All Security Audits)
+// 8. Passive Target Scanner Engine
 // ============================================================================
 const scanCache = new Map();
 const CACHE_TTL = 60 * 1000;
@@ -680,7 +878,6 @@ const safeLookup = (hostname, options, callback) => {
     dns.lookup(hostname, options, (err, address, family) => {
         if (err) return callback(err);
 
-        // Address can be a string or an array of objects depending on options.all
         const addresses = Array.isArray(address) ? address : [{ address, family }];
 
         for (const addrObj of addresses) {
@@ -696,16 +893,6 @@ const safeLookup = (hostname, options, callback) => {
 
 const safeHttpAgent = new http.Agent({ lookup: safeLookup });
 const safeHttpsAgent = new https.Agent({ lookup: safeLookup });
-
-const secretRegex = /(?:AIza[0-9A-Za-z\-_]{35}|sk-(?:proj-)?[a-zA-Z0-9\-_]{32,}|gh[pousr]_[A-Za-z0-9_]{36,255}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9a-zA-Z\-]{10,48}|sk_live_[0-9a-zA-Z]{24,}|-----BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY-----)/g;
-const errorLeakRegex = /(?:ReferenceError|TypeError|SyntaxError|RangeError):\s+[^\n]+|at\s+[A-Za-z0-9_$.]+\s+\([^)]+:\d+:\d+\)|(?:SQL syntax.*MySQL|Warning.*mysql_|PostgreSQL.*ERROR|ORA-\d{5}|SQLite\/JDBCDriver|ROLLBACK\s+FAILED|Deadlock\s+found)/i;
-const debugLogLeakRegex = /(?:console\.debug\(|DEBUG_LOG|\[TRACE\]|webpack:\/\/|sourceMappingURL=.*\.map)/i;
-const titleRegex = /<title[^>]*>([^<]+)<\/title>/i;
-const scriptRegex = /<script\b/gi;
-const formRegex = /<form\b/gi;
-const insecureFormRegex = /<form[^>]+action=["']http:\/\/[^"']+["']/i;
-const unsafeInlineRegex = /\bon(?:error|load|mouseover|focus)\s*=\s*["'][^"']*javascript:/i;
-const usernameRegex = /^[a-zA-Z0-9_-]{3,30}$/;
 
 function maskLeakedSecrets(rawHtml) {
     const matches = rawHtml.match(secretRegex);
@@ -743,6 +930,9 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
 
     try {
         const parsedUrl = new URL(target);
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+            return res.status(400).json({ success: false, error: 'Only HTTP and HTTPS protocols are permitted.' });
+        }
         const hostname = parsedUrl.hostname;
         const lookupResult = await require('dns').promises.lookup(hostname);
         const ip = lookupResult.address;
@@ -776,7 +966,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         const scriptCount = (htmlBody.match(scriptRegex) || []).length;
         const formCount = (htmlBody.match(formRegex) || []).length;
         const insecureForms = insecureFormRegex.test(htmlBody);
-        
+
         let report = `--- ETHICAL PASSIVE WEB SCRAPER & SECURITY AUDIT FOR: ${target} ---\n`;
         report += `[i] Scraped Page Title: ${pageTitle}\n`;
         report += `[i] DOM Surface: ${scriptCount} Script(s), ${formCount} Form(s), HTTP Status ${response.status}\n\n`;
@@ -784,7 +974,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         let score = 100;
         const checks = [];
 
-        // ১. Safe Error & Rollback Leak Check (টার্গেট ওয়েবসাইটে কোনো ডাটাবেস রোলব্যাক বা এরর লিক আছে কি না)
+        // 1. Safe Error & Rollback Leak Check
         if (htmlBody.includes('Stack trace:') || errorLeakRegex.test(htmlBody)) {
             report += `[!] Safe Error & Rollback: CRITICAL (Raw Stack Trace or DB Rollback Error Exposed!)\n`;
             score -= 20;
@@ -794,7 +984,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Safe Error & Rollback', status: 'SECURE', category: 'Error Leak', impact: '0 pts', detail: 'Target safely handles errors without leaking stack traces or DB rollback states.' });
         }
 
-        // ২. No Leaked Key Check (টার্গেট ওয়েবসাইটে কোনো API Key লিক আছে কি না)
+        // 2. No Leaked Key Check
         const keyAudit = maskLeakedSecrets(htmlBody);
         if (keyAudit.found) {
             report += `[!] No Leaked Keys: CRITICAL (${keyAudit.count} Exposed API Key(s) detected: ${keyAudit.maskedSamples.join(', ')})\n`;
@@ -805,7 +995,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'No Leaked Keys', status: 'SECURE', category: 'Credentials', impact: '0 pts', detail: 'No exposed API keys or secret tokens found in target page source.' });
         }
 
-        // ৩. Locked Origin Check (টার্গেট ওয়েবসাইটটির CORS Origin লক করা আছে কি না)
+        // 3. Locked Origin Check (CORS)
         const acao = headers['access-control-allow-origin'];
         if (acao === '*' || acao === 'https://unauthorized-origin-probe.example') {
             report += `[!] Locked Origin (CORS): WARNING (Wildcard or unlocked Origin: ${acao})\n`;
@@ -816,7 +1006,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Locked Origin (CORS)', status: 'SECURE', category: 'Origin Policy', impact: '0 pts', detail: 'Target restricts cross-origin access to trusted domains only.' });
         }
 
-        // ৪. Data Isolation & Cross-Origin Isolation Check (COOP / CORP / Frame Isolation)
+        // 4. Data Isolation & Cross-Origin Isolation Check
         if (headers['cross-origin-opener-policy'] || headers['cross-origin-resource-policy'] || headers['x-frame-options']) {
             report += `[+] Data Isolation: SECURE (Cross-origin/Frame isolation enforced)\n`;
             checks.push({ name: 'Data Isolation', status: 'SECURE', category: 'Isolation', impact: '0 pts', detail: 'Target enforces browser context and frame data isolation.' });
@@ -826,7 +1016,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Data Isolation', status: 'MISSING', category: 'Isolation', impact: '-10 pts', detail: 'Missing X-Frame-Options and Cross-Origin isolation headers.' });
         }
 
-        // ৫. Clean Input & Form Transport Check (টার্গেট ওয়েবসাইটের ইনপুট ফর্ম ও XSS ফিল্টার চেক)
+        // 5. Clean Input & Form Transport Check
         const unsafeInlineEvents = unsafeInlineRegex.test(htmlBody);
         if (insecureForms || unsafeInlineEvents) {
             report += `[!] Clean Input & Forms: CRITICAL (Unencrypted HTTP form or unsafe inline input handler!)\n`;
@@ -837,7 +1027,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Clean Input & Forms', status: 'SECURE', category: 'Input Sanitization', impact: '0 pts', detail: `Audited ${formCount} form(s); input transport and DOM handlers are clean.` });
         }
 
-        // ৬. Rate Limit Check (টার্গেট ওয়েবসাইটে রেট লিমিট আছে কি না)
+        // 6. Rate Limit Check
         if (headers['x-ratelimit-limit'] || headers['retry-after'] || headers['ratelimit-limit'] || headers['cf-ray']) {
             report += `[+] Rate Limiting: SECURE (Traffic rate limiting / WAF active)\n`;
             checks.push({ name: 'Rate Limiting', status: 'SECURE', category: 'Traffic Defense', impact: '0 pts', detail: 'Target enforces rate-limiting headers or edge WAF protection.' });
@@ -847,7 +1037,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Rate Limiting', status: 'NOTICE', category: 'Traffic Defense', impact: '-5 pts', detail: 'No explicit rate-limit headers exposed on public response.' });
         }
 
-        // ৭. Session / Link Expiry & Cookie Flags Check (টার্গেট ওয়েবসাইটের কুকি ও সেশন এক্সপায়ার টাইম আছে কি না)
+        // 7. Session / Link Expiry & Cookie Flags Check
         const rawCookies = headers['set-cookie'];
         if (Array.isArray(rawCookies) && rawCookies.length > 0) {
             const missingSecurity = rawCookies.some(c => !/httponly/i.test(c) || !/secure/i.test(c));
@@ -865,7 +1055,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Link & Session Expiry', status: 'SECURE', category: 'Session Lifecycle', impact: '0 pts', detail: 'Target is stateless on initial load with no insecure persistent cookies.' });
         }
 
-        // ৮. Log Flowing & Debug Exposure Check (টার্গেট ওয়েবসাইটে কনসোল ডিবাগ বা সোর্স ম্যাপ লিক আছে কি না)
+        // 8. Log Flowing & Debug Exposure Check
         if (debugLogLeakRegex.test(htmlBody) || headers['x-debug-token'] || headers['x-debug-token-link']) {
             report += `[!] Log Flowing Hygiene: WARNING (Debug logs, profiler headers, or .map files exposed)\n`;
             score -= 5;
@@ -875,7 +1065,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'Log Flowing Hygiene', status: 'SECURE', category: 'Telemetry', impact: '0 pts', detail: 'No debug console streams or source map leaks found in production HTML.' });
         }
 
-        // ৯. Indexing & Crawler Governance Check (টার্গেট ওয়েবসাইটের ইনডেক্সিং ও মেটা ট্যাগ কন্ট্রোল)
+        // 9. Server Index & Fingerprint Check
         if (headers['x-powered-by']) {
             report += `[!] Server Index & Fingerprint: WARNING (Tech Stack Exposed: ${cleanInput(String(headers['x-powered-by']), 50)})\n`;
             score -= 10;
@@ -887,7 +1077,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
 
         report += `\n--- DEFENSIVE HTTP SECURITY HEADERS ---\n`;
 
-        // ১০. HSTS Policy
+        // 10. HSTS Policy
         if (headers['strict-transport-security']) {
             report += `[+] HSTS (Strict-Transport-Security): SECURE\n`;
             checks.push({ name: 'HSTS Policy', status: 'SECURE', category: 'SSL/TLS', impact: '0 pts', detail: 'Enforces encrypted HTTPS connections against downgrade attacks.' });
@@ -897,7 +1087,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'HSTS Policy', status: 'MISSING', category: 'SSL/TLS', impact: '-10 pts', detail: 'Missing Strict-Transport-Security header.' });
         }
 
-        // ১১. Content-Security-Policy (CSP)
+        // 11. Content-Security-Policy (CSP)
         if (headers['content-security-policy']) {
             report += `[+] CSP (Content-Security-Policy): SECURE\n`;
             checks.push({ name: 'CSP Header', status: 'SECURE', category: 'XSS Defense', impact: '0 pts', detail: 'Content-Security-Policy is active to mitigate XSS injection.' });
@@ -907,7 +1097,7 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
             checks.push({ name: 'CSP Header', status: 'MISSING', category: 'XSS Defense', impact: '-10 pts', detail: 'No Content-Security-Policy defined against script injection.' });
         }
 
-        // ১২. MIME Sniffing & Referrer Privacy
+        // 12. MIME Sniffing
         if (headers['x-content-type-options']) {
             report += `[+] X-Content-Type-Options: SECURE (nosniff)\n`;
             checks.push({ name: 'MIME Sniffing', status: 'SECURE', category: 'Headers', impact: '0 pts', detail: 'Prevents browser MIME-type sniffing (nosniff).' });
@@ -937,12 +1127,14 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
         }
 
         res.json({ success: true, report, score, checks });
-    } catch (error) { 
-        res.status(500).json({ success: false, error: 'Target unreachable.' }); 
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Target unreachable.' });
     }
 });
 
-// ৯. RLS সুরক্ষিত স্ক্যান হিস্ট্রি পাওয়ার API
+// ============================================================================
+// 9. RLS-Protected Scan History
+// ============================================================================
 app.get('/api/scan-history', requireHTTPAuth, async (req, res) => {
     try {
         await ensureDatabaseIndexesAndCleanup();
@@ -962,12 +1154,15 @@ app.get('/api/scan-history', requireHTTPAuth, async (req, res) => {
     }
 });
 
-// ১০. ইমেইলে স্ক্যান রিপোর্ট পাঠানোর API
+// ============================================================================
+// 10. Email Report Relay
+// ============================================================================
 app.post('/api/send-report', requireHTTPAuth, async (req, res) => {
     const target = cleanInput(req.body.target, 512);
     const reportData = cleanInput(req.body.reportData, 25000);
     const emailTo = cleanInput(req.body.emailTo, 254);
-    if (!target || !reportData || !emailTo) return res.status(400).json({ success: false, error: "Missing information." });
+    if (!target || !reportData || !emailTo) return res.status(400).json({ success: false, error: 'Missing information.' });
+    if (!emailRegex.test(emailTo)) return res.status(400).json({ success: false, error: 'Invalid recipient email address.' });
 
     try {
         const mailOptions = {
@@ -978,56 +1173,76 @@ app.post('/api/send-report', requireHTTPAuth, async (req, res) => {
         };
         await transporter.sendMail(mailOptions);
         res.json({ success: true, message: 'Email sent successfully' });
-    } catch (error) { 
-        res.status(500).json({ success: false, error: 'Internal Email Service Error.' }); 
+    } catch (error) {
+        res.status(500).json({ success: false, error: 'Internal Email Service Error.' });
     }
 });
 
-// ১১. GitHub OAuth লগইন
+// ============================================================================
+// 11. GitHub OAuth (Bounded Timeouts + Safe Token Serialization)
+// ============================================================================
+function getSafeOAuthRedirectUri(req) {
+    const rawHost = String(req.headers.host || '').toLowerCase();
+    const isAllowed = ALLOWED_OAUTH_HOSTS.has(rawHost) || rawHost.endsWith('.vercel.app');
+    const safeHost = isAllowed ? rawHost : 'triscout.quarry.dpdns.org';
+    const proto = safeHost.startsWith('localhost') || safeHost.startsWith('127.0.0.1') ? 'http' : 'https';
+    return `${proto}://${safeHost}/api/auth/github/callback`;
+}
+
 app.get('/api/auth/github', (req, res) => {
-    const redirectUri = `https://${req.headers.host}/api/auth/github/callback`;
-    res.redirect(`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=read:user`);
+    const redirectUri = getSafeOAuthRedirectUri(req);
+    res.redirect(`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user`);
 });
 
 app.get('/api/auth/github/callback', async (req, res) => {
     const { code } = req.query;
-    if (!code) return res.status(400).send('No code provided');
+    if (!code || typeof code !== 'string') return res.status(400).send('No code provided');
     try {
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ client_id: GITHUB_CLIENT_ID, client_secret: GITHUB_CLIENT_SECRET, code: code })
+            body: JSON.stringify({ client_id: GITHUB_CLIENT_ID, client_secret: GITHUB_CLIENT_SECRET, code }),
+            signal: AbortSignal.timeout(8000)
         });
         const tokenData = await tokenResponse.json();
-        
-        const userResponse = await fetch('https://api.github.com/user', {
-            headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'User-Agent': 'TriScout-App' }
-        });
-        const userData = await userResponse.json();
-
-        try {
-            await ensureDatabaseIndexesAndCleanup();
-            await runWithRlsUser('__SYSTEM_AUTH__', async () => {
-                await sql`
-                    INSERT INTO users (username, avatar_url, provider, is_verified, last_login)
-                    VALUES (${userData.login}, ${userData.avatar_url}, 'github', TRUE, NOW())
-                    ON CONFLICT (username) DO UPDATE 
-                    SET avatar_url = EXCLUDED.avatar_url, last_login = NOW()
-                `;
-            });
-        } catch (dbError) {
-            console.error("[-] Neon Database save failed.", dbError);
-            throw dbError;
+        if (!tokenData.access_token) {
+            return res.status(401).send('<h3 style="color:red; text-align:center;">[!] GITHUB TOKEN EXCHANGE FAILED. <a href="/">RETRY</a></h3>');
         }
 
-        const token = jwt.sign({ user: userData.login, avatar: userData.avatar_url, provider: 'github' }, JWT_SECRET, { expiresIn: '2h' });
-        res.send(`<script>localStorage.setItem('token', '${token}'); sessionStorage.setItem('active_session', '1'); window.location.href = '/dashboard';</script>`);
-    } catch (error) { 
-        res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>'); 
+        const userResponse = await fetch('https://api.github.com/user', {
+            headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'User-Agent': 'TriScout-App' },
+            signal: AbortSignal.timeout(8000)
+        });
+        const userData = await userResponse.json();
+        if (!userData || !userData.login) {
+            return res.status(401).send('<h3 style="color:red; text-align:center;">[!] GITHUB PROFILE FETCH FAILED. <a href="/">RETRY</a></h3>');
+        }
+
+        await ensureDatabaseIndexesAndCleanup();
+        await runWithRlsUser('__SYSTEM_AUTH__', async () => {
+            await sql`
+                INSERT INTO users (username, avatar_url, provider, is_verified, last_login)
+                VALUES (${userData.login}, ${userData.avatar_url}, 'github', TRUE, NOW())
+                ON CONFLICT (username) DO UPDATE
+                SET avatar_url = EXCLUDED.avatar_url, last_login = NOW()
+            `;
+        });
+
+        const token = jwt.sign(
+            { user: userData.login, avatar: userData.avatar_url, provider: 'github' },
+            JWT_SECRET,
+            { expiresIn: '2h', algorithm: 'HS256' }
+        );
+        res.send(`<script>localStorage.setItem('token', ${JSON.stringify(token)}); sessionStorage.setItem('active_session', '1'); window.location.href = '/dashboard';</script>`);
+    } catch (error) {
+        logFlow('ERROR', 'GITHUB_OAUTH_CALLBACK_FAILED', { message: error.message });
+        res.status(500).send('<h3 style="color:red; text-align:center;">[!] OAUTH FAILURE. <a href="/">RETRY</a></h3>');
     }
 });
 
-// ১২. অ্যাকাউন্ট ও স্ক্যান ডেটা ডিলিট করার API (RLS Protected + Rollback)
+// ============================================================================
+// 12. Account Deletion (RLS + Transactional Rollback)
+// ============================================================================
 app.post('/api/account/delete', requireHTTPAuth, async (req, res) => {
     try {
         await ensureDatabaseIndexesAndCleanup();
@@ -1047,11 +1262,41 @@ app.post('/api/account/delete', requireHTTPAuth, async (req, res) => {
 
         res.json({
             success: true,
-            message: "RLS & Rollback Verified: Your account and all associated scan logs have been permanently deleted."
+            message: 'RLS & Rollback Verified: Your account and all associated scan logs have been permanently deleted.'
         });
     } catch (err) {
-        res.status(500).json({ success: false, error: "Failed to delete account data (Transaction rolled back safely)." });
+        res.status(500).json({ success: false, error: 'Failed to delete account data (Transaction rolled back safely).' });
     }
+});
+
+// ============================================================================
+// 13. Friendly 404 & Global Error Middleware (Checks 39 & 40)
+// ============================================================================
+app.use((req, res) => {
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ success: false, error: 'API endpoint not found.' });
+    }
+    res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8').send(
+        renderLegalHtml('404 Not Found', '404 // Route Not Found', [
+            { label: 'Status', text: 'The requested page does not exist on TriScout.' },
+            { label: 'Navigation', text: 'Return to the main console at https://triscout.quarry.dpdns.org/.' }
+        ])
+    );
+});
+
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+    logFlow('ERROR', 'UNHANDLED_EXPRESS_ERROR', { path: req.path, method: req.method, message: err.message });
+    if (res.headersSent) return next(err);
+    if (req.path.startsWith('/api/')) {
+        return res.status(err.status || 500).json({ success: false, error: 'Internal server error.' });
+    }
+    res.status(err.status || 500).setHeader('Content-Type', 'text/html; charset=utf-8').send(
+        renderLegalHtml('Server Error', '500 // Unexpected Error', [
+            { label: 'Status', text: 'An unexpected error occurred while processing your request.' },
+            { label: 'Recovery', text: 'Please return to the main console and try again.' }
+        ])
+    );
 });
 
 module.exports = app;
