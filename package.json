@@ -1,10 +1,11 @@
 {
   "name": "tri-scout",
-  "version": "1.0.0",
+  "version": "2.4.0",
   "description": "TriScout - Defensive Cyber Security and Vulnerability Assessment Tool",
   "main": "web_dashboard/server.js",
   "scripts": {
-    "start": "node web_dashboard/server.js"
+    "start": "node web_dashboard/server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.9.4",
