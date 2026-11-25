@@ -575,8 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(() => {});
-
-    const savedReport = localStorage.getItem('triscout_report');
+   const savedReport = localStorage.getItem('triscout_report');
     const savedTarget = localStorage.getItem('triscout_target');
     if (savedReport && savedTarget) {
         const preview = document.getElementById('reportPreview');
@@ -627,3 +626,4 @@ document.addEventListener('DOMContentLoaded', () => {
         switchTab(null, 'profile');
     }
 });
+    
