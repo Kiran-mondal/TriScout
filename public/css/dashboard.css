@@ -101,13 +101,37 @@ body.blueprint-canvas {
 }
 
 /* =====================================================================
-   BLUEPRINT MASCOT POSES (WALL-SITTING, DRAG WIND-TRAIL, SCAN INSPECT)
+   DYNAMIC TREE TOPOLOGY ANIMATIONS
+   ===================================================================== */
+@keyframes treeNodePop {
+    0%   { opacity: 0; transform: scale(0.55); }
+    70%  { opacity: 1; transform: scale(1.06); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+.tree-node-enter {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: treeNodePop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.tree-node-group {
+    cursor: pointer;
+}
+.tree-node-group:hover .tree-dot-ring {
+    stroke-width: 3;
+    filter: drop-shadow(0 0 6px rgba(57, 255, 136, 0.65));
+}
+
+/* =====================================================================
+   CLEAN BLUEPRINT MASCOT (NO TOP BOX, WALL-SITTING, SCROLLS WITH BOX)
    ===================================================================== */
 #dash-mini-mascot {
-    position: fixed;
+    position: absolute;
     left: 24px;
     top: 120px;
-    width: 92px;
+    width: 88px;
+    height: 90px;
     z-index: 75;
     touch-action: none;
     user-select: none;
@@ -116,14 +140,10 @@ body.blueprint-canvas {
 }
 
 #dash-mini-mascot.mascot-glide {
-    transition: left 0.34s cubic-bezier(0.22, 1, 0.36, 1), top 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: left 0.3s cubic-bezier(0.22, 1, 0.36, 1), top 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-#dash-mascot-body {
-    transform-origin: 190px 90px;
-    will-change: transform;
-}
-
+#dash-mascot-body { transform-origin: 190px 90px; will-change: transform; }
 #dash-leg-l { transform-origin: 164px 178px; will-change: transform; }
 #dash-leg-r { transform-origin: 216px 178px; will-change: transform; }
 #dash-arm-l { transform-origin: 134px 114px; will-change: transform; }
@@ -142,7 +162,7 @@ body.blueprint-canvas {
     transition: transform 0.16s ease;
 }
 
-/* ১. পাঁচিলে বসে পা দোলানো (Sitting on a Box/Tab Ledge — কোনো হাঁটাহাঁটি নেই) */
+/* ১. পাঁচিলে বসে পা দোলানো (Sitting Quietly on Box Ledge) */
 @keyframes sitBreath {
     0%, 100% { transform: translateY(0px); }
     50%      { transform: translateY(-2px); }
@@ -164,23 +184,13 @@ body.blueprint-canvas {
     50%      { transform: rotate(14deg); }
 }
 
-.mascot-sitting #dash-mascot-body {
-    animation: sitBreath 3.2s ease-in-out infinite;
-}
-.mascot-sitting #dash-leg-l {
-    animation: sitLegSwingLeft 2.1s ease-in-out infinite;
-}
-.mascot-sitting #dash-leg-r {
-    animation: sitLegSwingRight 2.1s ease-in-out infinite;
-}
-.mascot-sitting #dash-arm-l {
-    animation: sitArmRestLeft 3.2s ease-in-out infinite;
-}
-.mascot-sitting #dash-arm-r {
-    animation: sitArmRestRight 3.2s ease-in-out infinite;
-}
+.mascot-sitting #dash-mascot-body { animation: sitBreath 3.2s ease-in-out infinite; }
+.mascot-sitting #dash-leg-l       { animation: sitLegSwingLeft 2.1s ease-in-out infinite; }
+.mascot-sitting #dash-leg-r       { animation: sitLegSwingRight 2.1s ease-in-out infinite; }
+.mascot-sitting #dash-arm-l       { animation: sitArmRestLeft 3.2s ease-in-out infinite; }
+.mascot-sitting #dash-arm-r       { animation: sitArmRestRight 3.2s ease-in-out infinite; }
 
-/* ২. ড্র্যাগ করার সময় CSS অ্যানিমেশন বন্ধ থাকবে যাতে JS ফিজিক্স উল্টো দিকে হাত-পা ওড়াতে পারে */
+/* ২. ড্র্যাগ চলাকালীন উল্টো দিকে বাতাসে ওড়ার ফিজিক্স */
 .mascot-dragging #dash-mascot-body,
 .mascot-dragging #dash-leg-l,
 .mascot-dragging #dash-leg-r,
@@ -190,7 +200,7 @@ body.blueprint-canvas {
     transition: none !important;
 }
 
-/* ৩. স্ক্যানিংয়ের সময় কোড-লাইন পরিদর্শন ও স্ক্রল করার ভঙ্গি */
+/* ৩. স্ক্যানিংয়ে কোড-লাইন পরিদর্শন */
 @keyframes inspectBob {
     0%, 100% { transform: translateY(0px) rotate(-3deg); }
     50%      { transform: translateY(-3px) rotate(-5deg); }
@@ -199,24 +209,13 @@ body.blueprint-canvas {
     0%, 100% { transform: rotate(62deg); }
     50%      { transform: rotate(74deg); }
 }
-.mascot-inspecting #dash-mascot-body {
-    animation: inspectBob 0.9s ease-in-out infinite;
-}
-.mascot-inspecting #dash-arm-l {
-    animation: inspectPointArm 0.75s ease-in-out infinite;
-}
-.mascot-inspecting #dash-arm-r {
-    animation: none;
-    transform: rotate(-14deg);
-}
-.mascot-inspecting #dash-leg-l {
-    animation: sitLegSwingLeft 1.2s ease-in-out infinite;
-}
-.mascot-inspecting #dash-leg-r {
-    animation: sitLegSwingRight 1.2s ease-in-out infinite;
-}
+.mascot-inspecting #dash-mascot-body { animation: inspectBob 0.9s ease-in-out infinite; }
+.mascot-inspecting #dash-arm-l       { animation: inspectPointArm 0.75s ease-in-out infinite; }
+.mascot-inspecting #dash-arm-r       { animation: none; transform: rotate(-14deg); }
+.mascot-inspecting #dash-leg-l       { animation: sitLegSwingLeft 1.2s ease-in-out infinite; }
+.mascot-inspecting #dash-leg-r       { animation: sitLegSwingRight 1.2s ease-in-out infinite; }
 
-/* ৪. ট্যাপ/ক্লিক করলে খুশিতে লাফানো */
+/* ৪. ট্যাপ/ক্লিক করলে লাফানো */
 @keyframes dashMascotHop {
     0%   { transform: translateY(0) scale(1); }
     35%  { transform: translateY(-16px) rotate(-3deg) scale(1.04); }
@@ -238,7 +237,9 @@ body.blueprint-canvas {
     .mascot-sitting #dash-arm-l,
     .mascot-sitting #dash-arm-r,
     .mascot-inspecting #dash-mascot-body,
-    .mascot-inspecting #dash-arm-l {
+    .mascot-inspecting #dash-arm-l,
+    .tree-node-enter {
         animation: none !important;
     }
-}
+              }
+              
