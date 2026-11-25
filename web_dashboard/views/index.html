@@ -6,6 +6,7 @@
     <title>TriScout v2.4 TAC-OPS // Blueprint Command Center</title>
     <meta name="description" content="TriScout v2.4 TAC-OPS interactive passive cybersecurity reconnaissance console for auditing HTTP security headers, 11-node DMZ topology, and source/credential leaks."/>
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="stylesheet" href="/css/dashboard.css" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -67,122 +68,6 @@
             }
         };
     </script>
-
-    <style>
-        :root {
-            color-scheme: dark;
-            --bp-bg: #154078;
-            --bp-line: rgba(186, 224, 255, 0.72);
-            --bp-line-soft: rgba(186, 224, 255, 0.35);
-            --bp-grid-major: rgba(186, 224, 255, 0.16);
-            --bp-grid-minor: rgba(186, 224, 255, 0.05);
-            scrollbar-color: rgba(186, 224, 255, 0.45) #091e3d;
-            scrollbar-width: thin;
-        }
-
-        @supports not (scrollbar-color: auto) {
-            ::-webkit-scrollbar { width: 6px; height: 6px; }
-            ::-webkit-scrollbar-track { background: #091e3d; }
-            ::-webkit-scrollbar-thumb { background: rgba(186, 224, 255, 0.45); border-radius: 2px; }
-            ::-webkit-scrollbar-thumb:hover { background: #39ff88; }
-        }
-
-        body.blueprint-canvas {
-            background-color: var(--bp-bg);
-            background-image:
-                linear-gradient(to right, var(--bp-grid-major) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--bp-grid-major) 1px, transparent 1px),
-                linear-gradient(to right, var(--bp-grid-minor) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--bp-grid-minor) 1px, transparent 1px),
-                radial-gradient(circle at 50% 25%, #235aa3 0%, #0e2d56 100%);
-            background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px, 100% 100%;
-            background-attachment: fixed;
-            color: #e6f3ff;
-            overscroll-behavior: none;
-        }
-
-        .bp-panel {
-            background: rgba(17, 52, 102, 0.88);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1.5px solid var(--bp-line-soft);
-            box-shadow: 0 0 0 2px rgba(14, 43, 84, 0.55), 0 12px 32px rgba(4, 15, 35, 0.55);
-        }
-
-        .bp-frame {
-            border: 1.5px solid var(--bp-line);
-            box-shadow: 0 0 0 3px rgba(14, 43, 84, 0.65), 0 18px 42px rgba(4, 15, 35, 0.72);
-        }
-
-        .bp-input {
-            background: rgba(10, 31, 64, 0.85);
-            border: 1.5px solid rgba(186, 224, 255, 0.45);
-            color: #ffffff;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .bp-input:focus {
-            border-color: #39ff88;
-            box-shadow: 0 0 10px rgba(57, 255, 136, 0.3);
-            outline: none;
-        }
-        .bp-input::placeholder {
-            color: rgba(186, 224, 255, 0.45);
-        }
-
-        :focus-visible {
-            outline: 2px solid #39ff88;
-            outline-offset: 2px;
-        }
-
-        #mobileSidebar {
-            transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .sidebar-active {
-            background-color: #1c539e !important;
-            color: #ffffff !important;
-            border: 1px solid rgba(186, 224, 255, 0.8) !important;
-            border-left: 3px solid #39ff88 !important;
-            box-shadow: inset 0 0 12px rgba(57, 255, 136, 0.16);
-        }
-        .sidebar-active .nav-icon {
-            color: #39ff88 !important;
-        }
-
-        .cv-section {
-            content-visibility: auto;
-            contain-intrinsic-size: auto 300px;
-        }
-
-        /* Blueprint Mini Mascot Animations */
-        @keyframes dashWalkLeft {
-            0%   { transform: rotate(18deg) translateY(0px); }
-            25%  { transform: rotate(0deg) translateY(1px); }
-            50%  { transform: rotate(-18deg) translateY(0px); }
-            75%  { transform: rotate(0deg) translateY(-7px); }
-            100% { transform: rotate(18deg) translateY(0px); }
-        }
-        @keyframes dashWalkRight {
-            0%   { transform: rotate(-18deg) translateY(0px); }
-            25%  { transform: rotate(0deg) translateY(-7px); }
-            50%  { transform: rotate(18deg) translateY(0px); }
-            75%  { transform: rotate(0deg) translateY(1px); }
-            100% { transform: rotate(-18deg) translateY(0px); }
-        }
-        @keyframes dashMascotHop {
-            0%   { transform: translateY(0) scale(1); }
-            35%  { transform: translateY(-16px) rotate(-3deg) scale(1.04); }
-            70%  { transform: translateY(2px) rotate(2deg) scale(0.98); }
-            100% { transform: translateY(0) scale(1); }
-        }
-        .dash-hop-active {
-            animation: dashMascotHop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            #dash-leg-l, #dash-leg-r { animation: none !important; }
-        }
-    </style>
 </head>
 <body class="blueprint-canvas font-['JetBrains_Mono'] text-[#e6f3ff] antialiased selection:bg-[#39ff88] selection:text-[#003918]">
 
@@ -192,7 +77,7 @@
     <!-- BLUEPRINT SIDEBAR -->
     <aside id="mobileSidebar" class="fixed left-0 top-0 h-full w-64 bg-[#0d2850]/95 backdrop-blur-md z-50 flex flex-col justify-between select-none shadow-[4px_0_24px_rgba(4,15,35,0.75)] transform -translate-x-full lg:translate-x-0 border-r border-[#bae0ff]/60">
         <div class="flex flex-col flex-1 min-h-0">
-            <!-- Brand Header (Exact Match with Login Page Logo Badge) -->
+            <!-- Brand Header -->
             <div class="h-16 px-4 flex items-center justify-between bg-[#091e3d]/95 border-b border-[#bae0ff]/60">
                 <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded bg-[#e6f3ff] border border-[#39ff88] p-1 flex items-center justify-center shadow-[0_0_10px_rgba(124,224,255,0.4)]">
@@ -291,7 +176,7 @@
 
         <main class="relative pt-20 min-h-screen px-4 lg:px-8 pb-16">
 
-            <!-- Global Runtime Error Recovery Banner (Check 39) -->
+            <!-- Global Runtime Error Recovery Banner -->
             <div id="runtime-error-banner" role="alert" class="hidden mb-4 p-3 rounded-sm bg-red-950/85 border border-red-400 text-red-100 text-xs flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-base text-red-300">error</span>
@@ -306,7 +191,7 @@
             <section id="tab-overview" class="tab-view flex flex-col gap-6">
 
                 <!-- Mission Briefing Blueprint Panel -->
-                <div class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bp-frame bg-[#113466]/90 backdrop-blur-md p-5 sm:p-6 rounded-sm">
+                <div data-mascot-ledge class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bp-frame bg-[#113466]/90 backdrop-blur-md p-5 sm:p-6 rounded-sm">
                     <div class="max-w-3xl">
                         <div class="flex flex-wrap items-center gap-2 mb-2">
                             <span class="px-2 py-0.5 border border-[#39ff88]/60 bg-[#091e3d] text-[10px] text-[#39ff88] uppercase font-bold">PASSIVE ETHICAL RECON</span>
@@ -327,7 +212,7 @@
 
                 <!-- 4 Blueprint Metric Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-[#7ce0ff] cursor-pointer transition-all">
+                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-[#7ce0ff] cursor-pointer transition-all">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Evaluated Controls</span>
                             <span id="metric-assets-tag" class="text-[10px] text-[#7ce0ff] bg-[#091e3d] border border-[#bae0ff]/40 px-2 py-0.5">Idle</span>
@@ -341,7 +226,7 @@
                         </div>
                     </div>
 
-                    <div onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-amber-300 cursor-pointer transition-all">
+                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-amber-300 cursor-pointer transition-all">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Missing / Warnings</span>
                             <span id="metric-vuln-tag" class="text-[10px] text-[#bae0ff] bg-[#091e3d] border border-[#bae0ff]/40 px-2 py-0.5">No Scan</span>
@@ -357,7 +242,7 @@
                         </div>
                     </div>
 
-                    <div onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-red-400 cursor-pointer transition-all">
+                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-red-400 cursor-pointer transition-all">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Critical Leaks</span>
                             <span id="crit-status-label" class="text-[10px] text-[#ffb4ab] font-bold">0 EXPOSED</span>
@@ -371,7 +256,7 @@
                         </div>
                     </div>
 
-                    <div class="bp-panel p-5 rounded-sm">
+                    <div data-mascot-ledge class="bp-panel p-5 rounded-sm">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Security Posture</span>
                             <span id="scan-state-badge" class="text-[10px] text-[#7ce0ff] bg-[#091e3d] border border-[#7ce0ff]/50 px-2 py-0.5 font-bold">READY</span>
@@ -391,7 +276,7 @@
                 </div>
 
                 <!-- 11-NODE DMZ CLUSTER INTERACTIVE BLUEPRINT TOPOLOGY HUD -->
-                <div class="bp-frame bg-[#113466]/90 backdrop-blur-md p-4 sm:p-6 rounded-sm relative overflow-hidden flex flex-col gap-4">
+                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 backdrop-blur-md p-4 sm:p-6 rounded-sm relative overflow-hidden flex flex-col gap-4">
 
                     <!-- HUD Control Bar -->
                     <div class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 pb-3 border-b border-[#bae0ff]/50">
@@ -467,10 +352,9 @@
                             <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-[#7ce0ff]"></span> Monitored</span>
                             <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-[#39ff88]"></span> Hardened</span>
                         </div>
-    </div>
+                    </div>
 
-
- <!-- Topology SVG Canvas + Node Telemetry Drawer -->
+                    <!-- Topology SVG Canvas + Node Telemetry Drawer -->
                     <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
                         <div class="xl:col-span-8 bg-[#091e3d]/95 p-3 relative overflow-hidden border border-[#bae0ff]/55 flex items-center justify-center">
                             <div class="absolute top-2.5 left-3 text-[9px] text-[#7ce0ff]/80 uppercase tracking-widest pointer-events-none">[ZONE 01: PUBLIC INGRESS]</div>
@@ -578,7 +462,7 @@
                                 </g>
 
                                 <!-- ZONE 02: DMZ COMPUTE (4) -->
-                                <g class="topo-node zone-dmz cursor-pointer" onclick="inspectTopoNode('PRIMARY')" transform="translate(425, 75)">
+                            <g class="topo-node zone-dmz cursor-pointer" onclick="inspectTopoNode('PRIMARY')" transform="translate(425, 75)">
                                     <circle id="svg-primary-ping" class="animate-ping opacity-35" fill="#7ce0ff" r="40"></circle>
                                     <circle id="node-target-circle" fill="#174786" r="30" stroke="#39ff88" stroke-width="2.5"></circle>
                                     <text id="svg-target-icon" fill="#39ff88" font-family="JetBrains Mono" font-size="12" text-anchor="middle" y="-6">✔</text>
@@ -637,8 +521,9 @@
                                     <text fill="#39ff88" font-family="JetBrains Mono" font-size="10" font-weight="bold" text-anchor="middle" y="4">CACHE-BKT</text>
                                     <text fill="#ffffff" font-family="Inter" font-size="11" text-anchor="middle" y="44">Token Bucket &amp; TTL</text>
                                     <text id="svg-cache-meta" fill="#bae0ff" font-family="JetBrains Mono" font-size="9" text-anchor="middle" y="57">TTL 60s :6379</text>
-                                                                   </g>
-                                     <!-- ZONE 04: CLOUD STORAGE & TLS (2) -->
+                                </g>
+
+                                <!-- ZONE 04: CLOUD STORAGE & TLS (2) -->
                                 <g class="topo-node zone-cloud cursor-pointer" onclick="inspectTopoNode('S3')" transform="translate(770, 205)">
                                     <circle fill="#174786" r="28" stroke="#e6f3ff" stroke-width="2"></circle>
                                     <text fill="#7ce0ff" font-family="JetBrains Mono" font-size="10" font-weight="bold" text-anchor="middle" y="4">CSP-ASSET</text>
@@ -653,10 +538,10 @@
                                     <text id="svg-tls-label" fill="#bae0ff" font-family="JetBrains Mono" font-size="9" text-anchor="middle" y="55">TLS Policy</text>
                                 </g>
                             </svg>
-                        </div>
+                                        </div>
 
                         <!-- Telemetry Inspector Drawer -->
-                        <div class="xl:col-span-4 bg-[#0d2850]/95 p-4 border border-[#bae0ff]/55 flex flex-col justify-between">
+                        <div data-mascot-ledge class="xl:col-span-4 bg-[#0d2850]/95 p-4 border border-[#bae0ff]/55 flex flex-col justify-between">
                             <div class="flex flex-col">
                                 <div class="flex items-center justify-between pb-2 border-b border-[#bae0ff]/40 mb-3">
                                     <div class="flex items-center gap-1.5">
@@ -732,7 +617,7 @@
                 </div>
 
                 <!-- Recent Session Scan History -->
-                <div class="bp-panel p-5 sm:p-6 rounded-sm cv-section">
+                <div data-mascot-ledge class="bp-panel p-5 sm:p-6 rounded-sm cv-section">
                     <div class="flex items-center justify-between pb-3 mb-3 border-b border-[#bae0ff]/40">
                         <h3 class="text-sm sm:text-base text-white font-bold uppercase">Recent Scan History</h3>
                         <button onclick="clearScanHistory()" type="button" class="px-2.5 py-1 bg-red-950/70 hover:bg-red-900 border border-red-400/60 text-red-200 text-[11px] uppercase cursor-pointer">Clear Local</button>
@@ -750,7 +635,7 @@
             <section id="tab-scanner" class="tab-view hidden flex flex-col gap-6">
                 <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
                     <!-- Target Launcher -->
-                    <div class="xl:col-span-5 bp-frame bg-[#113466]/90 p-5 sm:p-6 rounded-sm flex flex-col justify-between">
+                    <div data-mascot-ledge class="xl:col-span-5 bp-frame bg-[#113466]/90 p-5 sm:p-6 rounded-sm flex flex-col justify-between">
                         <div>
                             <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#bae0ff]/45">
                                 <div class="flex items-center gap-2">
@@ -801,10 +686,10 @@
                             <span class="material-symbols-outlined text-base">rocket_launch</span>
                             <span>Initiate Target Scan</span>
                         </button>
-                    </div>
+    </div>
 
-                    <!-- Blueprint Terminal Console -->
-                    <div class="xl:col-span-7 bp-frame bg-[#091e3d]/95 rounded-sm overflow-hidden flex flex-col justify-between">
+                    <!-- Blueprint Terminal Console (Mascot inspects code lines & scrolls here) -->
+                    <div id="terminal-card" data-mascot-ledge class="xl:col-span-7 bp-frame bg-[#091e3d]/95 rounded-sm overflow-hidden flex flex-col justify-between">
                         <div class="bg-[#0d2850] px-4 py-2.5 flex items-center justify-between border-b border-[#bae0ff]/50 text-xs">
                             <div class="flex items-center gap-2">
                                 <span class="h-2.5 w-2.5 rounded-full bg-red-400 inline-block"></span>
@@ -820,9 +705,9 @@
                             </div>
                         </div>
 
-                        <div class="p-4 text-xs space-y-1.5 overflow-y-auto h-64 bg-[#081933] text-[#e6f3ff] flex-1" id="terminal-body">
-                            <div><span class="text-[#39ff88] font-bold">[SYSTEM]</span> TriScout v2.4 On-Demand Scanner Ready.</div>
-                            <div><span class="text-[#7ce0ff] font-bold">[INFO]</span> Enter a domain on the left or type <span class="text-white font-bold">scan example.com</span> below.</div>
+                        <div class="p-4 pr-24 text-xs space-y-1.5 overflow-y-auto h-72 bg-[#081933] text-[#e6f3ff] flex-1" id="terminal-body">
+                            <div class="term-log-line"><span class="text-[#39ff88] font-bold">[SYSTEM]</span> TriScout v2.4 On-Demand Scanner Ready.</div>
+                            <div class="term-log-line"><span class="text-[#7ce0ff] font-bold">[INFO]</span> Enter a domain on the left or type <span class="text-white font-bold">scan example.com</span> below.</div>
                             <div id="terminal-append-point"></div>
                         </div>
 
@@ -836,7 +721,7 @@
                 </div>
 
                 <!-- Color-Coded Security Control Matrix & Vulnerability Ledger -->
-                <div class="bp-panel p-5 sm:p-6 rounded-sm cv-section">
+                <div data-mascot-ledge class="bp-panel p-5 sm:p-6 rounded-sm cv-section">
                     <div class="flex flex-wrap items-center justify-between gap-4 pb-3 mb-4 border-b border-[#bae0ff]/45">
                         <div>
                             <h3 class="text-sm sm:text-base text-white font-bold uppercase flex items-center gap-2">
@@ -860,13 +745,13 @@
                         </div>
                     </div>
                 </div>
-    </section>
+            </section>
 
-           <!-- =================================================================
+            <!-- =================================================================
                  TAB 3: REPORTS & EXPORT
                  ================================================================= -->
             <section id="tab-reports" class="tab-view hidden flex flex-col gap-6 max-w-5xl mx-auto">
-                <div class="bp-panel p-5 sm:p-6 rounded-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                <div data-mascot-ledge class="bp-panel p-5 sm:p-6 rounded-sm flex flex-col md:flex-row items-center justify-between gap-4">
                     <div class="flex items-center gap-4">
                         <div class="p-3 bg-[#091e3d] border border-[#7ce0ff]/60 text-[#7ce0ff]">
                             <span class="material-symbols-outlined text-2xl">file_download</span>
@@ -889,7 +774,7 @@
                     </div>
                 </div>
 
-                <div class="bp-frame bg-[#113466]/90 p-5 sm:p-6 rounded-sm">
+                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 p-5 sm:p-6 rounded-sm">
                     <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#bae0ff]/45">
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-outlined text-[#39ff88]">mail</span>
@@ -915,7 +800,7 @@
                  TAB 4: CLI TOOL
                  ================================================================= -->
             <section id="tab-cli" class="tab-view hidden max-w-4xl mx-auto">
-                <div class="bp-frame bg-[#113466]/90 p-6 sm:p-8 rounded-sm">
+                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 p-6 sm:p-8 rounded-sm">
                     <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#bae0ff]/45">
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-outlined text-[#39ff88] text-2xl">terminal</span>
@@ -940,10 +825,10 @@
             </section>
 
             <!-- =================================================================
-                 TAB 5: MY PROJECTS
+                 TAB 5: MY PROJECTS (All 5 SVG Icons Preserved)
                  ================================================================= -->
             <section id="tab-project" class="tab-view hidden max-w-6xl mx-auto">
-                <div class="bp-frame bg-[#113466]/90 p-6 sm:p-8 mb-6 flex flex-col items-center justify-center text-center rounded-sm">
+                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 p-6 sm:p-8 mb-6 flex flex-col items-center justify-center text-center rounded-sm">
                     <div class="p-1 rounded-full bg-gradient-to-tr from-[#39ff88] to-[#7ce0ff] mb-3 shadow-[0_0_24px_rgba(124,224,255,0.35)]">
                         <img src="https://github.com/Kiran-mondal.png" alt="Kiran Mondal" width="80" height="80" class="w-20 h-20 rounded-full border-4 border-[#0d2850] object-cover">
                     </div>
@@ -959,7 +844,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <div class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
                         <div class="flex items-center gap-3 mb-3">
                             <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <rect width="512" height="512" rx="120" fill="#0D4FF0"/>
@@ -976,7 +861,7 @@
                         </div>
                     </div>
 
-                    <div class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
                         <div class="flex items-center gap-3 mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32" aria-hidden="true">
                                 <path d="M 120 390 C 120 270, 392 350, 392 210 C 392 130, 310 90, 256 90" fill="none" stroke="#58a6ff" stroke-width="45" stroke-linecap="round" />
@@ -991,7 +876,7 @@
                         </div>
                     </div>
 
-                    <div class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
                         <div class="flex items-center gap-3 mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="32" height="32" aria-hidden="true">
                                 <path d="M 280 250 C 420 250, 420 380, 350 400 C 450 420, 450 580, 280 580" stroke="#00f2fe" stroke-width="45" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1006,7 +891,7 @@
                         </div>
                     </div>
 
-                    <div class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
                         <div class="flex items-center gap-3 mb-3">
                             <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="32" height="32" aria-hidden="true">
                                 <circle cx="50" cy="50" r="48" fill="#d97706" stroke="#ffffff" stroke-width="2"/>
@@ -1021,7 +906,7 @@
                         </div>
                     </div>
 
-                    <div class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
                         <div class="flex items-center gap-3 mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32" aria-hidden="true">
                                 <circle cx="256" cy="256" r="168" fill="none" stroke="#dc2626" stroke-width="48" />
@@ -1038,11 +923,11 @@
                 </div>
             </section>
 
-            <!-- =================================================================
+             <!-- =================================================================
                  TAB 6: ACCOUNT & SYSTEM
                  ================================================================= -->
             <section id="tab-profile" class="tab-view hidden max-w-4xl mx-auto flex flex-col gap-6">
-                <div class="bp-frame bg-[#113466]/90 p-6 rounded-sm">
+                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 p-6 rounded-sm">
                     <div class="flex flex-col sm:flex-row items-center gap-5 pb-5 mb-5 border-b border-[#bae0ff]/45">
                         <div class="w-20 h-20 rounded-sm bg-[#091e3d] flex items-center justify-center border-2 border-[#39ff88] overflow-hidden shrink-0" id="profileAvatar">
                             <span class="material-symbols-outlined text-4xl text-[#39ff88]">person</span>
@@ -1058,7 +943,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs" id="profileActions"></div>
                 </div>
 
-                <div class="bp-panel p-6 rounded-sm">
+                <div data-mascot-ledge class="bp-panel p-6 rounded-sm">
                     <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#bae0ff]/45">
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-outlined text-[#7ce0ff]">shield_lock</span>
@@ -1094,46 +979,71 @@
         </main>
     </div>
 
-    <!-- BLUEPRINT MINI INTERACTIVE MASCOT (Draggable, Cursor-Tracking, Scan-Step Pointing) -->
-    <div id="dash-mini-mascot" style="position: fixed; right: 16px; bottom: 16px; width: 92px; z-index: 60; touch-action: none; user-select: none;">
-        <div class="flex items-center justify-between bg-[#091e3d]/95 border border-[#bae0ff]/70 px-1.5 py-0.5 mb-0.5 text-[8px] text-[#39ff88] font-bold">
-            <span id="dash-mascot-step-tag" class="truncate">IDLE // DRAG</span>
-            <button type="button" onclick="toggleMiniMascot(false)" aria-label="Hide mascot" class="text-[#bae0ff] hover:text-white ml-1 cursor-pointer">&times;</button>
+    <!-- PROPORTIONAL BLUEPRINT MASCOT (Sits on Box Ledges, Opposite-Wind Drag Physics, Scan-Line Traversal) -->
+    <div id="dash-mini-mascot" class="mascot-sitting">
+        <div class="flex items-center justify-between gap-1 bg-[#091e3d]/95 border border-[#bae0ff]/75 px-1.5 py-0.5 mb-0.5 text-[8px] text-[#39ff88] font-bold">
+            <span id="dash-mascot-step-tag" class="truncate">PERCHED // SIT</span>
+            <div class="flex items-center gap-1 shrink-0">
+                <button id="dash-mascot-place-btn" type="button" onclick="toggleMascotPlaceMode()" title="Tap any box to seat mascot" aria-label="Tap any box to seat mascot" class="text-[#7ce0ff] hover:text-[#39ff88] cursor-pointer p-0.5">
+                    <svg class="w-2.5 h-2.5 fill-none stroke-current" stroke-width="2.2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="7"/>
+                        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                        <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+                        <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+                    </svg>
+                </button>
+                <button type="button" onclick="toggleMiniMascot(false)" title="Hide mascot" aria-label="Hide mascot" class="text-[#bae0ff] hover:text-white cursor-pointer px-0.5">&times;</button>
+            </div>
         </div>
-        <svg id="dash-mascot-svg" viewBox="60 20 280 275" class="w-24 h-24 cursor-grab active:cursor-grabbing overflow-visible drop-shadow-[0_8px_16px_rgba(4,15,35,0.75)]" fill="none">
-            <g id="dash-mascot-body" style="transform-origin: 190px 180px; transition: transform 0.25s ease;">
-                <g id="dash-leg-l" style="transform-origin: 158px 188px; animation: dashWalkLeft 0.96s linear infinite;">
-                    <path d="M158 188 C146 216, 150 242, 160 268" stroke="#e6f3ff" stroke-width="13" stroke-linecap="round"/>
-                    <path d="M158 188 C146 216, 150 242, 160 268" stroke="#18498a" stroke-width="9" stroke-linecap="round"/>
-                    <ellipse cx="160" cy="276" rx="13" ry="7.5" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+        <svg id="dash-mascot-svg" viewBox="70 28 240 245" class="w-[92px] h-[94px] cursor-grab active:cursor-grabbing overflow-visible drop-shadow-[0_8px_16px_rgba(4,15,35,0.75)]" fill="none">
+            <defs>
+                <clipPath id="dash-eye-clip"><circle cx="190" cy="88" r="22"/></clipPath>
+            </defs>
+            <g id="dash-mascot-body">
+                <!-- Symmetrical Proportional Legs -->
+                <g id="dash-leg-l">
+                    <path d="M164 178 L160 244" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
+                    <path d="M164 178 L160 244" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
+                    <ellipse cx="160" cy="250" rx="12" ry="7" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
                 </g>
-                <g id="dash-leg-r" style="transform-origin: 214px 188px; animation: dashWalkRight 0.96s linear infinite;">
-                    <path d="M214 188 L218 272" stroke="#e6f3ff" stroke-width="13" stroke-linecap="round"/>
-                    <path d="M214 188 L218 272" stroke="#18498a" stroke-width="9" stroke-linecap="round"/>
-                    <ellipse cx="220" cy="278" rx="14" ry="7" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+                <g id="dash-leg-r">
+                    <path d="M216 178 L220 244" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
+                    <path d="M216 178 L220 244" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
+                    <ellipse cx="220" cy="250" rx="12" ry="7" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
                 </g>
-                <g id="dash-arm-l" style="transform-origin: 128px 112px; transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);">
-                    <path d="M128 112 L98 180" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
-                    <path d="M128 112 L98 180" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
-                    <circle cx="96" cy="186" r="11" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+
+                <!-- Symmetrical Proportional Arms -->
+                <g id="dash-arm-l">
+                    <path d="M134 114 L108 172" stroke="#e6f3ff" stroke-width="11" stroke-linecap="round"/>
+                    <path d="M134 114 L108 172" stroke="#18498a" stroke-width="7.5" stroke-linecap="round"/>
+                    <circle cx="106" cy="177" r="9.5" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
                 </g>
-                <g id="dash-arm-r" style="transform-origin: 252px 112px; transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);">
-                    <path d="M252 112 L282 180" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
-                    <path d="M252 112 L282 180" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
-                    <circle cx="284" cy="186" r="11" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+                <g id="dash-arm-r">
+                    <path d="M246 114 L272 172" stroke="#e6f3ff" stroke-width="11" stroke-linecap="round"/>
+                    <path d="M246 114 L272 172" stroke="#18498a" stroke-width="7.5" stroke-linecap="round"/>
+                    <circle cx="274" cy="177" r="9.5" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
                 </g>
-                <rect x="124" y="36" width="132" height="156" rx="38" fill="#174786" stroke="#e6f3ff" stroke-width="2.4"/>
-                <rect x="133" y="45" width="114" height="138" rx="30" fill="none" stroke="#bae0ff" stroke-width="1.1" stroke-dasharray="4 4" stroke-opacity="0.7"/>
-                <circle cx="190" cy="88" r="24" fill="#d8ecff" stroke="#e6f3ff" stroke-width="2.2"/>
-                <g id="dash-pupil-group" style="transition: transform 0.08s ease-out;">
-                    <circle cx="190" cy="88" r="12" fill="#102a4c"/>
-                    <g id="dash-iris-ring" style="transform-origin: 190px 88px;">
-                        <circle cx="190" cy="88" r="9" fill="none" stroke="#7ce0ff" stroke-width="1.5" stroke-dasharray="4 3"/>
-                        <polygon points="190,75 187.5,80 192.5,80" fill="#39ff88"/>
+
+                <!-- Main Blueprint Torso -->
+                <rect x="130" y="42" width="120" height="140" rx="34" fill="#174786" stroke="#e6f3ff" stroke-width="2.4"/>
+                <rect x="139" y="51" width="102" height="122" rx="26" fill="none" stroke="#bae0ff" stroke-width="1.1" stroke-dasharray="4 4" stroke-opacity="0.7"/>
+
+                <!-- Cyclops Sensor Eye -->
+                <g clip-path="url(#dash-eye-clip)">
+                    <circle cx="190" cy="88" r="22" fill="#d8ecff"/>
+                    <g id="dash-pupil-group">
+                        <circle cx="190" cy="88" r="11" fill="#102a4c"/>
+                        <g id="dash-iris-ring">
+                            <circle cx="190" cy="88" r="8.2" fill="none" stroke="#7ce0ff" stroke-width="1.4" stroke-dasharray="4 3"/>
+                            <polygon points="190,76 187.8,80.5 192.2,80.5" fill="#39ff88"/>
+                        </g>
+                        <circle id="dash-pupil-core" cx="190" cy="88" r="5" fill="#00d9ff"/>
+                        <circle cx="194" cy="84" r="2.4" fill="#ffffff"/>
                     </g>
-                    <circle cx="190" cy="88" r="5" fill="#00d9ff"/>
-                    <circle cx="194" cy="84" r="2.6" fill="#ffffff"/>
+                    <rect id="dash-eyelid-top" x="164" y="42" width="52" height="24" fill="#133b70" stroke="#bae0ff" stroke-width="1.4"/>
+                    <rect id="dash-eyelid-bottom" x="164" y="110" width="52" height="24" fill="#133b70" stroke="#bae0ff" stroke-width="1.4"/>
                 </g>
+                <circle cx="190" cy="88" r="22" fill="none" stroke="#e6f3ff" stroke-width="2.2"/>
             </g>
         </svg>
     </div>
@@ -1142,787 +1052,8 @@
         Show Mascot
     </button>
 
-    <script>
-        let currentScanData = null;
-        let sessionScanCount = 0;
-        let currentTopoScale = 1;
-
-        function escapeHtml(value) {
-            return String(value == null ? '' : value)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
-            if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-                return fetch(url, { ...options, signal: AbortSignal.timeout(timeoutMs) });
-            }
-            const ctrl = new AbortController();
-            const id = setTimeout(() => ctrl.abort(), timeoutMs);
-            return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(id));
-        }
-
-        function showRuntimeError(msg) {
-            const banner = document.getElementById('runtime-error-banner');
-            const text = document.getElementById('runtime-error-text');
-            if (!banner || !text) return;
-            text.textContent = msg;
-            banner.classList.remove('hidden');
-        }
-
-        // Global Error Boundaries (Check 39)
-        window.addEventListener('error', (event) => {
-            showRuntimeError('Runtime UI error caught: ' + (event.message || 'Unknown error'));
-        });
-        window.addEventListener('unhandledrejection', (event) => {
-            const reason = event.reason && event.reason.message ? event.reason.message : 'Network or async operation failed.';
-            showRuntimeError('Async error caught: ' + reason);
-        });
-
-        function signOutSession() {
-            localStorage.removeItem('token');
-            sessionStorage.clear();
-            window.location.href = '/';
-        }
-
-        function toggleMobileSidebar() {
-            const sb = document.getElementById('mobileSidebar');
-            const ov = document.getElementById('sidebarOverlay');
-            const btn = document.getElementById('mobileMenuBtn');
-            if (sb && ov) {
-                const isOpening = sb.classList.contains('-translate-x-full');
-                sb.classList.toggle('-translate-x-full');
-                ov.classList.toggle('hidden');
-                if (btn) btn.setAttribute('aria-expanded', String(isOpening));
-            }
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                const sb = document.getElementById('mobileSidebar');
-                const ov = document.getElementById('sidebarOverlay');
-                const btn = document.getElementById('mobileMenuBtn');
-                if (sb && !sb.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
-                    sb.classList.add('-translate-x-full');
-                    if (ov) ov.classList.add('hidden');
-                    if (btn) btn.setAttribute('aria-expanded', 'false');
-                }
-            }
-        });
-
-        function switchTab(e, tabId) {
-            if (e) e.preventDefault();
-
-            document.querySelectorAll('.tab-view').forEach(sec => sec.classList.add('hidden'));
-            const activeSec = document.getElementById('tab-' + tabId);
-            if (activeSec) activeSec.classList.remove('hidden');
-
-            document.querySelectorAll('.sidebar-item').forEach(link => link.classList.remove('sidebar-active'));
-            const activeNav = document.querySelector('[data-tab="' + tabId + '"]');
-            if (activeNav) activeNav.classList.add('sidebar-active');
-
-            const titles = {
-                overview: 'OVERVIEW // COMMAND CENTER',
-                scanner: 'TARGET SCANNER // RECONNAISSANCE',
-                reports: 'REPORTS & EXPORT // DISPATCH',
-                cli: 'CLI TOOL // NPM PACKAGE',
-                project: 'MY PROJECTS // PORTFOLIO',
-                profile: 'ACCOUNT & SYSTEM // SETTINGS'
-            };
-            const titleEl = document.getElementById('top-page-title');
-            if (titleEl && titles[tabId]) titleEl.textContent = titles[tabId];
-
-            const sb = document.getElementById('mobileSidebar');
-            const ov = document.getElementById('sidebarOverlay');
-            if (sb && !sb.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
-                sb.classList.add('-translate-x-full');
-                if (ov) ov.classList.add('hidden');
-            }
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return false;
-        }
-
-        // Interactive Blueprint Topology Controls
-        function zoomTopology(delta) {
-            const svg = document.getElementById('topology-svg');
-            const label = document.getElementById('topo-zoom-level');
-            if (!svg) return;
-            currentTopoScale = delta === 0 ? 1 : Math.max(0.7, Math.min(1.45, +(currentTopoScale + delta).toFixed(2)));
-            svg.style.transform = `scale(${currentTopoScale})`;
-            if (label) label.textContent = Math.round(currentTopoScale * 100) + '%';
-        }
-
-        function filterTopologyZone(zoneClass, btnEl) {
-            document.querySelectorAll('.topo-filter-btn').forEach(b => {
-                b.className = 'topo-filter-btn px-2.5 py-1 bg-[#091e3d] text-[#bae0ff] hover:text-white border border-[#bae0ff]/40 flex items-center gap-1 cursor-pointer';
-            });
-            if (btnEl) {
-                btnEl.className = 'topo-filter-btn px-2.5 py-1 bg-[#1c539e] text-white font-bold border border-[#bae0ff]/80 flex items-center gap-1 cursor-pointer';
-            }
-            document.querySelectorAll('.topo-node').forEach(node => {
-                if (zoneClass === 'ALL' || node.classList.contains(zoneClass)) {
-                    node.style.opacity = '1';
-                } else {
-                    node.style.opacity = '0.22';
-                }
-            });
-        }
-
-        function inspectTopoNode(nodeKey) {
-            const detail = document.getElementById('tele-inspector-detail');
-            if (!detail) return;
-            const host = currentScanData ? currentScanData.host : 'standby target';
-            const ip = currentScanData ? currentScanData.ip : 'Unresolved';
-            const info = {
-                WAF: `Edge WAF Ingress for ${host} (${ip}). Evaluates public rate-limit headers, CF-Ray, and ingress posture.`,
-                LB: `Core Load Balancer & Google DoH Resolver routing passive HTTPS/443 telemetry for ${host}.`,
-                APIGW: `Origin Dispatcher enforcing Token Bucket rate limiting (10 scans/min) and Locked Origin policy.`,
-                PRIMARY: currentScanData
-                    ? `Primary audited target ${host} (${ip}). Posture score: ${currentScanData.score}/100 across ${currentScanData.checks.length} security controls.`
-                    : `Primary target node is on standby. Run a passive scan in Target Scanner to populate live posture data.`,
-                STANDBY: `DOM Surface Scraper passively counts public <script> and <form> tags without injecting active payloads.`,
-                AUTH: `Policy Node audits CORS Access-Control-Allow-Origin, HttpOnly/Secure cookie flags, and session expiry.`,
-                LEAK: `Source Audit Probe scans public HTML for exposed API keys, private keys, stack traces, and debug source maps.`,
-                POSTGRES: `Neon Serverless PostgreSQL enforcing Row-Level Security (RLS) across users, auth_otps, and scan_logs.`,
-                REDIS: `In-memory Token Bucket rate limiter and 60-second scan response cache.`,
-                S3: `Asset & Content-Security-Policy (CSP) verification node checking XSS script-source hardening.`,
-                IAM: `Transport Broker auditing Strict-Transport-Security (HSTS) and MIME nosniff enforcement.`
-            };
-            detail.textContent = info[nodeKey] || info.PRIMARY;
-        }
-
-        function appendTerm(type, msg) {
-            const tb = document.getElementById('terminal-body');
-            const ap = document.getElementById('terminal-append-point');
-            if (!tb || !ap) return;
-
-            const div = document.createElement('div');
-            const timeSpan = document.createElement('span');
-            timeSpan.className = 'text-[#bae0ff]/65';
-            timeSpan.textContent = '[' + new Date().toLocaleTimeString() + '] ';
-
-            const typeSpan = document.createElement('span');
-            let color = 'text-[#39ff88]';
-            if (type === '[VULN]' || type === '[ERROR]') color = 'text-[#ffb4ab]';
-            else if (type === '[RECON]' || type === '[DNS]') color = 'text-[#7ce0ff]';
-            typeSpan.className = 'font-bold ' + color;
-            typeSpan.textContent = type + ' ';
-
-            const msgNode = document.createTextNode(String(msg == null ? '' : msg));
-            div.append(timeSpan, typeSpan, msgNode);
-            tb.insertBefore(div, ap);
-            tb.scrollTop = tb.scrollHeight;
-        }
-
-        function clearTerminalBuffer() {
-            const tb = document.getElementById('terminal-body');
-            if (tb) tb.innerHTML = '<div id="terminal-append-point"></div>';
-        }
-
-        async function resolveDNS(domain) {
-            try {
-                const clean = domain.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
-                const res = await fetchWithTimeout('https://dns.google/resolve?name=' + encodeURIComponent(clean) + '&type=A', {}, 6000);
-                const data = await res.json();
-                if (data && data.Answer && data.Answer.length > 0) {
-                    return { ip: data.Answer[0].data, host: clean };
-                }
-            } catch (e) {}
-            return { ip: 'Resolved via Backend', host: domain.replace(/^https?:\/\//, '').split('/')[0] };
-        }
-
-        function getRemediationAdvice(name) {
-            if (name.includes('HSTS')) return 'Add "Strict-Transport-Security: max-age=63072000; includeSubDomains; preload" to your web server response headers.';
-            if (name.includes('CSP')) return 'Configure a strict "Content-Security-Policy" header to mitigate XSS and unauthorized script execution.';
-            if (name.includes('Isolation') || name.includes('X-Frame')) return 'Set "X-Frame-Options: DENY" or COOP/CORP headers to prevent iframe clickjacking.';
-            if (name.includes('MIME')) return 'Add "X-Content-Type-Options: nosniff" to prevent browser MIME-type sniffing.';
-            if (name.includes('Fingerprint') || name.includes('Tech Stack')) return 'Disable "X-Powered-By" headers and hide generator version meta tags.';
-            if (name.includes('Key') || name.includes('Secrets')) return 'Rotate exposed API keys immediately and store secrets in server-side environment variables.';
-            if (name.includes('Error')) return 'Disable raw stack traces and SQL error details in production responses.';
-            if (name.includes('CORS') || name.includes('Origin')) return 'Restrict Access-Control-Allow-Origin to explicit trusted origins instead of "*".';
-            return 'Enforce strict rate limiting and secure session flags at the reverse proxy or API gateway level.';
-        }
-
-        async function executeTargetAssessment(customTarget) {
-            const inputEl = document.getElementById('target-domain-input');
-            const target = (customTarget || (inputEl ? inputEl.value : '')).trim();
-            if (!target) return alert('Please enter a target domain or URL first!');
-
-            const comp = document.getElementById('compliance-check');
-            if (comp && !comp.checked) return alert('Please verify the ethical authorization checkbox first.');
-
-            switchTab(null, 'scanner');
-            if (typeof window.setMascotScanStep === 'function') window.setMascotScanStep(1);
-
-            const btn = document.getElementById('dispatch-recon-btn');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">sync</span><span>Scanning Target...</span>';
-            }
-
-            const msBadge = document.getElementById('mission-status-badge');
-            if (msBadge) msBadge.textContent = 'STATE: ACTIVE PROBING';
-            const sideTarget = document.getElementById('sidebar-active-target');
-            if (sideTarget) sideTarget.textContent = target;
-            const termBadge = document.getElementById('term-stream-badge');
-            if (termBadge) termBadge.textContent = 'PROBING';
-
-            const start = performance.now();
-            appendTerm('[RECON]', 'Initiating passive security scan for: ' + target);
-
-            const dns = await resolveDNS(target);
-            appendTerm('[DNS]', 'Host ' + dns.host + ' resolved to IPv4: ' + dns.ip);
-            if (typeof window.setMascotScanStep === 'function') window.setMascotScanStep(2);
-
-            try {
-                const res = await fetchWithTimeout('/api/scan-headers', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
-                    },
-                    body: JSON.stringify({ target: target })
-                }, 15000);
-                if (typeof window.setMascotScanStep === 'function') window.setMascotScanStep(3);
-
-                const data = await res.json();
-                const latency = Math.round(performance.now() - start);
-
-                if (res.status === 401 || res.status === 403) {
-                    appendTerm('[ERROR]', data.error || 'Session expired. Please sign in again.');
-                    if (res.status === 401) signOutSession();
-                    return;
-                }
-
-                if (!data.success) {
-                    appendTerm('[ERROR]', data.error || 'Target scan failed.');
-                    return;
-                }
-
-                sessionScanCount++;
-                const score = typeof data.score === 'number' ? data.score : 50;
-                const checks = Array.isArray(data.checks) ? data.checks : [];
-
-                currentScanData = {
-                    target: target,
-                    host: dns.host,
-                    ip: dns.ip,
-                    score: score,
-                    checks: checks,
-                    report: data.report,
-                    latency: latency,
-                    timestamp: new Date().toLocaleString()
-                };
-
-                localStorage.setItem('triscout_target', target);
-                localStorage.setItem('triscout_report', data.report);
-                saveScanHistory(currentScanData);
-
-                String(data.report || '').split('\n').forEach(line => {
-                    if (line.trim()) {
-                        if (line.startsWith('[+]')) appendTerm('[PASS]', line);
-                        else if (line.startsWith('[!]')) appendTerm('[VULN]', line);
-                        else appendTerm('[INFO]', line);
-                    }
-                });
-
-                appendTerm('[READY]', 'Scan finished in ' + latency + 'ms. Score: ' + score + '/100.');
-                updateAllDashboardWidgets(currentScanData);
-                if (typeof window.setMascotScanStep === 'function') window.setMascotScanStep(4);
-            } catch (err) {
-                appendTerm('[ERROR]', err.name === 'TimeoutError' ? 'Scan request timed out.' : 'Could not reach scanning API.');
-                if (typeof window.setMascotScanStep === 'function') window.setMascotScanStep(0);
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<span class="material-symbols-outlined text-base">rocket_launch</span><span>Initiate Target Scan</span>';
-                }
-                if (termBadge) termBadge.textContent = 'READY';
-            }
-        }
-
-        function setText(id, val) {
-            const el = document.getElementById(id);
-            if (el) el.textContent = val;
-        }
-
-        function updateAllDashboardWidgets(scan) {
-            const checks = scan.checks || [];
-            const crit = checks.filter(c => c.status === 'CRITICAL').length;
-            const high = checks.filter(c => c.status === 'MISSING' || c.status === 'WARNING').length;
-            const med = checks.filter(c => c.status === 'NOTICE').length;
-            const low = checks.filter(c => c.status === 'SECURE').length;
-            const openIssues = crit + high;
-
-            // 4 Metric Cards & Sidebar
-            setText('metric-assets-count', checks.length);
-            setText('metric-assets-tag', scan.ip);
-            setText('metric-vuln-total', openIssues);
-            setText('metric-vuln-tag', openIssues > 0 ? 'Action Req' : 'Secure');
-            setText('pill-crit', crit);
-            setText('pill-high', high);
-            setText('pill-low', low);
-
-            setText('nav-badge-vulns', openIssues > 0 ? (openIssues + ' WARN') : 'CLEAN');
-            setText('sidebar-defcon-status', scan.score >= 80 ? 'SECURE' : 'AT RISK');
-            setText('mission-status-badge', 'STATE: AUDIT COMPLETE');
-
-            setText('metric-crit-big', String(crit).padStart(2, '0'));
-            setText('crit-status-label', crit > 0 ? (crit + ' CRITICAL') : '0 EXPOSED');
-
-            setText('metric-score-big', scan.score + '%');
-            const scoreBar = document.getElementById('metric-score-bar');
-            if (scoreBar) scoreBar.style.width = scan.score + '%';
-            setText('scan-state-badge', 'VERIFIED');
-            setText('scans-executed-count', sessionScanCount + ' scan(s) in session');
-            setText('scan-latency-text', 'Latency: ' + scan.latency + ' ms');
-
-            // 11-Node Blueprint Topology HUD Updates
-            setText('hud-ping-badge', 'PING: ' + scan.latency + ' ms');
-            setText('topo-banner-tag', '[SCAN COMPLETE // ' + scan.host.toUpperCase() + ']');
-            setText('topo-banner-desc', 'Evaluated ' + checks.length + ' controls — ' + low + ' secure, ' + openIssues + ' warning/critical.');
-            setText('topo-scan-clock', 'LATENCY: ' + scan.latency + ' ms');
-            setText('topo-progress-text', scan.score + '/100');
-
-            setText('svg-dns-ip', 'IP: ' + scan.ip);
-            setText('svg-target-score', scan.score + '/100');
-            setText('svg-target-grade', scan.score >= 85 ? 'GRADE A+' : (scan.score >= 60 ? 'GRADE B' : 'HIGH RISK'));
-            setText('svg-target-host', scan.host);
-            setText('svg-target-ip', 'IP: ' + scan.ip);
-
-            const findStatus = (needle) => {
-                const match = checks.find(c => c.name && c.name.toLowerCase().includes(needle));
-                return match ? match.status : 'CHECKED';
-            };
-            const errStatus = findStatus('error');
-            const corsStatus = findStatus('cors');
-            const hstsStatus = findStatus('hsts');
-            const keyStatus = findStatus('key');
-            const cspStatus = findStatus('csp');
-
-            setText('tele-status-pill', scan.score >= 80 ? 'VERIFIED' : 'AT RISK');
-            setText('tele-target-title', 'Target: ' + scan.host);
-            setText('tele-suite-pct', checks.length + '/12 Controls Audited');
-            setText('tele-row-error', errStatus);
-            setText('tele-row-origin', corsStatus);
-            setText('tele-row-tls', hstsStatus);
-            setText('tele-row-keys', keyStatus);
-            setText('tele-row-score', scan.score + ' / 100');
-
-            setText('svg-auth-status', 'CORS: ' + corsStatus);
-            setText('svg-leak-status', 'KEYS: ' + keyStatus);
-            setText('svg-s3-status', 'CSP: ' + cspStatus);
-            setText('svg-tls-label', 'HSTS: ' + hstsStatus);
-            inspectTopoNode('PRIMARY');
-          // Ledger Counters
-            setText('lf-all', checks.length);
-            setText('lf-crit', crit);
-            setText('lf-high', high);
-            setText('lf-med', med);
-            setText('lf-low', low);
-
-            // Safe HTML Ledger Rendering (Escaped against XSS)
-            const container = document.getElementById('ledger-items-container');
-            if (container) {
-                container.innerHTML = checks.map(c => {
-                    let borderCls = 'border-[#39ff88]/50 bg-[#0b2f24]/45';
-                    let badgeCls = 'bg-[#39ff88] text-[#003918]';
-                    if (c.status === 'CRITICAL') {
-                        borderCls = 'border-red-400/75 bg-red-950/50';
-                        badgeCls = 'bg-red-400 text-red-950';
-                    } else if (c.status === 'MISSING' || c.status === 'WARNING') {
-                        borderCls = 'border-amber-300/65 bg-amber-950/35';
-                        badgeCls = 'bg-amber-300 text-black';
-                    } else if (c.status === 'NOTICE') {
-                        borderCls = 'border-[#7ce0ff]/55 bg-[#091e3d]/80';
-                        badgeCls = 'bg-[#7ce0ff] text-[#0d2850]';
-                    }
-
-                    const safeStatus = escapeHtml(c.status);
-                    const safeName = escapeHtml(c.name);
-                    const safeImpact = escapeHtml(c.impact);
-                    const safeDetail = escapeHtml(c.detail);
-                    const safeFix = escapeHtml(getRemediationAdvice(String(c.name || '')));
-
-                    return '<div class="ledger-card p-4 rounded-sm border transition-all cursor-pointer ' + borderCls + '" data-status="' + safeStatus + '" onclick="this.querySelector(\'.rem-box\').classList.toggle(\'hidden\')">' +
-                        '<div class="flex items-center justify-between gap-2 mb-1.5">' +
-                            '<div class="flex items-center gap-2">' +
-                                '<span class="px-2 py-0.5 text-[10px] font-bold uppercase ' + badgeCls + '">' + safeStatus + '</span>' +
-                                '<span class="font-bold text-xs sm:text-sm text-white">' + safeName + '</span>' +
-                            '</div>' +
-                            '<span class="text-[11px] text-[#bae0ff]">' + safeImpact + '</span>' +
-                        '</div>' +
-                        '<p class="text-xs text-[#bae0ff] font-sans mb-1">' + safeDetail + '</p>' +
-                        '<div class="rem-box hidden mt-2.5 pt-2.5 border-t border-[#bae0ff]/25 text-xs text-[#7ce0ff]">' +
-                            '<strong>Fix:</strong> ' + safeFix +
-                        '</div>' +
-                    '</div>';
-                }).join('');
-            }
-
-            const preview = document.getElementById('reportPreview');
-            if (preview) preview.textContent = 'TARGET: ' + scan.target + '\n\n' + scan.report;
-        }
-
-        function filterLedgerByStatus(status, btn) {
-            document.querySelectorAll('.ledger-filter-btn').forEach(b => b.classList.remove('ring-2', 'ring-[#39ff88]'));
-            if (btn) btn.classList.add('ring-2', 'ring-[#39ff88]');
-            document.querySelectorAll('.ledger-card').forEach(card => {
-                const st = card.getAttribute('data-status');
-                if (status === 'ALL' || st === status || (status === 'MISSING' && (st === 'MISSING' || st === 'WARNING'))) {
-                    card.classList.remove('hidden');
-                } else {
-                    card.classList.add('hidden');
-                }
-            });
-        }
-
-        function saveScanHistory(scan) {
-            try {
-                const list = JSON.parse(localStorage.getItem('triscout_scan_history') || '[]');
-                list.unshift({ target: scan.target, ip: scan.ip, score: scan.score, time: scan.timestamp });
-                if (list.length > 10) list.pop();
-                localStorage.setItem('triscout_scan_history', JSON.stringify(list));
-                renderScanHistory();
-            } catch (e) {}
-        }
-
-        function renderScanHistory(overrideList) {
-            const container = document.getElementById('scan-history-list');
-            if (!container) return;
-            try {
-                const list = Array.isArray(overrideList)
-                    ? overrideList
-                    : JSON.parse(localStorage.getItem('triscout_scan_history') || '[]');
-                if (!list.length) {
-                    container.innerHTML = '<div class="p-4 text-center text-[#bae0ff]/80 bg-[#091e3d]/70 border border-[#bae0ff]/25">No scan history recorded in this session yet.</div>';
-                    return;
-                }
-                container.innerHTML = list.map(item =>
-                    '<div class="flex items-center justify-between p-3 bg-[#091e3d]/90 border border-[#bae0ff]/35">' +
-                        '<div><span class="text-[#7ce0ff] font-bold">' + escapeHtml(item.target) + '</span> ' +
-                        (item.ip ? '<span class="text-[#bae0ff]/75 text-[11px]">(' + escapeHtml(item.ip) + ')</span>' : '') + '</div>' +
-                        '<div class="flex items-center gap-3">' +
-                            '<span class="text-[#bae0ff]/75 text-[11px] hidden sm:inline">' + escapeHtml(item.time) + '</span>' +
-                            '<span class="px-2 py-0.5 bg-[#113466] border border-[#39ff88]/50 text-[#39ff88] font-bold">Score: ' + escapeHtml(item.score) + '/100</span>' +
-                        '</div>' +
-                    '</div>'
-                ).join('');
-            } catch (e) {}
-        }
-
-        function clearScanHistory() {
-            localStorage.removeItem('triscout_scan_history');
-            renderScanHistory([]);
-        }
-
-        function exportScanReport(format) {
-            if (!currentScanData) return alert('Please run a target scan first before exporting!');
-            if (format === 'json') {
-                const blob = new Blob([JSON.stringify(currentScanData, null, 2)], { type: 'application/json' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = 'triscout-report-' + currentScanData.host + '.json';
-                a.click();
-                setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-            } else if (format === 'csv') {
-                const rows = [['Control', 'Category', 'Status', 'Impact', 'Detail']];
-                currentScanData.checks.forEach(c => rows.push([c.name, c.category, c.status, c.impact, '"' + String(c.detail || '').replace(/"/g, '""') + '"']));
-                const blob = new Blob([rows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = 'triscout-findings-' + currentScanData.host + '.csv';
-                a.click();
-                setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-            } else if (format === 'pdf') {
-                window.print();
-            }
-        }
-
-        async function sendReportEmail() {
-            const email = document.getElementById('emailInput').value.trim();
-            const target = localStorage.getItem('triscout_target');
-            const reportData = localStorage.getItem('triscout_report');
-            const btn = document.getElementById('reportBtn');
-
-            if (!email) return alert('Please enter a recipient email address!');
-            if (!reportData || !target) return alert('No scan report found! Run a scan first.');
-
-            btn.disabled = true;
-            btn.textContent = 'Sending...';
-            try {
-                const res = await fetchWithTimeout('/api/send-report', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('token')
-                    },
-                    body: JSON.stringify({ target: target, reportData: reportData, emailTo: email })
-                }, 15000);
-                const d = await res.json();
-                alert(d.success ? 'SUCCESS: Report sent to ' + email : ('FAILED: ' + d.error));
-            } catch (e) {
-                alert('Error communicating with email server.');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<span class="material-symbols-outlined text-base">send</span><span>Send Report</span>';
-            }
-        }
-
-        function handleTerminalCommand(e) {
-            e.preventDefault();
-            const inp = document.getElementById('terminal-input');
-            const cmd = (inp.value || '').trim();
-            if (!cmd) return;
-            appendTerm('[USER]', '> ' + cmd);
-            inp.value = '';
-
-            const lower = cmd.toLowerCase();
-            if (lower === 'help') {
-                appendTerm('[INFO]', 'Commands: scan <domain>, status, export json, clear');
-            } else if (lower.startsWith('scan ')) {
-                const t = cmd.slice(5).trim();
-                const domInp = document.getElementById('target-domain-input');
-                if (domInp) domInp.value = t;
-                executeTargetAssessment(t);
-            } else if (lower === 'status') {
-                appendTerm('[INFO]', currentScanData ? ('Active Target: ' + currentScanData.host + ' | Score: ' + currentScanData.score + '/100') : 'Idle. No target scanned yet.');
-            } else if (lower === 'export json') {
-                exportScanReport('json');
-            } else if (lower === 'clear') {
-                clearTerminalBuffer();
-            } else {
-                appendTerm('[INFO]', 'Unknown command. Type "help".');
-            }
-        }
-
-        function pasteTargetClipboard() {
-            navigator.clipboard.readText().then(t => {
-                const inp = document.getElementById('target-domain-input');
-                if (inp && t) inp.value = t.trim();
-            }).catch(() => {});
-        }
-
-        async function deleteUserAccount() {
-            if (!confirm('WARNING: Permanently delete your account and all associated scan logs from Neon PostgreSQL?')) return;
-            try {
-                const res = await fetchWithTimeout('/api/account/delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-                }, 15000);
-                const d = await res.json();
-                if (d.success) {
-                    alert(d.message);
-                    signOutSession();
-                } else {
-                    alert('Error: ' + d.error);
-                }
-            } catch (e) {
-                alert('Failed to reach account deletion API.');
-            }
-        }
-
-        // Blueprint Mini Mascot Controls
-        function toggleMiniMascot(show) {
-            const wrap = document.getElementById('dash-mini-mascot');
-            const restore = document.getElementById('dash-mascot-restore');
-            if (!wrap || !restore) return;
-            if (show) {
-                wrap.classList.remove('hidden');
-                restore.classList.add('hidden');
-            } else {
-                wrap.classList.add('hidden');
-                restore.classList.remove('hidden');
-            }
-        }
-
-        (function initDashboardMascot() {
-            const wrap = document.getElementById('dash-mini-mascot');
-            const svg = document.getElementById('dash-mascot-svg');
-            const body = document.getElementById('dash-mascot-body');
-            const armL = document.getElementById('dash-arm-l');
-            const armR = document.getElementById('dash-arm-r');
-            const pupil = document.getElementById('dash-pupil-group');
-            const iris = document.getElementById('dash-iris-ring');
-            const tag = document.getElementById('dash-mascot-step-tag');
-            if (!wrap || !svg) return;
-
-            let isDragging = false;
-            let movedDuringDrag = false;
-            let startX = 0, startY = 0, origLeft = 0, origTop = 0;
-
-            window.setMascotScanStep = function(step) {
-                if (!armL || !armR || !tag) return;
-                if (step === 1) {
-                    armL.style.transform = 'rotate(-65deg)';
-                    armR.style.transform = 'rotate(15deg)';
-                    tag.textContent = 'STEP 1: DNS';
-                } else if (step === 2) {
-                    armL.style.transform = 'rotate(-20deg)';
-                    armR.style.transform = 'rotate(20deg)';
-                    tag.textContent = 'STEP 2: HDR';
-                } else if (step === 3) {
-                    armL.style.transform = 'rotate(-15deg)';
-                    armR.style.transform = 'rotate(65deg)';
-                    tag.textContent = 'STEP 3: AUDIT';
-                } else if (step === 4) {
-                    armL.style.transform = 'rotate(-75deg)';
-                    armR.style.transform = 'rotate(75deg)';
-                    tag.textContent = 'DONE // 100%';
-                    if (body) {
-                        body.classList.remove('dash-hop-active');
-                        void body.offsetWidth;
-                        body.classList.add('dash-hop-active');
-                    }
-                } else {
-                    armL.style.transform = 'rotate(0deg)';
-                    armR.style.transform = 'rotate(0deg)';
-                    tag.textContent = 'IDLE // DRAG';
-                }
-            };
-
-            function trackEye(cx, cy) {
-                if (!pupil) return;
-                const r = svg.getBoundingClientRect();
-                if (!r.width) return;
-                const ex = r.left + r.width * 0.5;
-                const ey = r.top + r.height * 0.28;
-                const ang = Math.atan2(cy - ey, cx - ex);
-                const dist = Math.min(8.5, Math.hypot(cx - ex, cy - ey) / 18);
-                pupil.style.transform = `translate(${(Math.cos(ang) * dist).toFixed(1)}px, ${(Math.sin(ang) * dist).toFixed(1)}px)`;
-                if (iris) iris.style.transform = `rotate(${Math.round((ang * 180) / Math.PI) + 90}deg)`;
-            }
-
-            window.addEventListener('pointermove', (e) => {
-                trackEye(e.clientX, e.clientY);
-                if (!isDragging) return;
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                if (Math.hypot(dx, dy) > 5) movedDuringDrag = true;
-                wrap.style.left = Math.max(8, Math.min(window.innerWidth - wrap.offsetWidth - 8, origLeft + dx)) + 'px';
-                wrap.style.top = Math.max(68, Math.min(window.innerHeight - wrap.offsetHeight - 8, origTop + dy)) + 'px';
-                wrap.style.right = 'auto';
-                wrap.style.bottom = 'auto';
-            }, { passive: true });
-
-            svg.addEventListener('pointerdown', (e) => {
-                isDragging = true;
-                movedDuringDrag = false;
-                const rect = wrap.getBoundingClientRect();
-                startX = e.clientX;
-                startY = e.clientY;
-                origLeft = rect.left;
-                origTop = rect.top;
-            });
-
-            window.addEventListener('pointerup', () => {
-                if (isDragging && !movedDuringDrag && body) {
-                    body.classList.remove('dash-hop-active');
-                    void body.offsetWidth;
-                    body.classList.add('dash-hop-active');
-                    setTimeout(() => body.classList.remove('dash-hop-active'), 450);
-                }
-                isDragging = false;
-            });
-        })();
-
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.expand();
-                window.Telegram.WebApp.ready();
-            }
-
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.replace('/');
-                return;
-            }
-
-            // IME-safe Enter shortcut on target domain input
-            const targetInput = document.getElementById('target-domain-input');
-            if (targetInput) {
-                targetInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) {
-                        e.preventDefault();
-                        executeTargetAssessment();
-                    }
-                });
-            }
-
-            renderScanHistory();
-
-            // Load RLS-protected history from backend if available
-            fetchWithTimeout('/api/scan-history', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            }, 8000)
-                .then(r => r.ok ? r.json() : null)
-                .then(data => {
-                    if (data && data.success && Array.isArray(data.history) && data.history.length > 0) {
-                        renderScanHistory(data.history.map(h => ({
-                            target: h.target,
-                            ip: '',
-                            score: h.score,
-                            time: h.time ? new Date(h.time).toLocaleString() : ''
-                        })));
-                    }
-                })
-                .catch(() => {});
-
-            const savedReport = localStorage.getItem('triscout_report');
-            const savedTarget = localStorage.getItem('triscout_target');
-            if (savedReport && savedTarget) {
-                const preview = document.getElementById('reportPreview');
-                if (preview) preview.textContent = 'TARGET: ' + savedTarget + '\n\n' + savedReport;
-            }
-
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-                const user = payload.user || 'Operator';
-                setText('navProfileName', user);
-                setText('profileName', user);
-
-                const actionsEl = document.getElementById('profileActions');
-                if (payload.provider === 'github' || payload.provider === 'registered') {
-                    setText('profileRole', payload.provider === 'github'
-                        ? 'GitHub OAuth Verified Operator'
-                        : ('Registered Operator (' + (payload.email || 'Verified') + ')'));
-
-                    if (payload.avatar && payload.avatar.startsWith('https://')) {
-                        const img1 = document.createElement('img');
-                        img1.src = payload.avatar;
-                        img1.alt = user;
-                        img1.className = 'w-full h-full object-cover';
-                        const av1 = document.getElementById('navProfileAvatar');
-                        const av2 = document.getElementById('profileAvatar');
-                        av1.innerHTML = ''; av1.appendChild(img1);
-                        av2.innerHTML = ''; av2.appendChild(img1.cloneNode(true));
-                    }
-                    actionsEl.innerHTML =
-                        '<button type="button" onclick="signOutSession()" class="p-3 bg-[#091e3d] hover:bg-[#1c539e] text-white border border-[#bae0ff]/60 uppercase font-bold cursor-pointer">Sign Out Session</button>' +
-                        '<button type="button" onclick="deleteUserAccount()" class="p-3 bg-red-950/75 hover:bg-red-900 text-red-200 uppercase font-bold border border-red-400/70 cursor-pointer">Delete Account Data</button>';
-                }else {
-                    setText('profileRole', 'System Administrator (Local Env)');
-                    actionsEl.innerHTML =
-                        '<div class="p-3 bg-[#091e3d] border border-[#bae0ff]/40 text-[#bae0ff]">Local Admin managed via Environment Variables.</div>' +
-                        '<button type="button" onclick="signOutSession()" class="p-3 bg-red-950/75 hover:bg-red-900 text-red-200 border border-red-400/70 uppercase font-bold cursor-pointer">Sign Out Session</button>';
-                }
-            } catch (e) {}
-
-            const path = window.location.pathname.replace('/', '');
-            const params = new URLSearchParams(window.location.search);
-            const tabParam = params.get('tab');
-            if (tabParam) {
-                switchTab(null, tabParam);
-            } else if (['reports', 'cli', 'project', 'profile'].includes(path)) {
-                switchTab(null, path);
-            } else if (path === 'about') {
-                switchTab(null, 'profile');
-            }
-        });
-    </script>
+    <!-- Modular Deferred Scripts -->
+    <script defer src="/js/mascot-engine.js"></script>
+    <script defer src="/js/dashboard.js"></script>
 </body>
-</html>
+                        </html>
