@@ -3,7 +3,6 @@
    ============================================================================ */
 let currentScanData = null;
 let sessionScanCount = 0;
-let currentTopoScale = 1;
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -35,7 +34,6 @@ function showRuntimeError(msg) {
     banner.classList.remove('hidden');
 }
 
-// Global Error Boundaries (Check 39)
 window.addEventListener('error', (event) => {
     showRuntimeError('Runtime UI error caught: ' + (event.message || 'Unknown error'));
 });
@@ -117,54 +115,7 @@ function switchTab(e, tabId) {
 }
 
 // ============================================================================
-// Interactive 11-Node Blueprint Topology HUD Controls
-// ============================================================================
-function zoomTopology(delta) {
-    const svg = document.getElementById('topology-svg');
-    const label = document.getElementById('topo-zoom-level');
-    if (!svg) return;
-    currentTopoScale = delta === 0 ? 1 : Math.max(0.7, Math.min(1.45, +(currentTopoScale + delta).toFixed(2)));
-    svg.style.transform = `scale(${currentTopoScale})`;
-    if (label) label.textContent = Math.round(currentTopoScale * 100) + '%';
-}
-
-function filterTopologyZone(zoneClass, btnEl) {
-    document.querySelectorAll('.topo-filter-btn').forEach(b => {
-        b.className = 'topo-filter-btn px-2.5 py-1 bg-[#091e3d] text-[#bae0ff] hover:text-white border border-[#bae0ff]/40 flex items-center gap-1 cursor-pointer';
-    });
-    if (btnEl) {
-        btnEl.className = 'topo-filter-btn px-2.5 py-1 bg-[#1c539e] text-white font-bold border border-[#bae0ff]/80 flex items-center gap-1 cursor-pointer';
-    }
-    document.querySelectorAll('.topo-node').forEach(node => {
-        node.style.opacity = (zoneClass === 'ALL' || node.classList.contains(zoneClass)) ? '1' : '0.22';
-    });
-}
-
-function inspectTopoNode(nodeKey) {
-    const detail = document.getElementById('tele-inspector-detail');
-    if (!detail) return;
-    const host = currentScanData ? currentScanData.host : 'standby target';
-    const ip = currentScanData ? currentScanData.ip : 'Unresolved';
-    const info = {
-        WAF: `Edge WAF Ingress for ${host} (${ip}). Evaluates public rate-limit headers, CF-Ray, and ingress posture.`,
-        LB: `Core Load Balancer & Google DoH Resolver routing passive HTTPS/443 telemetry for ${host}.`,
-        APIGW: `Origin Dispatcher enforcing Token Bucket rate limiting (10 scans/min) and Locked Origin policy.`,
-        PRIMARY: currentScanData
-            ? `Primary audited target ${host} (${ip}). Posture score: ${currentScanData.score}/100 across ${currentScanData.checks.length} security controls.`
-            : `Primary target node is on standby. Run a passive scan in Target Scanner to populate live posture data.`,
-        STANDBY: `DOM Surface Scraper passively counts public <script> and <form> tags without injecting active payloads.`,
-        AUTH: `Policy Node audits CORS Access-Control-Allow-Origin, HttpOnly/Secure cookie flags, and session expiry.`,
-        LEAK: `Source Audit Probe scans public HTML for exposed API keys, private keys, stack traces, and debug source maps.`,
-        POSTGRES: `Neon Serverless PostgreSQL enforcing Row-Level Security (RLS) across users, auth_otps, and scan_logs.`,
-        REDIS: `In-memory Token Bucket rate limiter and 60-second scan response cache.`,
-        S3: `Asset & Content-Security-Policy (CSP) verification node checking XSS script-source hardening.`,
-        IAM: `Transport Broker auditing Strict-Transport-Security (HSTS) and MIME nosniff enforcement.`
-    };
-    detail.textContent = info[nodeKey] || info.PRIMARY;
-}
-
-// ============================================================================
-// Terminal Stream & Paced Target Reconnaissance (With Mascot Code Inspection)
+// Terminal Stream & Paced Target Reconnaissance
 // ============================================================================
 function appendTerm(type, msg) {
     const tb = document.getElementById('terminal-body');
@@ -244,20 +195,18 @@ async function executeTargetAssessment(customTarget) {
 
     const start = performance.now();
 
-    // Step 1: Recon Init + Mascot moves to terminal code line
     const line1 = appendTerm('[RECON]', 'Initiating passive security scan for: ' + target);
-    if (window.TriScoutMascot && line1) window.TriScoutMascot.inspectTerminalLine(line1, 'STEP 1: INIT');
-    await sleep(360);
+    if (window.TriScoutMascot && line1) window.TriScoutMascot.inspectTerminalLine(line1);
+    await sleep(340);
 
-    // Step 2: DNS Resolution
     const dns = await resolveDNS(target);
     const line2 = appendTerm('[DNS]', 'Host ' + dns.host + ' resolved to IPv4: ' + dns.ip);
-    if (window.TriScoutMascot && line2) window.TriScoutMascot.inspectTerminalLine(line2, 'STEP 2: DNS');
-    await sleep(360);
+    if (window.TriScoutMascot && line2) window.TriScoutMascot.inspectTerminalLine(line2);
+    await sleep(340);
 
     try {
         const line3 = appendTerm('[RECON]', 'Probing HTTP security headers, DOM surface & source leaks...');
-        if (window.TriScoutMascot && line3) window.TriScoutMascot.inspectTerminalLine(line3, 'STEP 3: PROBE');
+        if (window.TriScoutMascot && line3) window.TriScoutMascot.inspectTerminalLine(line3);
 
         const res = await fetchWithTimeout('/api/scan-headers', {
             method: 'POST',
@@ -301,26 +250,24 @@ async function executeTargetAssessment(customTarget) {
         localStorage.setItem('triscout_report', data.report);
         saveScanHistory(currentScanData);
 
-        // Paced line-by-line streaming so the mascot visibly moves along and scrolls the lines
         const reportLines = String(data.report || '').split('\n').filter(l => l.trim());
         for (let i = 0; i < reportLines.length; i++) {
             const line = reportLines[i];
             const tagType = line.startsWith('[+]') ? '[PASS]' : (line.startsWith('[!]') ? '[VULN]' : '[INFO]');
             const lineEl = appendTerm(tagType, line);
             if (window.TriScoutMascot && lineEl) {
-                window.TriScoutMascot.inspectTerminalLine(lineEl, `LINE ${i + 1}/${reportLines.length}`);
+                window.TriScoutMascot.inspectTerminalLine(lineEl);
             }
-            await sleep(220);
+            await sleep(200);
         }
 
         const finalLine = appendTerm('[READY]', 'Scan finished in ' + latency + 'ms. Score: ' + score + '/100.');
         if (window.TriScoutMascot && finalLine) {
-            window.TriScoutMascot.inspectTerminalLine(finalLine, 'AUDITED ' + score + '%');
+            window.TriScoutMascot.inspectTerminalLine(finalLine);
         }
         updateAllDashboardWidgets(currentScanData);
-        await sleep(340);
+        await sleep(300);
 
-        // Mascot scrolls up & down to review the terminal lines, then perches on the terminal ledge
         if (window.TriScoutMascot) {
             await window.TriScoutMascot.sweepTerminalScrollReview();
         }
@@ -366,42 +313,28 @@ function updateAllDashboardWidgets(scan) {
     setText('scans-executed-count', sessionScanCount + ' scan(s) in session');
     setText('scan-latency-text', 'Latency: ' + scan.latency + ' ms');
 
+    // Sync Dynamic Tree Topology strictly to scanned target's present components
     setText('hud-ping-badge', 'PING: ' + scan.latency + ' ms');
-    setText('topo-banner-tag', '[SCAN COMPLETE // ' + scan.host.toUpperCase() + ']');
-    setText('topo-banner-desc', 'Evaluated ' + checks.length + ' controls — ' + low + ' secure, ' + openIssues + ' warning/critical.');
+    setText('topo-banner-tag', '[SYNCED TREE // ' + scan.host.toUpperCase() + ']');
+    setText('topo-banner-desc', 'Showing only active controls, assets & exposures actually detected on ' + scan.host + '.');
     setText('topo-scan-clock', 'LATENCY: ' + scan.latency + ' ms');
-    setText('topo-progress-text', scan.score + '/100');
-
-    setText('svg-dns-ip', 'IP: ' + scan.ip);
-    setText('svg-target-score', scan.score + '/100');
-    setText('svg-target-grade', scan.score >= 85 ? 'GRADE A+' : (scan.score >= 60 ? 'GRADE B' : 'HIGH RISK'));
-    setText('svg-target-host', scan.host);
-    setText('svg-target-ip', 'IP: ' + scan.ip);
 
     const findStatus = (needle) => {
         const match = checks.find(c => c.name && c.name.toLowerCase().includes(needle));
         return match ? match.status : 'CHECKED';
     };
-    const errStatus = findStatus('error');
-    const corsStatus = findStatus('cors');
-    const hstsStatus = findStatus('hsts');
-    const keyStatus = findStatus('key');
-    const cspStatus = findStatus('csp');
-
     setText('tele-status-pill', scan.score >= 80 ? 'VERIFIED' : 'AT RISK');
     setText('tele-target-title', 'Target: ' + scan.host);
-    setText('tele-suite-pct', checks.length + '/12 Controls Audited');
-    setText('tele-row-error', errStatus);
-    setText('tele-row-origin', corsStatus);
-    setText('tele-row-tls', hstsStatus);
-    setText('tele-row-keys', keyStatus);
+    setText('tele-suite-pct', checks.length + ' Controls Audited');
+    setText('tele-row-error', findStatus('error'));
+    setText('tele-row-origin', findStatus('cors'));
+    setText('tele-row-tls', findStatus('hsts'));
+    setText('tele-row-keys', findStatus('key'));
     setText('tele-row-score', scan.score + ' / 100');
 
-    setText('svg-auth-status', 'CORS: ' + corsStatus);
-    setText('svg-leak-status', 'KEYS: ' + keyStatus);
-    setText('svg-s3-status', 'CSP: ' + cspStatus);
-    setText('svg-tls-label', 'HSTS: ' + hstsStatus);
-    inspectTopoNode('PRIMARY');
+    if (window.TriScoutTopology && typeof window.TriScoutTopology.syncFromScan === 'function') {
+        window.TriScoutTopology.syncFromScan(scan);
+    }
 
     setText('lf-all', checks.length);
     setText('lf-crit', crit);
@@ -425,23 +358,17 @@ function updateAllDashboardWidgets(scan) {
                 badgeCls = 'bg-[#7ce0ff] text-[#0d2850]';
             }
 
-            const safeStatus = escapeHtml(c.status);
-            const safeName = escapeHtml(c.name);
-            const safeImpact = escapeHtml(c.impact);
-            const safeDetail = escapeHtml(c.detail);
-            const safeFix = escapeHtml(getRemediationAdvice(String(c.name || '')));
-
-            return '<div data-mascot-ledge class="ledger-card p-4 rounded-sm border transition-all cursor-pointer ' + borderCls + '" data-status="' + safeStatus + '" onclick="this.querySelector(\'.rem-box\').classList.toggle(\'hidden\')">' +
+            return '<div data-mascot-ledge class="ledger-card p-4 rounded-sm border transition-all cursor-pointer ' + borderCls + '" data-status="' + escapeHtml(c.status) + '" onclick="this.querySelector(\'.rem-box\').classList.toggle(\'hidden\')">' +
                 '<div class="flex items-center justify-between gap-2 mb-1.5">' +
                     '<div class="flex items-center gap-2">' +
-                        '<span class="px-2 py-0.5 text-[10px] font-bold uppercase ' + badgeCls + '">' + safeStatus + '</span>' +
-                        '<span class="font-bold text-xs sm:text-sm text-white">' + safeName + '</span>' +
+                        '<span class="px-2 py-0.5 text-[10px] font-bold uppercase ' + badgeCls + '">' + escapeHtml(c.status) + '</span>' +
+                        '<span class="font-bold text-xs sm:text-sm text-white">' + escapeHtml(c.name) + '</span>' +
                     '</div>' +
-                    '<span class="text-[11px] text-[#bae0ff]">' + safeImpact + '</span>' +
+                    '<span class="text-[11px] text-[#bae0ff]">' + escapeHtml(c.impact) + '</span>' +
                 '</div>' +
-                '<p class="text-xs text-[#bae0ff] font-sans mb-1">' + safeDetail + '</p>' +
+                '<p class="text-xs text-[#bae0ff] font-sans mb-1">' + escapeHtml(c.detail) + '</p>' +
                 '<div class="rem-box hidden mt-2.5 pt-2.5 border-t border-[#bae0ff]/25 text-xs text-[#7ce0ff]">' +
-                    '<strong>Fix:</strong> ' + safeFix +
+                    '<strong>Fix:</strong> ' + escapeHtml(getRemediationAdvice(String(c.name || ''))) +
                 '</div>' +
             '</div>';
         }).join('');
@@ -609,7 +536,6 @@ async function deleteUserAccount() {
     }
 }
 
-// Bootstrap Dashboard on DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
     if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.expand();
@@ -622,7 +548,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // IME-safe Enter shortcut on target domain input
     const targetInput = document.getElementById('target-domain-input');
     if (targetInput) {
         targetInput.addEventListener('keydown', (e) => {
