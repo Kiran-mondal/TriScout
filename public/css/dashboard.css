@@ -1,0 +1,244 @@
+:root {
+    color-scheme: dark;
+    --bp-bg: #154078;
+    --bp-line: rgba(186, 224, 255, 0.72);
+    --bp-line-soft: rgba(186, 224, 255, 0.35);
+    --bp-grid-major: rgba(186, 224, 255, 0.16);
+    --bp-grid-minor: rgba(186, 224, 255, 0.05);
+    scrollbar-color: rgba(186, 224, 255, 0.45) #091e3d;
+    scrollbar-width: thin;
+}
+
+@supports not (scrollbar-color: auto) {
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #091e3d; }
+    ::-webkit-scrollbar-thumb { background: rgba(186, 224, 255, 0.45); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #39ff88; }
+}
+
+body.blueprint-canvas {
+    background-color: var(--bp-bg);
+    background-image:
+        linear-gradient(to right, var(--bp-grid-major) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--bp-grid-major) 1px, transparent 1px),
+        linear-gradient(to right, var(--bp-grid-minor) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--bp-grid-minor) 1px, transparent 1px),
+        radial-gradient(circle at 50% 25%, #235aa3 0%, #0e2d56 100%);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px, 100% 100%;
+    background-attachment: fixed;
+    color: #e6f3ff;
+    overscroll-behavior: none;
+}
+
+.bp-panel {
+    background: rgba(17, 52, 102, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1.5px solid var(--bp-line-soft);
+    box-shadow: 0 0 0 2px rgba(14, 43, 84, 0.55), 0 12px 32px rgba(4, 15, 35, 0.55);
+}
+
+.bp-frame {
+    border: 1.5px solid var(--bp-line);
+    box-shadow: 0 0 0 3px rgba(14, 43, 84, 0.65), 0 18px 42px rgba(4, 15, 35, 0.72);
+}
+
+.bp-input {
+    background: rgba(10, 31, 64, 0.85);
+    border: 1.5px solid rgba(186, 224, 255, 0.45);
+    color: #ffffff;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.bp-input:focus {
+    border-color: #39ff88;
+    box-shadow: 0 0 10px rgba(57, 255, 136, 0.3);
+    outline: none;
+}
+.bp-input::placeholder {
+    color: rgba(186, 224, 255, 0.45);
+}
+
+:focus-visible {
+    outline: 2px solid #39ff88;
+    outline-offset: 2px;
+}
+
+#mobileSidebar {
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-active {
+    background-color: #1c539e !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(186, 224, 255, 0.8) !important;
+    border-left: 3px solid #39ff88 !important;
+    box-shadow: inset 0 0 12px rgba(57, 255, 136, 0.16);
+}
+.sidebar-active .nav-icon {
+    color: #39ff88 !important;
+}
+
+.cv-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 300px;
+}
+
+/* =====================================================================
+   MASCOT LEDGE SNAP HIGHLIGHT & TERMINAL CODE-LINE HIGHLIGHT
+   ===================================================================== */
+.mascot-ledge-highlight {
+    box-shadow: inset 0 3px 0 #39ff88, 0 -4px 16px rgba(57, 255, 136, 0.45) !important;
+    border-top-color: #39ff88 !important;
+    transition: box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.term-line-active {
+    background: rgba(57, 255, 136, 0.16);
+    border-left: 2px solid #39ff88;
+    padding-left: 6px;
+    border-radius: 2px;
+    transition: background 0.2s ease;
+}
+
+/* =====================================================================
+   BLUEPRINT MASCOT POSES (WALL-SITTING, DRAG WIND-TRAIL, SCAN INSPECT)
+   ===================================================================== */
+#dash-mini-mascot {
+    position: fixed;
+    left: 24px;
+    top: 120px;
+    width: 92px;
+    z-index: 75;
+    touch-action: none;
+    user-select: none;
+    pointer-events: auto;
+    will-change: left, top;
+}
+
+#dash-mini-mascot.mascot-glide {
+    transition: left 0.34s cubic-bezier(0.22, 1, 0.36, 1), top 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#dash-mascot-body {
+    transform-origin: 190px 90px;
+    will-change: transform;
+}
+
+#dash-leg-l { transform-origin: 164px 178px; will-change: transform; }
+#dash-leg-r { transform-origin: 216px 178px; will-change: transform; }
+#dash-arm-l { transform-origin: 134px 114px; will-change: transform; }
+#dash-arm-r { transform-origin: 246px 114px; will-change: transform; }
+
+#dash-pupil-group {
+    transform-origin: 190px 88px;
+    transition: transform 0.06s ease-out;
+    will-change: transform;
+}
+#dash-iris-ring {
+    transform-origin: 190px 88px;
+    transition: transform 0.06s linear;
+}
+#dash-eyelid-top, #dash-eyelid-bottom {
+    transition: transform 0.16s ease;
+}
+
+/* ১. পাঁচিলে বসে পা দোলানো (Sitting on a Box/Tab Ledge — কোনো হাঁটাহাঁটি নেই) */
+@keyframes sitBreath {
+    0%, 100% { transform: translateY(0px); }
+    50%      { transform: translateY(-2px); }
+}
+@keyframes sitLegSwingLeft {
+    0%, 100% { transform: rotate(-16deg) translateY(-2px); }
+    50%      { transform: rotate(12deg) translateY(1px); }
+}
+@keyframes sitLegSwingRight {
+    0%, 100% { transform: rotate(14deg) translateY(1px); }
+    50%      { transform: rotate(-14deg) translateY(-2px); }
+}
+@keyframes sitArmRestLeft {
+    0%, 100% { transform: rotate(-18deg); }
+    50%      { transform: rotate(-14deg); }
+}
+@keyframes sitArmRestRight {
+    0%, 100% { transform: rotate(18deg); }
+    50%      { transform: rotate(14deg); }
+}
+
+.mascot-sitting #dash-mascot-body {
+    animation: sitBreath 3.2s ease-in-out infinite;
+}
+.mascot-sitting #dash-leg-l {
+    animation: sitLegSwingLeft 2.1s ease-in-out infinite;
+}
+.mascot-sitting #dash-leg-r {
+    animation: sitLegSwingRight 2.1s ease-in-out infinite;
+}
+.mascot-sitting #dash-arm-l {
+    animation: sitArmRestLeft 3.2s ease-in-out infinite;
+}
+.mascot-sitting #dash-arm-r {
+    animation: sitArmRestRight 3.2s ease-in-out infinite;
+}
+
+/* ২. ড্র্যাগ করার সময় CSS অ্যানিমেশন বন্ধ থাকবে যাতে JS ফিজিক্স উল্টো দিকে হাত-পা ওড়াতে পারে */
+.mascot-dragging #dash-mascot-body,
+.mascot-dragging #dash-leg-l,
+.mascot-dragging #dash-leg-r,
+.mascot-dragging #dash-arm-l,
+.mascot-dragging #dash-arm-r {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* ৩. স্ক্যানিংয়ের সময় কোড-লাইন পরিদর্শন ও স্ক্রল করার ভঙ্গি */
+@keyframes inspectBob {
+    0%, 100% { transform: translateY(0px) rotate(-3deg); }
+    50%      { transform: translateY(-3px) rotate(-5deg); }
+}
+@keyframes inspectPointArm {
+    0%, 100% { transform: rotate(62deg); }
+    50%      { transform: rotate(74deg); }
+}
+.mascot-inspecting #dash-mascot-body {
+    animation: inspectBob 0.9s ease-in-out infinite;
+}
+.mascot-inspecting #dash-arm-l {
+    animation: inspectPointArm 0.75s ease-in-out infinite;
+}
+.mascot-inspecting #dash-arm-r {
+    animation: none;
+    transform: rotate(-14deg);
+}
+.mascot-inspecting #dash-leg-l {
+    animation: sitLegSwingLeft 1.2s ease-in-out infinite;
+}
+.mascot-inspecting #dash-leg-r {
+    animation: sitLegSwingRight 1.2s ease-in-out infinite;
+}
+
+/* ৪. ট্যাপ/ক্লিক করলে খুশিতে লাফানো */
+@keyframes dashMascotHop {
+    0%   { transform: translateY(0) scale(1); }
+    35%  { transform: translateY(-16px) rotate(-3deg) scale(1.04); }
+    70%  { transform: translateY(2px) rotate(2deg) scale(0.98); }
+    100% { transform: translateY(0) scale(1); }
+}
+.dash-hop-active {
+    animation: dashMascotHop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* ৫. চোখের পলক */
+.mascot-blink #dash-eyelid-top { transform: translateY(24px); }
+.mascot-blink #dash-eyelid-bottom { transform: translateY(-20px); }
+
+@media (prefers-reduced-motion: reduce) {
+    .mascot-sitting #dash-mascot-body,
+    .mascot-sitting #dash-leg-l,
+    .mascot-sitting #dash-leg-r,
+    .mascot-sitting #dash-arm-l,
+    .mascot-sitting #dash-arm-r,
+    .mascot-inspecting #dash-mascot-body,
+    .mascot-inspecting #dash-arm-l {
+        animation: none !important;
+    }
+}
