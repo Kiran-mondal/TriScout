@@ -1,14 +1,13 @@
 /* ============================================================================
-   TriScout Blueprint Mascot Engine
-   - Random initial box perch inside dashboard
-   - Wall-sitting pose (legs gently swinging, hands resting proportionally, no walking)
-   - Real-time opposite-direction inertia/wind physics for arms, legs & body while dragging
-   - Drag-synced eye tracking & natural blinks
-   - Terminal code-line traversal & vertical scrolling during scans
+   TriScout Blueprint Mascot Engine (No Top Box, Document-Anchored Scroll Sitting)
+   - Sits physically on any page box (position: absolute -> scrolls naturally with box)
+   - Sits on fixed sidebar tabs (position: fixed) when dropped there
+   - Opposite-direction wind/inertia physics while dragging + synced eye tracking
+   - Rides along terminal code lines & scrolls review during scans
    ============================================================================ */
 (function () {
     const LEDGE_SELECTOR = '[data-mascot-ledge], .bp-panel, .bp-frame, .sidebar-item, #terminal-card';
-    const SEAT_OFFSET_Y = 76; // Aligns mascot bottom/hips cleanly onto a box's top border
+    const SEAT_OFFSET_Y = 58; // Aligns bottom of torso directly onto the box's top edge
 
     const wrap = document.getElementById('dash-mini-mascot');
     const svg = document.getElementById('dash-mascot-svg');
@@ -20,36 +19,32 @@
     const pupil = document.getElementById('dash-pupil-group');
     const iris = document.getElementById('dash-iris-ring');
     const pupilCore = document.getElementById('dash-pupil-core');
-    const tag = document.getElementById('dash-mascot-step-tag');
-    const placeBtn = document.getElementById('dash-mascot-place-btn');
 
     if (!wrap || !svg) return;
 
     const state = {
         mode: 'sitting',       // 'sitting' | 'dragging' | 'inspecting'
+        anchorSpace: 'page',   // 'page' (absolute, scrolls with page) | 'fixed' (fixed sidebar/header or dragging)
         isDragging: false,
         movedDuringDrag: false,
-        isPlaceMode: false,
         activePointerId: null,
         startX: 0,
         startY: 0,
-        origLeft: 24,
-        origTop: 120,
-        currLeft: 24,
-        currTop: 120,
+        origViewLeft: 24,
+        origViewTop: 120,
+        currViewLeft: 24,
+        currViewTop: 120,
         prevPointerX: 0,
         prevPointerY: 0,
         velX: 0,
         velY: 0,
-        // Spring-smoothed limb angles during drag
         sTorso: 0,
         sArmL: 0,
         sArmR: 0,
         sLegL: 0,
         sLegR: 0,
-        // Docked box/tab reference
         dockedEl: null,
-        dockedRelX: 0.78, // Relative horizontal position along the box's top edge (0..1)
+        dockedRelX: 0.78,
         highlightedEl: null,
         rafId: null
     };
@@ -62,19 +57,40 @@
         return a + (b - a) * t;
     }
 
-    function setTag(text) {
-        if (tag) tag.textContent = text;
+    function isInsideFixedContainer(el) {
+        let curr = el;
+        while (curr && curr !== document.body && curr !== document.documentElement) {
+            if (window.getComputedStyle(curr).position === 'fixed') return true;
+            curr = curr.parentElement;
+        }
+        return false;
     }
 
-    function applyPosition(leftPx, topPx) {
-        const w = wrap.offsetWidth || 92;
-        const h = wrap.offsetHeight || 114;
-        state.currLeft = clamp(leftPx, 4, Math.max(4, window.innerWidth - w - 4));
-        state.currTop = clamp(topPx, 4, Math.max(4, window.innerHeight - h - 4));
-        wrap.style.left = state.currLeft.toFixed(1) + 'px';
-        wrap.style.top = state.currTop.toFixed(1) + 'px';
-        wrap.style.right = 'auto';
-        wrap.style.bottom = 'auto';
+    // Position in viewport space (used while dragging or sitting on fixed sidebar/header)
+    function applyViewportPosition(leftPx, topPx) {
+        const w = wrap.offsetWidth || 88;
+        const h = wrap.offsetHeight || 90;
+        state.anchorSpace = 'fixed';
+        wrap.style.position = 'fixed';
+        state.currViewLeft = clamp(leftPx, 4, Math.max(4, window.innerWidth - w - 4));
+        state.currViewTop = clamp(topPx, 4, Math.max(4, window.innerHeight - h - 4));
+        wrap.style.left = state.currViewLeft.toFixed(1) + 'px';
+        wrap.style.top = state.currViewTop.toFixed(1) + 'px';
+    }
+
+    // Position in document space (used when sitting on any page box -> scrolls naturally with box!)
+    function applyDocumentPosition(docLeftPx, docTopPx) {
+        const w = wrap.offsetWidth || 88;
+        const docW = Math.max(document.documentElement.scrollWidth, window.innerWidth);
+        const docH = Math.max(document.documentElement.scrollHeight, window.innerHeight);
+        state.anchorSpace = 'page';
+        wrap.style.position = 'absolute';
+        const safeLeft = clamp(docLeftPx, 4, Math.max(4, docW - w - 4));
+        const safeTop = clamp(docTopPx, 4, Math.max(4, docH - 40));
+        wrap.style.left = safeLeft.toFixed(1) + 'px';
+        wrap.style.top = safeTop.toFixed(1) + 'px';
+        state.currViewLeft = safeLeft - window.scrollX;
+        state.currViewTop = safeTop - window.scrollY;
     }
 
     function clearInlinePhysicsTransforms() {
@@ -83,7 +99,7 @@
         });
     }
 
-    function setMode(nextMode, labelText) {
+    function setMode(nextMode) {
         state.mode = nextMode;
         wrap.classList.remove('mascot-sitting', 'mascot-dragging', 'mascot-inspecting');
         if (nextMode === 'sitting') {
@@ -95,7 +111,6 @@
             clearInlinePhysicsTransforms();
             wrap.classList.add('mascot-inspecting');
         }
-        if (labelText) setTag(labelText);
     }
 
     function playHop() {
@@ -106,7 +121,6 @@
         setTimeout(() => body.classList.remove('dash-hop-active'), 440);
     }
 
-    // Eye Tracking (Synced with both hover/touch & drag vector)
     function trackEyeTo(clientX, clientY, boostScale = false) {
         if (!pupil) return;
         const r = svg.getBoundingClientRect();
@@ -117,20 +131,15 @@
         const dy = clientY - ey;
         const ang = Math.atan2(dy, dx);
         const dist = Math.min(9, Math.hypot(dx, dy) / 16);
-        const tx = Math.cos(ang) * dist;
-        const ty = Math.sin(ang) * dist;
 
-        pupil.style.transform = `translate(${tx.toFixed(1)}px, ${ty.toFixed(1)}px)`;
-        if (iris) {
-            iris.style.transform = `rotate(${Math.round((ang * 180) / Math.PI) + 90}deg)`;
-        }
+        pupil.style.transform = `translate(${(Math.cos(ang) * dist).toFixed(1)}px, ${(Math.sin(ang) * dist).toFixed(1)}px)`;
+        if (iris) iris.style.transform = `rotate(${Math.round((ang * 180) / Math.PI) + 90}deg)`;
         if (pupilCore) {
             pupilCore.setAttribute('r', boostScale ? '6.2' : '5');
             pupilCore.setAttribute('fill', boostScale ? '#39ff88' : '#00d9ff');
         }
     }
 
-    // Find nearest visible box/panel/tab ledge for wall-sitting
     function getVisibleLedges() {
         return Array.from(document.querySelectorAll(LEDGE_SELECTOR)).filter(el => {
             if (el.closest('#dash-mini-mascot')) return false;
@@ -138,18 +147,17 @@
             return (
                 rect.width >= 90 &&
                 rect.height >= 28 &&
-                rect.bottom > 64 &&
-                rect.top < window.innerHeight - 20 &&
+                rect.bottom > 40 &&
+                rect.top < window.innerHeight - 10 &&
                 rect.right > 20 &&
                 rect.left < window.innerWidth - 20
             );
         });
     }
 
-    function findNearestLedge(centerX, seatY, snapRadius = 56) {
+    function findNearestLedge(centerX, seatY, snapRadius = 60) {
         let best = null;
         let bestDist = snapRadius;
-
         for (const el of getVisibleLedges()) {
             const rect = el.getBoundingClientRect();
             if (centerX < rect.left - 18 || centerX > rect.right + 18) continue;
@@ -164,9 +172,7 @@
 
     function setLedgeHighlight(el) {
         if (state.highlightedEl === el) return;
-        if (state.highlightedEl) {
-            state.highlightedEl.classList.remove('mascot-ledge-highlight');
-        }
+        if (state.highlightedEl) state.highlightedEl.classList.remove('mascot-ledge-highlight');
         state.highlightedEl = el;
         if (el) el.classList.add('mascot-ledge-highlight');
     }
@@ -176,7 +182,7 @@
         const rect = el.getBoundingClientRect();
         if (!rect.width || !rect.height) return false;
 
-        const w = wrap.offsetWidth || 92;
+        const w = wrap.offsetWidth || 88;
         const minCenter = rect.left + Math.min(44, rect.width * 0.25);
         const maxCenter = rect.right - Math.min(44, rect.width * 0.25);
         const centerX = preferredCenterX != null
@@ -186,65 +192,65 @@
         state.dockedEl = el;
         state.dockedRelX = rect.width > 0 ? clamp((centerX - rect.left) / rect.width, 0.12, 0.88) : 0.5;
 
-        if (glide) wrap.classList.add('mascot-glide');
-        applyPosition(centerX - w / 2, rect.top - SEAT_OFFSET_Y);
-        setMode('sitting', 'PERCHED // SIT');
+        const targetIsFixed = isInsideFixedContainer(el);
+        const switchingSpace = (targetIsFixed && state.anchorSpace !== 'fixed') || (!targetIsFixed && state.anchorSpace !== 'page');
+
+        if (glide && !switchingSpace) wrap.classList.add('mascot-glide');
+        else wrap.classList.remove('mascot-glide');
+
+        if (targetIsFixed) {
+            applyViewportPosition(centerX - w / 2, rect.top - SEAT_OFFSET_Y);
+        } else {
+            applyDocumentPosition(centerX + window.scrollX - w / 2, rect.top + window.scrollY - SEAT_OFFSET_Y);
+        }
+
+        setMode('sitting');
 
         if (glide) {
             setTimeout(() => {
                 wrap.classList.remove('mascot-glide');
                 playHop();
-            }, 340);
+            }, switchingSpace ? 60 : 300);
         }
         return true;
     }
 
-    // Keep mascot seated cleanly on its chosen box when scrolling or resizing
-    function syncDockedPosition() {
+    function syncDockedOnResize() {
         if (state.isDragging || state.mode === 'inspecting' || !state.dockedEl) return;
         const rect = state.dockedEl.getBoundingClientRect();
-        if (!rect.width || !rect.height || rect.bottom < 0 || rect.top > window.innerHeight + 60) {
-            // If docked box scrolled far out or tab changed, stay safely visible
-            return;
+        if (!rect.width || !rect.height) return;
+        const w = wrap.offsetWidth || 88;
+        const centerX = rect.left + rect.width * state.dockedRelX;
+        if (isInsideFixedContainer(state.dockedEl)) {
+            applyViewportPosition(centerX - w / 2, rect.top - SEAT_OFFSET_Y);
+        } else {
+            applyDocumentPosition(centerX + window.scrollX - w / 2, rect.top + window.scrollY - SEAT_OFFSET_Y);
         }
-        const w = wrap.offsetWidth || 92;
-        const targetLeft = rect.left + rect.width * state.dockedRelX - w / 2;
-        const targetTop = rect.top - SEAT_OFFSET_Y;
-        applyPosition(targetLeft, targetTop);
     }
 
-    // Pick a random visible box inside the dashboard on initial load
     function perchOnRandomBox(glide = false) {
-        const candidates = getVisibleLedges().filter(el => !el.classList.contains('sidebar-item'));
+        const candidates = getVisibleLedges().filter(el => !isInsideFixedContainer(el));
         const pool = candidates.length > 0 ? candidates : getVisibleLedges();
         if (pool.length === 0) {
-            applyPosition(window.innerWidth - 116, window.innerHeight - 134);
-            setMode('sitting', 'CHILL // DRAG');
+            applyDocumentPosition(window.innerWidth - 116, window.scrollY + 120);
+            setMode('sitting');
             return;
         }
         const chosen = pool[Math.floor(Math.random() * pool.length)];
         sitOnElementLedge(chosen, null, glide);
     }
 
-    // =========================================================================
-    // REAL-TIME OPPOSITE-DIRECTION WIND/INERTIA PHYSICS LOOP DURING DRAG
-    // Moving Right (velX > 0) => Limbs & lower body trail LEFT (+angle in SVG)
-    // Moving Left  (velX < 0) => Limbs & lower body trail RIGHT (-angle in SVG)
-    // Moving Down  (velY > 0) => Arms flare UPWARD/OUTWARD opposite gravity
-    // =========================================================================
+    // Opposite-Direction Wind/Inertia Physics Loop While Dragging
     function stepDragPhysics() {
         if (!state.isDragging) {
             state.rafId = null;
             return;
         }
 
-        // Decay velocity smoothly when finger/mouse pauses mid-drag
         state.velX *= 0.82;
         state.velY *= 0.82;
 
-        // Horizontal opposite-direction wind trail (proportional between arms & legs)
-        const windTrail = clamp(state.velX * 2.1, -50, 50);
-        // Vertical opposite-direction flare (dragging down lifts arms up; dragging up streamlines down)
+        const windTrail = clamp(state.velX * 2.15, -52, 52);
         const verticalFlare = clamp(state.velY * 1.25, -16, 36);
 
         const targetTorso = clamp(state.velX * 0.72, -20, 20);
@@ -253,7 +259,6 @@
         const targetLegL = clamp(windTrail * 1.12 + verticalFlare * 0.28, -56, 56);
         const targetLegR = clamp(windTrail * 1.06 - verticalFlare * 0.28, -56, 56);
 
-        // Smooth spring interpolation for natural, coordinated limb motion
         state.sTorso = lerp(state.sTorso, targetTorso, 0.26);
         state.sArmL = lerp(state.sArmL, targetArmL, 0.24);
         state.sArmR = lerp(state.sArmR, targetArmR, 0.24);
@@ -266,23 +271,15 @@
         if (legL) legL.style.transform = `rotate(${state.sLegL.toFixed(2)}deg)`;
         if (legR) legR.style.transform = `rotate(${state.sLegR.toFixed(2)}deg)`;
 
-        // Sync eye direction with drag motion (looks excitedly ahead of drag vector)
         const speed = Math.hypot(state.velX, state.velY);
         const rect = svg.getBoundingClientRect();
-        const eyeX = rect.left + rect.width * 0.5;
-        const eyeY = rect.top + rect.height * 0.28;
-        trackEyeTo(eyeX + state.velX * 8, eyeY + state.velY * 8, speed > 6);
+        trackEyeTo(rect.left + rect.width * 0.5 + state.velX * 8, rect.top + rect.height * 0.28 + state.velY * 8, speed > 6);
 
         state.rafId = requestAnimationFrame(stepDragPhysics);
     }
 
-    // =========================================================================
-    // POINTER DRAG & DROP HANDLERS (MOUSE & MOBILE TOUCH)
-    // =========================================================================
+    // Drag & Drop Pointer Handlers
     wrap.addEventListener('pointerdown', (e) => {
-        if (e.target && e.target.closest('button')) return;
-        if (state.isPlaceMode) exitPlaceMode();
-
         state.isDragging = true;
         state.movedDuringDrag = false;
         state.activePointerId = e.pointerId;
@@ -294,10 +291,13 @@
         state.startY = e.clientY;
         state.prevPointerX = e.clientX;
         state.prevPointerY = e.clientY;
-        state.origLeft = rect.left;
-        state.origTop = rect.top;
+        state.origViewLeft = rect.left;
+        state.origViewTop = rect.top;
         state.velX = 0;
         state.velY = 0;
+
+        // Convert smoothly to viewport-fixed while actively dragging
+        applyViewportPosition(rect.left, rect.top);
 
         if (wrap.setPointerCapture) {
             try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
@@ -316,17 +316,17 @@
 
         if (!state.movedDuringDrag && Math.hypot(dx, dy) > 5) {
             state.movedDuringDrag = true;
-            setMode('dragging', 'FLYING...');
+            setMode('dragging');
             if (!state.rafId) state.rafId = requestAnimationFrame(stepDragPhysics);
         }
 
         if (state.movedDuringDrag) {
             state.velX = lerp(state.velX, stepX, 0.6);
             state.velY = lerp(state.velY, stepY, 0.6);
-            applyPosition(state.origLeft + dx, state.origTop + dy);
+            applyViewportPosition(state.origViewLeft + dx, state.origViewTop + dy);
 
-            const w = wrap.offsetWidth || 92;
-            const nearest = findNearestLedge(state.currLeft + w / 2, state.currTop + SEAT_OFFSET_Y, 56);
+            const w = wrap.offsetWidth || 88;
+            const nearest = findNearestLedge(state.currViewLeft + w / 2, state.currViewTop + SEAT_OFFSET_Y, 62);
             setLedgeHighlight(nearest ? nearest.el : null);
         }
     });
@@ -346,18 +346,21 @@
         const hoveredLedge = state.highlightedEl;
         setLedgeHighlight(null);
 
+        const w = wrap.offsetWidth || 88;
         if (state.movedDuringDrag) {
-            const w = wrap.offsetWidth || 92;
             if (hoveredLedge) {
-                sitOnElementLedge(hoveredLedge, state.currLeft + w / 2, true);
+                sitOnElementLedge(hoveredLedge, state.currViewLeft + w / 2, true);
             } else {
+                // Anchor right where dropped in document space so it scrolls naturally with the page
                 state.dockedEl = null;
-                setMode('sitting', 'FLOATING // SIT');
+                applyDocumentPosition(state.currViewLeft + window.scrollX, state.currViewTop + window.scrollY);
+                setMode('sitting');
                 playHop();
             }
         } else {
-            // Simple tap/click on mascot => playful hop & blink
-            setMode(state.mode === 'inspecting' ? 'inspecting' : 'sitting');
+            // Re-anchor in page space if not on a fixed container, then hop & blink
+            applyDocumentPosition(state.currViewLeft + window.scrollX, state.currViewTop + window.scrollY);
+            setMode('sitting');
             playHop();
             svg.classList.add('mascot-blink');
             setTimeout(() => svg.classList.remove('mascot-blink'), 170);
@@ -367,70 +370,17 @@
     wrap.addEventListener('pointerup', finishDrag);
     wrap.addEventListener('pointercancel', finishDrag);
 
-    // =========================================================================
-    // TAP-ANYWHERE PLACEMENT MODE (For Quick Mobile Perching)
-    // =========================================================================
-    function handleTapToPlace(e) {
-        if (!state.isPlaceMode) return;
-        if (e.target && e.target.closest('#dash-mini-mascot')) return;
-        e.preventDefault();
-        e.stopPropagation();
-
-        const w = wrap.offsetWidth || 92;
-        const nearest = findNearestLedge(e.clientX, e.clientY, 64);
-        if (nearest) {
-            sitOnElementLedge(nearest.el, e.clientX, true);
-        } else {
-            state.dockedEl = null;
-            wrap.classList.add('mascot-glide');
-            applyPosition(e.clientX - w / 2, e.clientY - SEAT_OFFSET_Y);
-            setMode('sitting', 'FLOATING // SIT');
-            setTimeout(() => {
-                wrap.classList.remove('mascot-glide');
-                playHop();
-            }, 340);
-        }
-        exitPlaceMode();
-    }
-
-    function exitPlaceMode() {
-        state.isPlaceMode = false;
-        document.removeEventListener('pointerdown', handleTapToPlace, true);
-        if (placeBtn) placeBtn.classList.remove('text-[#39ff88]');
-        document.body.style.cursor = '';
-        if (state.mode === 'sitting') setTag(state.dockedEl ? 'PERCHED // SIT' : 'FLOATING // SIT');
-    }
-
-    window.toggleMascotPlaceMode = function () {
-        if (state.isPlaceMode) {
-            exitPlaceMode();
-            return;
-        }
-        state.isPlaceMode = true;
-        if (placeBtn) placeBtn.classList.add('text-[#39ff88]');
-        setTag('TAP ANY BOX');
-        document.body.style.cursor = 'crosshair';
-        setTimeout(() => {
-            document.addEventListener('pointerdown', handleTapToPlace, true);
-        }, 0);
-    };
-
-    window.toggleMiniMascot = function (show) {
-        const restore = document.getElementById('dash-mascot-restore');
-        if (!restore) return;
-        if (show) {
-            wrap.classList.remove('hidden');
-            restore.classList.add('hidden');
-        } else {
-            wrap.classList.add('hidden');
-            restore.classList.remove('hidden');
+    // Toggle Mascot Visibility from Top Bar
+    window.toggleMiniMascot = function () {
+        const isHidden = wrap.classList.toggle('hidden');
+        const btn = document.getElementById('header-mascot-toggle');
+        if (btn) btn.setAttribute('aria-pressed', String(!isHidden));
+        if (!isHidden) {
+            setTimeout(() => perchOnRandomBox(true), 40);
         }
     };
 
-    // =========================================================================
-    // SCAN-LINE TRAVERSAL & TERMINAL SCROLLING API
-    // Mascot glides beside streaming terminal lines & scrolls code up/down
-    // =========================================================================
+    // Terminal Code-Line Inspection & Scroll Review During Scans
     let prevActiveLine = null;
 
     function highlightTerminalLine(lineEl) {
@@ -439,7 +389,7 @@
         if (lineEl) lineEl.classList.add('term-line-active');
     }
 
-    function inspectTerminalLine(lineEl, labelText) {
+    function inspectTerminalLine(lineEl) {
         if (!lineEl || state.isDragging || wrap.classList.contains('hidden')) return;
         const termBody = document.getElementById('terminal-body');
         if (!termBody) return;
@@ -447,21 +397,17 @@
         state.dockedEl = null;
         highlightTerminalLine(lineEl);
 
-        // Smoothly scroll terminal so the line stays comfortably in view as mascot rides along it
         const targetScroll = Math.max(0, lineEl.offsetTop - termBody.clientHeight * 0.55);
         termBody.scrollTo({ top: targetScroll, behavior: 'smooth' });
 
         const bodyRect = termBody.getBoundingClientRect();
         const lineRect = lineEl.getBoundingClientRect();
-        const clampedLineY = clamp(lineRect.top + lineRect.height / 2, bodyRect.top + 24, bodyRect.bottom - 24);
-        const w = wrap.offsetWidth || 92;
+        const clampedLineY = clamp(lineRect.top + lineRect.height / 2, bodyRect.top + 22, bodyRect.bottom - 22);
+        const w = wrap.offsetWidth || 88;
 
-        // Place mascot right next to the code line inside the right edge of the terminal
         wrap.classList.add('mascot-glide');
-        applyPosition(bodyRect.right - w - 10, clampedLineY - 56);
-        setMode('inspecting', labelText || 'READING CODE');
-
-        // Focus eye directly on the left-side text of the code line
+        applyDocumentPosition(bodyRect.right + window.scrollX - w - 10, clampedLineY + window.scrollY - 46);
+        setMode('inspecting');
         trackEyeTo(bodyRect.left + 80, clampedLineY, true);
     }
 
@@ -472,28 +418,22 @@
 
         const lines = Array.from(termBody.querySelectorAll('.term-log-line'));
         if (lines.length >= 4) {
-            // Pull terminal slightly back up to review top findings, then scroll back down
-            setTag('SCROLLING UP');
-            const topSample = lines[Math.min(1, lines.length - 1)];
-            inspectTerminalLine(topSample, 'REVIEW TOP');
+            inspectTerminalLine(lines[Math.min(1, lines.length - 1)]);
             await new Promise(r => setTimeout(r, 420));
-
-            setTag('SCROLLING DOWN');
-            const bottomSample = lines[lines.length - 1];
-            inspectTerminalLine(bottomSample, 'REVIEW END');
+            inspectTerminalLine(lines[lines.length - 1]);
             await new Promise(r => setTimeout(r, 420));
         }
+
         highlightTerminalLine(null);
         if (termCard) {
             sitOnElementLedge(termCard, termCard.getBoundingClientRect().right - 80, true);
-            setTag('SCAN DONE // SIT');
         } else {
-            setMode('sitting', 'SCAN DONE // SIT');
+            setMode('sitting');
             playHop();
         }
     }
 
-    // Global Pointer & Touch Eye Tracking (When Not Dragging or Inspecting)
+    // Eye Tracking (Mouse & Mobile Touch)
     window.addEventListener('pointermove', (e) => {
         if (state.isDragging || state.mode === 'inspecting') return;
         trackEyeTo(e.clientX, e.clientY, false);
@@ -504,7 +444,6 @@
         if (e.touches && e.touches[0]) trackEyeTo(e.touches[0].clientX, e.touches[0].clientY, false);
     }, { passive: true });
 
-    // Occasional Natural Idle Blink
     setInterval(() => {
         if (state.isDragging || wrap.classList.contains('hidden')) return;
         if (Math.random() < 0.35) {
@@ -513,14 +452,8 @@
         }
     }, 2600);
 
-    // Sync Position on Scroll & Resize
-    window.addEventListener('scroll', syncDockedPosition, { passive: true });
-    window.addEventListener('resize', () => {
-        if (state.dockedEl) syncDockedPosition();
-        else applyPosition(state.currLeft, state.currTop);
-    }, { passive: true });
+    window.addEventListener('resize', syncDockedOnResize, { passive: true });
 
-    // Public API for dashboard.js
     window.TriScoutMascot = {
         perchOnRandomBox,
         sitOnElementLedge,
@@ -528,18 +461,19 @@
         sweepTerminalScrollReview,
         onTabChange: function () {
             if (state.isDragging || state.mode === 'inspecting') return;
-            // If previously docked box is now hidden in another tab, gracefully perch on a visible box in the new tab
             if (state.dockedEl) {
                 const rect = state.dockedEl.getBoundingClientRect();
                 if (!rect.width || !rect.height) {
                     setTimeout(() => perchOnRandomBox(true), 80);
                 }
+            } else {
+                setTimeout(() => perchOnRandomBox(true), 80);
             }
         }
     };
 
-    // Initial random box placement after layout settles
     window.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => perchOnRandomBox(false), 120);
     });
 })();
+       
