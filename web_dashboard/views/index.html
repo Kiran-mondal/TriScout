@@ -124,7 +124,7 @@
 
     <!-- MAIN VIEWPORT -->
     <div class="lg:pl-64">
-        <header class="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-[#0d2850]/90 z-30 flex items-center justify-between gap-2 px-3 sm:px-4 lg:px-8 border-b border-[#bae0ff]/60">
+        <header class="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-[#0d2850]/90 backdrop-blur-md z-30 flex items-center justify-between gap-2 px-3 sm:px-4 lg:px-8 border-b border-[#bae0ff]/60">
             <div class="flex items-center gap-2.5 min-w-0 flex-1">
                 <button id="mobileMenuBtn" onclick="toggleMobileSidebar()" aria-label="Open navigation menu" aria-expanded="false" class="lg:hidden shrink-0 p-2 -ml-1 rounded-sm border border-[#bae0ff]/40 text-[#e6f3ff] hover:bg-[#1c539e] cursor-pointer">
                     <span class="material-symbols-outlined text-xl block">menu</span>
@@ -185,7 +185,7 @@
 
                 <!-- 4 Blueprint Metric Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-[#7ce0ff] cursor-pointer">
+                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-[#7ce0ff] cursor-pointer transition-all">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Evaluated Controls</span>
                             <span id="metric-assets-tag" class="text-[10px] text-[#7ce0ff] bg-[#091e3d] border border-[#bae0ff]/40 px-2 py-0.5">Idle</span>
@@ -197,7 +197,7 @@
                         <div class="text-[10px] text-[#bae0ff]/80 pt-2 border-t border-[#bae0ff]/30">HTTP Headers, DNS &amp; Source Probes</div>
                     </div>
 
-                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-amber-300 cursor-pointer">
+                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-amber-300 cursor-pointer transition-all">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Missing / Warnings</span>
                             <span id="metric-vuln-tag" class="text-[10px] text-[#bae0ff] bg-[#091e3d] border border-[#bae0ff]/40 px-2 py-0.5">No Scan</span>
@@ -213,7 +213,7 @@
                         </div>
                     </div>
 
-                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-red-400 cursor-pointer">
+                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-red-400 cursor-pointer transition-all">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Critical Leaks</span>
                             <span id="crit-status-label" class="text-[10px] text-[#ffb4ab] font-bold">0 EXPOSED</span>
@@ -271,7 +271,7 @@
                         </div>
                     </div>
 
-                    <div class="p-3 bg-[#091e3d]/90 border border-[#7ce0ff]/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+                    <div class="p-3 bg-[#091e3d]/85 border border-[#7ce0ff]/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
                         <div class="text-[11px]">
                             <span id="topo-banner-tag" class="text-[#7ce0ff] font-bold uppercase tracking-wide mr-1">[DEMO TREE // CLICK + DOTS TO EXPAND]</span>
                             <span id="topo-banner-desc" class="text-white font-sans">Run a scan in Target Scanner to auto-sync this tree with your target website's real detected structure.</span>
@@ -282,7 +282,6 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic Tree SVG + Node Telemetry Inspector -->
                     <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
                         <div class="xl:col-span-8 bg-[#091e3d]/90 p-3 relative overflow-x-auto border border-[#bae0ff]/55 flex items-center justify-center min-h-[300px]">
                             <svg id="topology-svg" class="w-full min-w-[600px] select-none transition-transform duration-300" fill="none" viewBox="0 0 880 320" aria-label="Interactive target tree topology"></svg>
@@ -392,8 +391,8 @@
                         </button>
                     </div>
 
-                    <div id="terminal-card" data-mascot-ledge class="xl:col-span-7 bp-frame rounded-sm overflow-hidden flex flex-col justify-between">
-                        <div class="bg-[#0d2850]/95 px-4 py-2.5 flex items-center justify-between border-b border-[#bae0ff]/50 text-xs">
+                    <div id="terminal-card" data-mascot-ledge class="xl:col-span-7 bp-frame bg-[#091e3d]/90 rounded-sm overflow-hidden flex flex-col justify-between">
+                        <div class="bg-[#0d2850] px-4 py-2.5 flex items-center justify-between border-b border-[#bae0ff]/50 text-xs">
                             <div class="flex items-center gap-2">
                                 <span class="h-2.5 w-2.5 rounded-full bg-red-400 inline-block"></span>
                                 <span class="h-2.5 w-2.5 rounded-full bg-amber-300 inline-block"></span>
@@ -408,13 +407,13 @@
                             </div>
                         </div>
 
-                        <div class="p-4 pr-24 text-xs space-y-1.5 overflow-y-auto h-72 bg-[#081933]/95 text-[#e6f3ff] flex-1" id="terminal-body">
+                        <div class="p-4 pr-24 text-xs space-y-1.5 overflow-y-auto h-72 bg-[#081933] text-[#e6f3ff] flex-1" id="terminal-body">
                             <div class="term-log-line"><span class="text-[#39ff88] font-bold">[SYSTEM]</span> TriScout v2.4 On-Demand Scanner Ready.</div>
                             <div class="term-log-line"><span class="text-[#7ce0ff] font-bold">[INFO]</span> Enter a domain on the left or type <span class="text-white font-bold">scan example.com</span> below.</div>
                             <div id="terminal-append-point"></div>
                         </div>
 
-                        <form onsubmit="handleTerminalCommand(event)" class="bg-[#0d2850]/95 px-4 py-2.5 flex items-center gap-2 border-t border-[#bae0ff]/50 text-xs">
+                        <form onsubmit="handleTerminalCommand(event)" class="bg-[#0d2850] px-4 py-2.5 flex items-center gap-2 border-t border-[#bae0ff]/50 text-xs">
                             <label for="terminal-input" class="sr-only">CLI Input</label>
                             <span class="text-[#39ff88] font-bold">&gt;</span>
                             <input class="w-full bg-transparent text-white placeholder:text-[#bae0ff]/45 focus:outline-none" id="terminal-input" placeholder="Type command ('scan example.com', 'help', 'status', 'clear')..." type="text"/>
@@ -476,7 +475,7 @@
                         </div>
                         <span class="text-[10px] text-[#7ce0ff] bg-[#091e3d] border border-[#7ce0ff]/50 px-2.5 py-0.5 font-bold">SMTP RELAY</span>
                     </div>
-                    <div id="reportPreview" class="bg-[#081933]/95 text-[#e6f3ff] p-4 mb-4 text-xs border border-[#bae0ff]/40 h-64 overflow-y-auto leading-relaxed whitespace-pre-wrap">No recent scan report found in session buffer. Run a scan in the Target Scanner tab first.</div>
+                    <div id="reportPreview" class="bg-[#081933] text-[#e6f3ff] p-4 mb-4 text-xs border border-[#bae0ff]/40 h-64 overflow-y-auto leading-relaxed whitespace-pre-wrap">No recent scan report found in session buffer. Run a scan in the Target Scanner tab first.</div>
                     <div class="flex flex-col sm:flex-row gap-3">
                         <label for="emailInput" class="sr-only">Recipient email address</label>
                         <input type="email" id="emailInput" class="flex-1 bp-input px-4 py-2.5 text-xs" placeholder="Enter recipient email address (e.g. client@domain.com)"/>
@@ -500,19 +499,19 @@
                         <span class="text-[10px] text-[#39ff88] bg-[#091e3d] border border-[#39ff88]/60 px-2.5 py-0.5 font-bold">NPM GLOBAL</span>
                     </div>
                     <p class="text-sm text-[#bae0ff] font-sans mb-6 leading-relaxed">Execute passive security header checks and leak assessments directly from your terminal or automated CI/CD workflows.</p>
-                    <div class="bg-[#081933]/95 p-5 border border-[#bae0ff]/50 text-xs sm:text-sm text-[#e6f3ff] mb-6 leading-relaxed">
+                    <div class="bg-[#081933] p-5 border border-[#bae0ff]/50 text-xs sm:text-sm text-[#e6f3ff] mb-6 leading-relaxed">
                         <span class="text-[#bae0ff]/65"># Install globally via NPM</span><br>
                         <span class="text-[#39ff88] font-bold">$</span> npm install -g @kiran-mondal/triscout<br><br>
                         <span class="text-[#bae0ff]/65"># Run a quick passive scan</span><br>
                         <span class="text-[#39ff88] font-bold">$</span> triscout example.com
                     </div>
-                    <a href="https://github.com/Kiran-mondal/triscout/packages" target="_blank" rel="noopener noreferrer" class="w-full py-3 bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] text-xs uppercase font-bold transition-all flex items-center justify-center gap-2">
+                    <a href="https://github.com/Kiran-mondal/triscout/packages" target="_blank" rel="noopener noreferrer" class="w-full py-3 bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] text-xs uppercase font-bold flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-base">open_in_new</span><span>View Package on GitHub</span>
                     </a>
                 </div>
             </section>
 
-         <!-- =================================================================
+            <!-- =================================================================
                  TAB 5: MY PROJECTS
                  ================================================================= -->
             <section id="tab-project" class="tab-view hidden max-w-6xl mx-auto">
@@ -525,7 +524,7 @@
                         <span class="material-symbols-outlined text-sm text-[#39ff88]">code</span>
                         Full-Stack Developer &amp; Cyber Security Enthusiast
                     </p>
-                    <a href="https://github.com/Kiran-mondal" target="_blank" rel="noopener noreferrer" class="bg-[#1c539e] hover:bg-[#39ff88] hover:text-[#003918] text-white px-5 py-2 border border-[#bae0ff]/75 transition-all flex items-center gap-2 text-xs uppercase font-bold">
+                    <a href="https://github.com/Kiran-mondal" target="_blank" rel="noopener noreferrer" class="bg-[#1c539e] hover:bg-[#39ff88] hover:text-[#003918] text-white px-5 py-2 border border-[#bae0ff]/75 flex items-center gap-2 text-xs uppercase font-bold">
                         <span class="material-symbols-outlined text-base">open_in_new</span><span>View GitHub Profile</span>
                     </a>
                 </div>
@@ -608,7 +607,7 @@
                         </div>
                     </div>
                 </div>
-            </section>
+    </section>
 
             <!-- =================================================================
                  TAB 6: ACCOUNT & SYSTEM
@@ -653,29 +652,37 @@
         </main>
     </div>
 
-    <!-- 2-BONE ARTICULATED WALL-SITTING MASCOT (Sits on Box Top Edge, Stays Under Sidebar & Header) -->
+    <!-- 2-BONE ARTICULATED WALL-SITTING & FLYING BLUEPRINT MASCOT -->
     <div id="dash-mini-mascot" aria-hidden="true" role="presentation">
-        <svg id="dash-mascot-svg" viewBox="40 20 300 250" class="w-[96px] h-[80px] overflow-visible drop-shadow-[0_6px_12px_rgba(4,15,35,0.65)]" fill="none">
+        <svg id="dash-mascot-svg" viewBox="40 20 300 250" style="touch-action: none;" class="w-[96px] h-[80px] overflow-visible drop-shadow-[0_6px_12px_rgba(4,15,35,0.65)]" fill="none">
             <defs>
                 <clipPath id="dash-eye-clip"><circle cx="190" cy="88" r="22"/></clipPath>
             </defs>
 
+            <!-- Blueprint Speed Wind-Streaks (Visible only when flying fast) -->
+            <g id="dash-wind-lines" opacity="0" stroke="#7ce0ff" stroke-linecap="round">
+                <line x1="255" y1="88" x2="318" y2="88" stroke-width="2.2" stroke-opacity="0.75"/>
+                <line x1="264" y1="120" x2="338" y2="120" stroke-width="1.8" stroke-opacity="0.55" stroke-dasharray="18 8"/>
+                <line x1="255" y1="152" x2="312" y2="152" stroke-width="2.2" stroke-opacity="0.75"/>
+            </g>
+
+            <!-- Ledge Contact Shadow (Visible only when sitting on a box edge) -->
             <ellipse id="dash-ledge-shadow" cx="190" cy="184" rx="88" ry="4.5" fill="#041024" opacity="0.62"/>
 
-            <!-- Articulated Arms (2-Bone IK: Palms brace flat ON the box ledge at y=183) -->
-            <g id="dash-arm-l" class="mascot-hit">
+            <!-- 2-Bone Articulated Arms -->
+            <g id="dash-arm-l" class="mascot-hit" style="touch-action: none;">
                 <path id="dash-arm-l-outer" d="M136 118 Q106 145 104 183" stroke="#e6f3ff" stroke-width="11.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <path id="dash-arm-l-inner" d="M136 118 Q106 145 104 183" stroke="#18498a" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <ellipse id="dash-hand-l" cx="104" cy="183" rx="10.5" ry="6.2" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
             </g>
-            <g id="dash-arm-r" class="mascot-hit">
+            <g id="dash-arm-r" class="mascot-hit" style="touch-action: none;">
                 <path id="dash-arm-r-outer" d="M244 118 Q274 145 276 183" stroke="#e6f3ff" stroke-width="11.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <path id="dash-arm-r-inner" d="M244 118 Q274 145 276 183" stroke="#18498a" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <ellipse id="dash-hand-r" cx="276" cy="183" rx="10.5" ry="6.2" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
             </g>
 
-            <!-- Torso -->
-            <g id="dash-torso-group" class="mascot-hit">
+            <!-- Blueprint Torso -->
+            <g id="dash-torso-group" class="mascot-hit" style="touch-action: none;">
                 <rect x="134" y="46" width="112" height="136" rx="34" fill="#174786" stroke="#e6f3ff" stroke-width="2.4"/>
                 <rect x="143" y="55" width="94" height="118" rx="26" fill="none" stroke="#bae0ff" stroke-width="1.1" stroke-dasharray="4 4" stroke-opacity="0.7"/>
                 <g clip-path="url(#dash-eye-clip)">
@@ -695,8 +702,8 @@
                 <circle cx="190" cy="88" r="22" fill="none" stroke="#e6f3ff" stroke-width="2.2"/>
             </g>
 
-            <!-- 2-Bone Articulated Legs (Knees rest on front edge -> Shins & Shoes dangle over box face) -->
-            <g id="dash-leg-l" class="mascot-hit">
+            <!-- 2-Bone Articulated Legs -->
+            <g id="dash-leg-l" class="mascot-hit" style="touch-action: none;">
                 <path id="dash-thigh-l-outer" d="M164 176 Q158 184 156 192" stroke="#e6f3ff" stroke-width="13.5" stroke-linecap="round"/>
                 <path id="dash-thigh-l-inner" d="M164 176 Q158 184 156 192" stroke="#18498a" stroke-width="9.5" stroke-linecap="round"/>
                 <path id="dash-shin-l-outer" d="M156 192 Q154 214 154 238" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
@@ -707,7 +714,7 @@
                     <line x1="-6" y1="2" x2="6" y2="2" stroke="#7ce0ff" stroke-width="1.2" stroke-opacity="0.7"/>
                 </g>
             </g>
-            <g id="dash-leg-r" class="mascot-hit">
+            <g id="dash-leg-r" class="mascot-hit" style="touch-action: none;">
                 <path id="dash-thigh-r-outer" d="M216 176 Q222 184 224 192" stroke="#e6f3ff" stroke-width="13.5" stroke-linecap="round"/>
                 <path id="dash-thigh-r-inner" d="M216 176 Q222 184 224 192" stroke="#18498a" stroke-width="9.5" stroke-linecap="round"/>
                 <path id="dash-shin-r-outer" d="M224 192 Q226 214 226 238" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
