@@ -30,9 +30,9 @@
       "dest": "/api/processor.py"
     },
     {
-      "src": "/(style\\.css|logo\\.svg|sitemap\\.xml|robots\\.txt|llms\\.txt)",
+      "src": "/(style\\.css|logo\\.svg|sitemap\\.xml|robots\\.txt|llms\\.txt|css/.*|js/.*)",
       "headers": {
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
         "X-Content-Type-Options": "nosniff"
       },
       "dest": "/web_dashboard/server.js"
