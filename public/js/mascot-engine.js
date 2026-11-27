@@ -1,10 +1,10 @@
 /* ============================================================================
-   TriScout High-FPS 2-Bone Articulated Wall-Sitting Mascot Engine
-   - GPU-composited translate3d positioning (zero layout thrashing on mobile)
-   - Analytical 2-Bone Arm IK keeping both palms braced flat on the box edge
-   - 3D depth-foreshortened swinging shins & shoes from box-edge knees
-   - Soft spring squash-and-stretch landing, lerped eye tracking & idle glances
-   - Pauses rAF automatically when backgrounded to save CPU/battery
+   TriScout 2-Bone Articulated Mascot Engine
+   - Bulletproof mobile & desktop drag-and-drop with box-ledge snapping
+   - 360° opposite-direction flying animation (arms, legs, torso lean & wind
+     streaks trail opposite to movement during BOTH user drag & auto-flight)
+   - True wall-sitting pose (both palms braced via 2-Bone IK, swinging knees)
+   - GPU translate3d positioning + automatic background rAF pause
    ============================================================================ */
 (function () {
     const LEDGE_SELECTOR = '[data-mascot-ledge], .bp-panel, .bp-frame, .sidebar-item, #terminal-card';
@@ -13,6 +13,7 @@
     const svg = document.getElementById('dash-mascot-svg');
     const torsoGroup = document.getElementById('dash-torso-group');
     const shadowEl = document.getElementById('dash-ledge-shadow');
+    const windGroup = document.getElementById('dash-wind-lines');
 
     const armLOuter = document.getElementById('dash-arm-l-outer');
     const armLInner = document.getElementById('dash-arm-l-inner');
@@ -44,7 +45,7 @@
     const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const state = {
-        mode: 'sitting',         // 'sitting' | 'dragging' | 'inspecting'
+        mode: 'sitting',         // 'sitting' | 'flying' | 'inspecting'
         anchorSpace: 'page',     // 'page' (absolute) | 'fixed'
         isDragging: false,
         movedDuringDrag: false,
@@ -55,17 +56,23 @@
         origViewY: 120,
         currViewX: 24,
         currViewY: 120,
+        currDocX: 24,
+        currDocY: 120,
         prevPointerX: 0,
         prevPointerY: 0,
+        // Flight velocity (px per 16ms frame)
         velX: 0,
         velY: 0,
         sVelX: 0,
         sVelY: 0,
         sLagX: 0,
         sLagY: 0,
-        sitBlend: 1,
+        // Autonomous JS flight target (drives real flying animation between boxes/lines)
+        autoFlight: null,
+        sitBlend: 1,             // 1 = seated on ledge, 0 = airborne/flying
         hopEnergy: 0,
         landSquash: 0,
+        // Smooth lerped eye tracking
         targetLookX: window.innerWidth * 0.5,
         targetLookY: window.innerHeight * 0.4,
         eyeOffsetX: 0,
@@ -92,10 +99,10 @@
 
     function getSeatOffsetY() {
         const h = svg.getBoundingClientRect().height || 80;
-        return h * ((184 - 20) / 250); // 52.48px at 80px height — locks torso & palms flush on box top edge
+        return h * ((184 - 20) / 250);
     }
 
-    // 2-Bone Analytical Inverse Kinematics Solver
+    // 2-Bone Analytical Inverse Kinematics Solver (locks palms onto box ledge while seated)
     function solveIK2Bone(sx, sy, tx, ty, L1, L2, bendDir) {
         const dx = tx - sx;
         const dy = ty - sy;
@@ -111,6 +118,53 @@
         };
     }
 
+    // Compute 360° opposite-side flying limb joints (handles Left, Right, Up, Down & Diagonals)
+    function computeFlyingLimb(sx, sy, side, vx, vy, lagVx, lagVy, L1, L2, phaseOffset) {
+        const spd = Math.hypot(vx, vy);
+        const intensity = clamp(spd / 11, 0, 1);
+
+        // Resting hover dangle (down and slightly outward)
+        const bx = side * 0.26;
+        const by = 0.96;
+
+        // Opposite direction of travel (wind vector)
+        const ux = spd > 0.25 ? -vx / spd : bx;
+        const uy = spd > 0.25 ? -vy / spd : by;
+
+        // Outward splay prevents left/right limbs collapsing onto torso when moving straight down
+        const splayX = side * (0.24 + 0.34 * Math.max(0, -uy) * intensity);
+        const blend = intensity * 0.92;
+
+        let dx1 = bx * (1 - blend) + (ux + splayX) * blend;
+        let dy1 = by * (1 - blend) + uy * blend;
+        const mag1 = Math.hypot(dx1, dy1) || 1;
+        dx1 /= mag1;
+        dy1 /= mag1;
+
+        // Secondary segment follows lagged velocity for whip/stream effect
+        const lagSpd = Math.hypot(lagVx, lagVy);
+        const lux = lagSpd > 0.25 ? -lagVx / lagSpd : ux;
+        const luy = lagSpd > 0.25 ? -lagVy / lagSpd : uy;
+        let dx2 = bx * (1 - blend) + (lux + splayX * 0.7) * blend;
+        let dy2 = by * (1 - blend) + luy * blend;
+        const mag2 = Math.hypot(dx2, dy2) || 1;
+        dx2 /= mag2;
+        dy2 /= mag2;
+
+        // Perpendicular wind ripple flutter at speed
+        const perpX = -dy2;
+        const perpY = dx2;
+        const flutter = Math.sin(state.t * 16 + phaseOffset) * (5.2 * intensity);
+
+        const midX = sx + dx1 * L1 + perpX * (flutter * 0.45);
+        const midY = sy + dy1 * L1 + perpY * (flutter * 0.45);
+        const endX = midX + dx2 * L2 + perpX * flutter;
+        const endY = midY + dy2 * L2 + perpY * flutter;
+        const tipRot = (Math.atan2(dy2, dx2) * 180) / Math.PI - 90;
+
+        return { midX, midY, endX, endY, tipRot, intensity };
+    }
+
     function setArmPose(outerEl, innerEl, handEl, sx, sy, ex, ey, hx, hy, handRx, handRy, handRot) {
         const d = `M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${ex.toFixed(1)} ${ey.toFixed(1)} ${hx.toFixed(1)} ${hy.toFixed(1)}`;
         outerEl.setAttribute('d', d);
@@ -123,8 +177,8 @@
     }
 
     function setLegPose(tOut, tIn, sOut, sIn, kneeEl, shoeEl, hx, hy, kx, ky, fx, fy, shoeScale, shoeRot) {
-        const thighD = `M ${hx.toFixed(1)} ${hy.toFixed(1)} Q ${((hx + kx) * 0.5).toFixed(1)} ${(hy + 5).toFixed(1)} ${kx.toFixed(1)} ${ky.toFixed(1)}`;
-        const shinCtrlX = (kx + fx) * 0.5 + (fx - kx) * 0.15;
+        const thighD = `M ${hx.toFixed(1)} ${hy.toFixed(1)} Q ${((hx + kx) * 0.5).toFixed(1)} ${((hy + ky) * 0.5 + 3).toFixed(1)} ${kx.toFixed(1)} ${ky.toFixed(1)}`;
+        const shinCtrlX = (kx + fx) * 0.5 + (fx - kx) * 0.14;
         const shinCtrlY = (ky + fy) * 0.5;
         const shinD = `M ${kx.toFixed(1)} ${ky.toFixed(1)} Q ${shinCtrlX.toFixed(1)} ${shinCtrlY.toFixed(1)} ${fx.toFixed(1)} ${fy.toFixed(1)}`;
 
@@ -135,7 +189,19 @@
 
         kneeEl.setAttribute('cx', kx.toFixed(1));
         kneeEl.setAttribute('cy', ky.toFixed(1));
-        shoeEl.setAttribute('transform', `translate(${fx.toFixed(1)}, ${(fy + 5).toFixed(1)}) rotate(${shoeRot.toFixed(1)}) scale(${shoeScale.toFixed(2)})`);
+        shoeEl.setAttribute('transform', `translate(${fx.toFixed(1)}, ${(fy + 4).toFixed(1)}) rotate(${shoeRot.toFixed(1)}) scale(${shoeScale.toFixed(2)})`);
+    }
+
+    function updateWindStreaks() {
+        if (!windGroup) return;
+        const spd = Math.hypot(state.sVelX, state.sVelY);
+        const airFactor = 1 - state.sitBlend;
+        const alpha = clamp((spd - 2.5) / 10, 0, 0.85) * airFactor;
+        windGroup.setAttribute('opacity', alpha.toFixed(2));
+        if (alpha > 0.02) {
+            const oppAngle = (Math.atan2(-state.sVelY, -state.sVelX) * 180) / Math.PI;
+            windGroup.setAttribute('transform', `rotate(${oppAngle.toFixed(1)} 190 120)`);
+        }
     }
 
     function updateSmoothedEye(dt) {
@@ -147,10 +213,10 @@
         let tyTarget = state.targetLookY;
         let boost = state.eyeBoost;
 
-        if (state.isDragging && state.movedDuringDrag) {
-            txTarget = eyeScreenX + state.sVelX * 14;
-            tyTarget = eyeScreenY + state.sVelY * 14;
-            boost = Math.hypot(state.sVelX, state.sVelY) > 4.5;
+        if ((state.isDragging && state.movedDuringDrag) || state.autoFlight) {
+            txTarget = eyeScreenX + state.sVelX * 16;
+            tyTarget = eyeScreenY + state.sVelY * 16;
+            boost = Math.hypot(state.sVelX, state.sVelY) > 4;
         }
 
         const dx = txTarget - eyeScreenX;
@@ -158,24 +224,58 @@
         const ang = Math.atan2(dy, dx);
         const dist = Math.min(8.8, Math.hypot(dx, dy) / 16);
 
-        const desiredX = Math.cos(ang) * dist;
-        const desiredY = Math.sin(ang) * dist;
         const smooth = 1 - Math.exp(-18 * dt);
-
-        state.eyeOffsetX = lerp(state.eyeOffsetX, desiredX, smooth);
-        state.eyeOffsetY = lerp(state.eyeOffsetY, desiredY, smooth);
+        state.eyeOffsetX = lerp(state.eyeOffsetX, Math.cos(ang) * dist, smooth);
+        state.eyeOffsetY = lerp(state.eyeOffsetY, Math.sin(ang) * dist, smooth);
         state.eyeAngleDeg = Math.round((ang * 180) / Math.PI) + 90;
 
         pupil.style.transform = `translate3d(${state.eyeOffsetX.toFixed(2)}px, ${state.eyeOffsetY.toFixed(2)}px, 0)`;
         if (iris) iris.style.transform = `rotate(${state.eyeAngleDeg}deg)`;
         if (pupilCore) {
-            pupilCore.setAttribute('r', boost ? '6.1' : '5');
+            pupilCore.setAttribute('r', boost ? '6.2' : '5');
             pupilCore.setAttribute('fill', boost ? '#39ff88' : '#00d9ff');
         }
     }
 
     // =========================================================================
-    // 60/120 FPS KINEMATIC LOOP (Frame-rate independent exponential smoothing)
+    // AUTONOMOUS JS FLIGHT STEPPER (Generates Real Opposite-Wind Velocity)
+    // =========================================================================
+    function stepAutoFlight(dt) {
+        const f = state.autoFlight;
+        if (!f) return;
+
+        const currX = f.space === 'fixed' ? state.currViewX : state.currDocX;
+        const currY = f.space === 'fixed' ? state.currViewY : state.currDocY;
+        const dx = f.targetX - currX;
+        const dy = f.targetY - currY;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < 1.5 || prefersReducedMotion) {
+            if (f.space === 'fixed') applyViewportPosition(f.targetX, f.targetY);
+            else applyDocumentPosition(f.targetX, f.targetY);
+            state.autoFlight = null;
+            state.mode = f.endMode || 'sitting';
+            if (state.mode === 'sitting') state.landSquash = 1.0;
+            if (typeof f.onArrive === 'function') f.onArrive();
+            return;
+        }
+
+        const stepFactor = 1 - Math.exp(-9.5 * dt);
+        const stepX = dx * stepFactor;
+        const stepY = dy * stepFactor;
+
+        // Feed normalized 60fps velocity into opposite-side flying physics
+        const normScale = (1 / 60) / dt;
+        state.velX = clamp(stepX * normScale * 1.45, -28, 28);
+        state.velY = clamp(stepY * normScale * 1.45, -28, 28);
+        state.mode = 'flying';
+
+        if (f.space === 'fixed') applyViewportPosition(currX + stepX, currY + stepY);
+        else applyDocumentPosition(currX + stepX, currY + stepY);
+    }
+
+    // =========================================================================
+    // 60/120 FPS KINEMATIC RIG LOOP
     // =========================================================================
     function renderRigFrame(now) {
         if (document.hidden || wrap.classList.contains('hidden')) {
@@ -186,23 +286,27 @@
         const dt = Math.min(0.05, Math.max(0.001, (now - state.lastFrameTime) / 1000));
         state.lastFrameTime = now;
 
+        stepAutoFlight(dt);
+
         const speedBoost = 1 + state.hopEnergy * 1.5;
         if (!prefersReducedMotion) state.t += dt * speedBoost;
         state.hopEnergy = Math.max(0, state.hopEnergy - dt * 1.9);
         state.landSquash = Math.max(0, state.landSquash - dt * 3.4);
 
-        const damp = Math.exp(-11 * dt);
-        state.velX *= damp;
-        state.velY *= damp;
+        const damp = Math.exp(-9.5 * dt);
+        if (!state.autoFlight) {
+            state.velX *= damp;
+            state.velY *= damp;
+        }
         state.sVelX = lerp(state.sVelX, state.velX, 1 - Math.exp(-16 * dt));
         state.sVelY = lerp(state.sVelY, state.velY, 1 - Math.exp(-16 * dt));
-        state.sLagX = lerp(state.sLagX, state.sVelX, 1 - Math.exp(-8 * dt));
-        state.sLagY = lerp(state.sLagY, state.sVelY, 1 - Math.exp(-8 * dt));
+        state.sLagX = lerp(state.sLagX, state.sVelX, 1 - Math.exp(-7.5 * dt));
+        state.sLagY = lerp(state.sLagY, state.sVelY, 1 - Math.exp(-7.5 * dt));
 
-        const targetBlend = state.mode === 'dragging' ? 0 : 1;
-        state.sitBlend = lerp(state.sitBlend, targetBlend, 1 - Math.exp(-12 * dt));
+        const targetBlend = state.mode === 'flying' ? 0 : 1;
+        state.sitBlend = lerp(state.sitBlend, targetBlend, 1 - Math.exp(-13 * dt));
 
-        // 1. Torso Posture + Landing Squash & Stretch
+        // 1. Torso Lean: While flying, bottom swings opposite to travel direction around top pivot
         const hopY = -Math.sin(state.hopEnergy * Math.PI) * 14;
         const squashWave = Math.sin(state.landSquash * Math.PI);
         const scaleX = 1 + squashWave * 0.08;
@@ -212,20 +316,22 @@
         const sitLeanRot = Math.sin(state.t * 0.9) * 2.4;
         const sitLeanX = Math.sin(state.t * 0.9) * 2.2;
 
-        const dragTilt = clamp(state.sVelX * 0.85, -24, 24);
-        const torsoRot = lerp(dragTilt, state.mode === 'inspecting' ? -4.5 : sitLeanRot, state.sitBlend);
+        // Moving RIGHT (sVelX > 0) => positive rotation around head (190, 62) swings torso bottom LEFT!
+        const flyTilt = clamp(state.sVelX * 1.65, -28, 28);
+        const torsoRot = lerp(flyTilt, state.mode === 'inspecting' ? -4.5 : sitLeanRot, state.sitBlend);
+        const torsoPivotY = lerp(64, 180, state.sitBlend);
         const torsoShiftY = lerp(0, sitBreathY + hopY, state.sitBlend);
         const torsoShiftX = lerp(0, sitLeanX, state.sitBlend);
 
         if (torsoGroup) {
             torsoGroup.setAttribute(
                 'transform',
-                `translate(${torsoShiftX.toFixed(1)}, ${torsoShiftY.toFixed(1)}) translate(190, 180) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)}) rotate(${torsoRot.toFixed(2)}) translate(-190, -180)`
+                `translate(${torsoShiftX.toFixed(1)}, ${torsoShiftY.toFixed(1)}) translate(190, ${torsoPivotY.toFixed(1)}) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)}) rotate(${torsoRot.toFixed(2)}) translate(-190, ${(-torsoPivotY).toFixed(1)})`
             );
         }
 
         if (shadowEl) {
-            const shadowOp = state.sitBlend * (state.mode === 'sitting' ? 0.62 : 0.35) * (1 - Math.abs(hopY) / 28);
+            const shadowOp = state.sitBlend * (state.mode === 'sitting' ? 0.62 : 0.3) * (1 - Math.abs(hopY) / 28);
             shadowEl.setAttribute('opacity', Math.max(0, shadowOp).toFixed(2));
         }
 
@@ -239,16 +345,14 @@
         const hrx = 216 + torsoShiftX * 0.4;
         const hry = 176 + torsoShiftY * 0.5;
 
-        // 2. ARMS (2-Bone IK Braced on Box Ledge vs Opposite-Wind Drag Trail)
+        // 2. ARMS: Seated (2-Bone IK Braced on Box Edge) vs Flying (360° Opposite-Side Wind Stream)
         const sitHandLX = 104, sitHandLY = 183;
         const sitHandRX = 276, sitHandRY = 183;
-
-        const windX = clamp(-state.sVelX * 2.8, -68, 68);
-        const lagWindX = clamp(-state.sLagX * 3.6, -82, 82);
-        const windY = clamp(-state.sVelY * 1.9, -46, 36);
-
         const ikL = solveIK2Bone(slx, sly, sitHandLX, sitHandLY, 41, 39, +1);
         const ikR = solveIK2Bone(srx, sry, sitHandRX, sitHandRY, 41, 39, -1);
+
+        const flyArmL = computeFlyingLimb(slx, sly, -1, state.sVelX, state.sVelY, state.sLagX, state.sLagY, 38, 36, 0.0);
+        const flyArmR = computeFlyingLimb(srx, sry, +1, state.sVelX, state.sVelY, state.sLagX, state.sLagY, 38, 36, 2.2);
 
         let elx, ely, pxL, pyL, erx, ery, pxR, pyR;
         const handRx = lerp(8.5, 10.5, state.sitBlend);
@@ -261,21 +365,21 @@
             elx = ikPoint.ex; ely = ikPoint.ey; pxL = ptX; pyL = ptY;
             erx = ikR.ex; ery = ikR.ey; pxR = sitHandRX; pyR = sitHandRY;
         } else {
-            elx = lerp(slx - 16 + windX * 0.55, ikL.ex, state.sitBlend);
-            ely = lerp(sly + 30 + windY * 0.45, ikL.ey, state.sitBlend);
-            pxL = lerp(slx - 26 + lagWindX * 0.95, sitHandLX, state.sitBlend);
-            pyL = lerp(sly + 62 + windY * 0.9, sitHandLY, state.sitBlend);
+            elx = lerp(flyArmL.midX, ikL.ex, state.sitBlend);
+            ely = lerp(flyArmL.midY, ikL.ey, state.sitBlend);
+            pxL = lerp(flyArmL.endX, sitHandLX, state.sitBlend);
+            pyL = lerp(flyArmL.endY, sitHandLY, state.sitBlend);
 
-            erx = lerp(srx + 16 + windX * 0.55, ikR.ex, state.sitBlend);
-            ery = lerp(sry + 30 + windY * 0.45, ikR.ey, state.sitBlend);
-            pxR = lerp(srx + 26 + lagWindX * 0.95, sitHandRX, state.sitBlend);
-            pyR = lerp(sry + 62 + windY * 0.9, sitHandRY, state.sitBlend);
+            erx = lerp(flyArmR.midX, ikR.ex, state.sitBlend);
+            ery = lerp(flyArmR.midY, ikR.ey, state.sitBlend);
+            pxR = lerp(flyArmR.endX, sitHandRX, state.sitBlend);
+            pyR = lerp(flyArmR.endY, sitHandRY, state.sitBlend);
         }
 
-        setArmPose(armLOuter, armLInner, handL, slx, sly, elx, ely, pxL, pyL, handRx, handRy, lerp(-20, -6, state.sitBlend));
-        setArmPose(armROuter, armRInner, handR, srx, sry, erx, ery, pxR, pyR, handRx, handRy, lerp(20, 6, state.sitBlend));
+        setArmPose(armLOuter, armLInner, handL, slx, sly, elx, ely, pxL, pyL, handRx, handRy, lerp(flyArmL.tipRot, -6, state.sitBlend));
+        setArmPose(armROuter, armRInner, handR, srx, sry, erx, ery, pxR, pyR, handRx, handRy, lerp(flyArmR.tipRot, 6, state.sitBlend));
 
-        // 3. LEGS (Wall-Sitting 3D Depth Kick vs Double-Pendulum Drag Trail)
+        // 3. LEGS: Seated (Box-Edge Knees + 3D Depth Kick) vs Flying (360° Opposite-Side Wind Stream)
         const kickPhaseL = Math.sin(state.t * 2.5);
         const kickPhaseR = Math.sin(state.t * 2.5 + Math.PI);
 
@@ -289,24 +393,28 @@
         const sitFootRX = sitKneeRX + 3 + kickPhaseR * 9;
         const sitFootRY = 236 - kickPhaseR * 17 + hopY * 0.6;
 
-        const klx = lerp(hlx - 4 + windX * 0.55, sitKneeLX, state.sitBlend);
-        const kly = lerp(hly + 32 + Math.min(10, windY * 0.3), sitKneeLY, state.sitBlend);
-        const flx = lerp(hlx - 8 + lagWindX * 1.05, sitFootLX, state.sitBlend);
-        const fly = lerp(hly + 68 + Math.min(18, windY * 0.5), sitFootLY, state.sitBlend);
+        const flyLegL = computeFlyingLimb(hlx, hly, -1, state.sVelX, state.sVelY, state.sLagX, state.sLagY, 34, 38, 1.1);
+        const flyLegR = computeFlyingLimb(hrx, hry, +1, state.sVelX, state.sVelY, state.sLagX, state.sLagY, 34, 38, 3.6);
 
-        const krx = lerp(hrx + 4 + windX * 0.55, sitKneeRX, state.sitBlend);
-        const kry = lerp(hry + 32 + Math.min(10, windY * 0.3), sitKneeRY, state.sitBlend);
-        const frx = lerp(hrx + 8 + lagWindX * 1.05, sitFootRX, state.sitBlend);
-        const fry = lerp(hry + 68 + Math.min(18, windY * 0.5), sitFootRY, state.sitBlend);
+        const klx = lerp(flyLegL.midX, sitKneeLX, state.sitBlend);
+        const kly = lerp(flyLegL.midY, sitKneeLY, state.sitBlend);
+        const flx = lerp(flyLegL.endX, sitFootLX, state.sitBlend);
+        const fly = lerp(flyLegL.endY, sitFootLY, state.sitBlend);
+
+        const krx = lerp(flyLegR.midX, sitKneeRX, state.sitBlend);
+        const kry = lerp(flyLegR.midY, sitKneeRY, state.sitBlend);
+        const frx = lerp(flyLegR.endX, sitFootRX, state.sitBlend);
+        const fry = lerp(flyLegR.endY, sitFootRY, state.sitBlend);
 
         const scaleL = lerp(0.98, 1.0 + kickPhaseL * 0.13, state.sitBlend);
         const scaleR = lerp(0.98, 1.0 + kickPhaseR * 0.13, state.sitBlend);
-        const rotL = lerp(clamp(-state.sLagX * 1.4, -35, 35), -kickPhaseL * 14 - 4, state.sitBlend);
-        const rotR = lerp(clamp(-state.sLagX * 1.4, -35, 35), kickPhaseR * 14 + 4, state.sitBlend);
+        const rotL = lerp(flyLegL.tipRot, -kickPhaseL * 14 - 4, state.sitBlend);
+        const rotR = lerp(flyLegR.tipRot, kickPhaseR * 14 + 4, state.sitBlend);
 
         setLegPose(thighLOuter, thighLInner, shinLOuter, shinLInner, kneeL, shoeL, hlx, hly, klx, kly, flx, fly, scaleL, rotL);
         setLegPose(thighROuter, thighRInner, shinROuter, shinRInner, kneeR, shoeR, hrx, hry, krx, kry, frx, fry, scaleR, rotR);
 
+        updateWindStreaks();
         updateSmoothedEye(dt);
         state.rafId = requestAnimationFrame(renderRigFrame);
     }
@@ -338,6 +446,8 @@
         wrap.style.zIndex = state.isDragging ? '60' : '55';
         state.currViewX = clamp(xPx, 4, Math.max(4, window.innerWidth - w - 4));
         state.currViewY = clamp(yPx, 4, Math.max(4, window.innerHeight - h - 4));
+        state.currDocX = state.currViewX + window.scrollX;
+        state.currDocY = state.currViewY + window.scrollY;
         wrap.style.transform = `translate3d(${state.currViewX.toFixed(1)}px, ${state.currViewY.toFixed(1)}px, 0)`;
     }
 
@@ -347,12 +457,24 @@
         const docH = Math.max(document.documentElement.scrollHeight, window.innerHeight);
         state.anchorSpace = 'page';
         wrap.style.position = 'absolute';
-        wrap.style.zIndex = '25'; // Above page cards, cleanly behind header (z-30) & mobile sidebar (z-50)
-        const safeX = clamp(docX, 4, Math.max(4, docW - w - 4));
-        const safeY = clamp(docY, 4, Math.max(4, docH - 40));
-        wrap.style.transform = `translate3d(${safeX.toFixed(1)}px, ${safeY.toFixed(1)}px, 0)`;
-        state.currViewX = safeX - window.scrollX;
-        state.currViewY = safeY - window.scrollY;
+        wrap.style.zIndex = '25';
+        state.currDocX = clamp(docX, 4, Math.max(4, docW - w - 4));
+        state.currDocY = clamp(docY, 4, Math.max(4, docH - 40));
+        wrap.style.transform = `translate3d(${state.currDocX.toFixed(1)}px, ${state.currDocY.toFixed(1)}px, 0)`;
+        state.currViewX = state.currDocX - window.scrollX;
+        state.currViewY = state.currDocY - window.scrollY;
+    }
+
+    function flyToPosition(space, targetX, targetY, endMode = 'sitting', onArrive = null) {
+        wrap.classList.remove('mascot-glide');
+        if (space === 'fixed' && state.anchorSpace !== 'fixed') {
+            applyViewportPosition(state.currViewX, state.currViewY);
+        } else if (space === 'page' && state.anchorSpace !== 'page') {
+            applyDocumentPosition(state.currViewX + window.scrollX, state.currViewY + window.scrollY);
+        }
+        state.autoFlight = { space, targetX, targetY, endMode, onArrive };
+        state.mode = 'flying';
+        ensureLoopRunning();
     }
 
     function getVisibleLedges() {
@@ -393,7 +515,7 @@
         if (el) el.classList.add('mascot-ledge-highlight');
     }
 
-    function sitOnElementLedge(el, preferredCenterX, glide = true) {
+    function sitOnElementLedge(el, preferredCenterX, fly = true) {
         if (!el) return false;
         const rect = el.getBoundingClientRect();
         if (!rect.width || !rect.height) return false;
@@ -402,7 +524,6 @@
         const seatOffset = getSeatOffsetY();
         const minCenter = rect.left + Math.min(48, rect.width * 0.25);
         const maxCenter = rect.right - Math.min(48, rect.width * 0.25);
-        // Default perch stays neatly toward the right side so centered titles & buttons remain clear
         const centerX = preferredCenterX != null
             ? clamp(preferredCenterX, minCenter, maxCenter)
             : rect.left + rect.width * (0.74 + Math.random() * 0.12);
@@ -411,41 +532,22 @@
         state.dockedRelX = rect.width > 0 ? clamp((centerX - rect.left) / rect.width, 0.12, 0.88) : 0.78;
 
         const targetIsFixed = isInsideFixedContainer(el);
-        const switchingSpace = (targetIsFixed && state.anchorSpace !== 'fixed') || (!targetIsFixed && state.anchorSpace !== 'page');
+        const targetX = targetIsFixed ? (centerX - w / 2) : (centerX + window.scrollX - w / 2);
+        const targetY = targetIsFixed ? (rect.top - seatOffset) : (rect.top + window.scrollY - seatOffset);
 
-        // Convert coordinate space seamlessly before gliding so there is no scroll jump
-        if (glide && switchingSpace) {
-            wrap.classList.remove('mascot-glide');
-            const currRect = wrap.getBoundingClientRect();
-            if (targetIsFixed) {
-                applyViewportPosition(currRect.left, currRect.top);
-            } else {
-                applyDocumentPosition(currRect.left + window.scrollX, currRect.top + window.scrollY);
-            }
-            void wrap.offsetWidth;
-        }
-
-        if (glide) wrap.classList.add('mascot-glide');
-        else wrap.classList.remove('mascot-glide');
-
-        if (targetIsFixed) {
-            applyViewportPosition(centerX - w / 2, rect.top - seatOffset);
+        if (fly) {
+            flyToPosition(targetIsFixed ? 'fixed' : 'page', targetX, targetY, 'sitting');
         } else {
-            applyDocumentPosition(centerX + window.scrollX - w / 2, rect.top + window.scrollY - seatOffset);
-        }
-
-        state.mode = 'sitting';
-        if (glide) {
-            setTimeout(() => {
-                wrap.classList.remove('mascot-glide');
-                state.landSquash = 1.0;
-            }, 320);
+            state.autoFlight = null;
+            if (targetIsFixed) applyViewportPosition(targetX, targetY);
+            else applyDocumentPosition(targetX, targetY);
+            state.mode = 'sitting';
         }
         return true;
     }
 
     function syncDockedOnResize() {
-        if (state.isDragging || state.mode === 'inspecting' || !state.dockedEl) return;
+        if (state.isDragging || state.autoFlight || state.mode === 'inspecting' || !state.dockedEl) return;
         const rect = state.dockedEl.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
         const w = wrap.offsetWidth || 96;
@@ -458,7 +560,7 @@
         }
     }
 
-    function perchOnRandomBox(glide = false) {
+    function perchOnRandomBox(fly = false) {
         const candidates = getVisibleLedges().filter(el => !isInsideFixedContainer(el));
         const pool = candidates.length > 0 ? candidates : getVisibleLedges();
         if (pool.length === 0) {
@@ -467,13 +569,20 @@
             return;
         }
         const chosen = pool[Math.floor(Math.random() * pool.length)];
-        sitOnElementLedge(chosen, null, glide);
+        sitOnElementLedge(chosen, null, fly);
     }
 
     // =========================================================================
-    // DRAG & DROP POINTER HANDLERS
+    // DRAG & DROP POINTER + TOUCH HANDLERS (Never Hijacked by Mobile Scroll)
     // =========================================================================
+    svg.addEventListener('touchstart', (e) => {
+        if (e.cancelable) e.preventDefault();
+    }, { passive: false });
+
     wrap.addEventListener('pointerdown', (e) => {
+        if (e.button != null && e.button !== 0 && e.pointerType === 'mouse') return;
+        e.preventDefault();
+        state.autoFlight = null;
         state.isDragging = true;
         state.movedDuringDrag = false;
         state.activePointerId = e.pointerId;
@@ -496,6 +605,7 @@
         if (wrap.setPointerCapture) {
             try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
         }
+        ensureLoopRunning();
     });
 
     wrap.addEventListener('pointermove', (e) => {
@@ -508,14 +618,14 @@
         state.prevPointerX = e.clientX;
         state.prevPointerY = e.clientY;
 
-        if (!state.movedDuringDrag && Math.hypot(dx, dy) > 5) {
+        if (!state.movedDuringDrag && Math.hypot(dx, dy) > 4) {
             state.movedDuringDrag = true;
-            state.mode = 'dragging';
+            state.mode = 'flying';
         }
 
         if (state.movedDuringDrag) {
-            state.velX = lerp(state.velX, stepX, 0.65);
-            state.velY = lerp(state.velY, stepY, 0.65);
+            state.velX = lerp(state.velX, clamp(stepX * 1.4, -32, 32), 0.72);
+            state.velY = lerp(state.velY, clamp(stepY * 1.4, -32, 32), 0.72);
             applyViewportPosition(state.origViewX + dx, state.origViewY + dy);
 
             const w = wrap.offsetWidth || 96;
@@ -524,7 +634,7 @@
         }
     });
 
-    function finishDrag(e) {
+ function finishDrag(e) {
         if (!state.isDragging || (e && e.pointerId !== state.activePointerId)) return;
         state.isDragging = false;
         wrap.classList.remove('is-grabbing');
@@ -560,15 +670,16 @@
     wrap.addEventListener('pointercancel', finishDrag);
 
     // =========================================================================
-    // TERMINAL CODE-LINE TRAVERSAL & SCROLL REVIEW
+    // TERMINAL CODE-LINE TRAVERSAL & SCROLL REVIEW (With Opposite-Side Flight)
     // =========================================================================
     let prevActiveLine = null;
     function highlightTerminalLine(lineEl) {
         if (prevActiveLine) prevActiveLine.classList.remove('term-line-active');
         prevActiveLine = lineEl;
         if (lineEl) lineEl.classList.add('term-line-active');
-            }
-   function inspectTerminalLine(lineEl) {
+    }
+
+    function inspectTerminalLine(lineEl) {
         if (!lineEl || state.isDragging || wrap.classList.contains('hidden')) return;
         const termBody = document.getElementById('terminal-body');
         if (!termBody) return;
@@ -584,13 +695,11 @@
         const clampedLineY = clamp(lineRect.top + lineRect.height / 2, bodyRect.top + 22, bodyRect.bottom - 22);
         const w = wrap.offsetWidth || 96;
 
-        wrap.classList.add('mascot-glide');
-        applyDocumentPosition(bodyRect.right + window.scrollX - w - 6, clampedLineY + window.scrollY - 42);
-        state.mode = 'inspecting';
         state.inspectPointY = 132;
         state.targetLookX = bodyRect.left + 80;
         state.targetLookY = clampedLineY;
         state.eyeBoost = true;
+        flyToPosition('page', bodyRect.right + window.scrollX - w - 6, clampedLineY + window.scrollY - 42, 'inspecting');
     }
 
     async function sweepTerminalScrollReview() {
@@ -610,14 +719,12 @@
         state.eyeBoost = false;
         if (termCard) {
             sitOnElementLedge(termCard, termCard.getBoundingClientRect().right - 72, true);
-            state.hopEnergy = 1.0;
         } else {
             state.mode = 'sitting';
             state.hopEnergy = 1.0;
         }
     }
 
-    // Passive Pointer & Touch Look Targets (Zero DOM writes inside event handlers)
     window.addEventListener('pointermove', (e) => {
         if (state.isDragging || state.mode === 'inspecting') return;
         state.targetLookX = e.clientX;
@@ -636,7 +743,6 @@
         }
     }, { passive: true });
 
-    // Keep cached viewport coordinates synced on scroll so eye tracking stays accurate
     window.addEventListener('scroll', () => {
         if (state.anchorSpace === 'page') {
             const rect = wrap.getBoundingClientRect();
@@ -645,9 +751,8 @@
         }
     }, { passive: true });
 
-    // Curious Idle Glances & Natural Blinks when pointer is idle
     setInterval(() => {
-        if (document.hidden || state.isDragging || state.mode === 'inspecting' || wrap.classList.contains('hidden')) return;
+        if (document.hidden || state.isDragging || state.autoFlight || state.mode === 'inspecting' || wrap.classList.contains('hidden')) return;
         if (performance.now() - state.lastPointerTime > 2600) {
             state.targetLookX = Math.random() * window.innerWidth;
             state.targetLookY = Math.random() * window.innerHeight * 0.85;
