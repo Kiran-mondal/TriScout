@@ -2,9 +2,13 @@
     color-scheme: dark;
     --bp-bg: #154078;
     --bp-line: rgba(186, 224, 255, 0.72);
-    --bp-line-soft: rgba(186, 224, 255, 0.35);
+    --bp-line-soft: rgba(186, 224, 255, 0.34);
+    --bp-glass: rgba(14, 43, 86, 0.68);
+    --bp-glass-strong: rgba(11, 34, 70, 0.82);
     --bp-grid-major: rgba(186, 224, 255, 0.16);
     --bp-grid-minor: rgba(186, 224, 255, 0.05);
+    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     scrollbar-color: rgba(186, 224, 255, 0.45) #091e3d;
     scrollbar-width: thin;
 }
@@ -16,6 +20,10 @@
     ::-webkit-scrollbar-thumb:hover { background: #39ff88; }
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body.blueprint-canvas {
     background-color: var(--bp-bg);
     background-image:
@@ -23,39 +31,102 @@ body.blueprint-canvas {
         linear-gradient(to bottom, var(--bp-grid-major) 1px, transparent 1px),
         linear-gradient(to right, var(--bp-grid-minor) 1px, transparent 1px),
         linear-gradient(to bottom, var(--bp-grid-minor) 1px, transparent 1px),
-        radial-gradient(circle at 50% 25%, #235aa3 0%, #0e2d56 100%);
+        radial-gradient(circle at 50% 20%, #245ca6 0%, #0d2b54 100%);
     background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px, 100% 100%;
     background-attachment: fixed;
     color: #e6f3ff;
     overscroll-behavior: none;
 }
 
+/* =====================================================================
+   FROSTED BLUEPRINT GLASS BLUR & SMOOTH HOVER/PRESS TRANSITIONS
+   ===================================================================== */
 .bp-panel {
-    background: rgba(17, 52, 102, 0.88);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: var(--bp-glass);
+    backdrop-filter: blur(14px) saturate(135%);
+    -webkit-backdrop-filter: blur(14px) saturate(135%);
     border: 1.5px solid var(--bp-line-soft);
-    box-shadow: 0 0 0 2px rgba(14, 43, 84, 0.55), 0 12px 32px rgba(4, 15, 35, 0.55);
+    box-shadow:
+        inset 0 1px 0 rgba(230, 243, 255, 0.2),
+        0 0 0 2px rgba(10, 32, 66, 0.48),
+        0 12px 30px rgba(4, 15, 35, 0.48);
+    contain: layout style;
+    transition:
+        transform 240ms var(--ease-smooth),
+        border-color 220ms ease,
+        box-shadow 260ms var(--ease-smooth),
+        background-color 220ms ease;
+}
+
+.bp-panel:hover {
+    background: rgba(18, 55, 108, 0.78);
+    border-color: rgba(186, 224, 255, 0.62);
+    box-shadow:
+        inset 0 1px 0 rgba(230, 243, 255, 0.3),
+        0 0 0 2px rgba(10, 32, 66, 0.55),
+        0 16px 38px rgba(4, 15, 35, 0.62);
 }
 
 .bp-frame {
+    background: var(--bp-glass-strong);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
     border: 1.5px solid var(--bp-line);
-    box-shadow: 0 0 0 3px rgba(14, 43, 84, 0.65), 0 18px 42px rgba(4, 15, 35, 0.72);
+    box-shadow:
+        inset 0 1px 0 rgba(230, 243, 255, 0.26),
+        0 0 0 3px rgba(10, 32, 66, 0.6),
+        0 20px 46px rgba(4, 15, 35, 0.68);
+    contain: layout style;
+    transition: border-color 220ms ease, box-shadow 260ms var(--ease-smooth);
+}
+
+header,
+#mobileSidebar {
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+}
+
+#sidebarOverlay {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: opacity 240ms var(--ease-smooth);
 }
 
 .bp-input {
-    background: rgba(10, 31, 64, 0.85);
+    background: rgba(9, 28, 58, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1.5px solid rgba(186, 224, 255, 0.45);
     color: #ffffff;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color 200ms ease, box-shadow 220ms var(--ease-smooth), background-color 200ms ease;
 }
 .bp-input:focus {
+    background: rgba(9, 28, 58, 0.94);
     border-color: #39ff88;
-    box-shadow: 0 0 10px rgba(57, 255, 136, 0.3);
+    box-shadow: 0 0 0 3px rgba(57, 255, 136, 0.16), 0 0 14px rgba(57, 255, 136, 0.28);
     outline: none;
 }
 .bp-input::placeholder {
     color: rgba(186, 224, 255, 0.45);
+}
+
+button,
+a.sidebar-item,
+.ledger-card {
+    transition:
+        transform 180ms var(--ease-smooth),
+        background-color 200ms ease,
+        border-color 200ms ease,
+        color 180ms ease,
+        box-shadow 220ms var(--ease-smooth);
+}
+
+button:active:not(:disabled) {
+    transform: scale(0.975);
+}
+
+.ledger-card:hover {
+    transform: translateY(-2px);
 }
 
 :focus-visible {
@@ -64,15 +135,15 @@ body.blueprint-canvas {
 }
 
 #mobileSidebar {
-    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 280ms var(--ease-smooth);
 }
 
 .sidebar-active {
-    background-color: #1c539e !important;
+    background-color: rgba(28, 83, 158, 0.85) !important;
     color: #ffffff !important;
     border: 1px solid rgba(186, 224, 255, 0.8) !important;
     border-left: 3px solid #39ff88 !important;
-    box-shadow: inset 0 0 12px rgba(57, 255, 136, 0.16);
+    box-shadow: inset 0 0 14px rgba(57, 255, 136, 0.18);
 }
 .sidebar-active .nav-icon {
     color: #39ff88 !important;
@@ -80,16 +151,61 @@ body.blueprint-canvas {
 
 .cv-section {
     content-visibility: auto;
-    contain-intrinsic-size: auto 300px;
+    contain-intrinsic-size: auto 320px;
+}
+
+/* =====================================================================
+   TAB VIEW TRANSITIONS (Native View Transition API + Smooth Fallback)
+   ===================================================================== */
+main {
+    view-transition-name: tab-content;
+}
+
+@keyframes tabBlurIn {
+    0% {
+        opacity: 0;
+        transform: translateY(10px) scale(0.992);
+        filter: blur(6px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0px);
+    }
+}
+
+@keyframes tabBlurOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0px);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-6px);
+        filter: blur(4px);
+    }
+}
+
+::view-transition-old(tab-content) {
+    animation: 180ms var(--ease-smooth) both tabBlurOut;
+}
+::view-transition-new(tab-content) {
+    animation: 260ms var(--ease-smooth) both tabBlurIn;
+}
+
+.tab-view-enter {
+    animation: tabBlurIn 280ms var(--ease-smooth) both;
 }
 
 /* =====================================================================
    MASCOT LEDGE SNAP HIGHLIGHT & TERMINAL CODE-LINE HIGHLIGHT
    ===================================================================== */
 .mascot-ledge-highlight {
-    box-shadow: inset 0 3px 0 #39ff88, 0 -4px 16px rgba(57, 255, 136, 0.45) !important;
+    box-shadow:
+        inset 0 3px 0 #39ff88,
+        0 -6px 20px rgba(57, 255, 136, 0.45) !important;
     border-top-color: #39ff88 !important;
-    transition: box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
 .term-line-active {
@@ -97,7 +213,7 @@ body.blueprint-canvas {
     border-left: 2px solid #39ff88;
     padding-left: 6px;
     border-radius: 2px;
-    transition: background 0.2s ease;
+    transition: background-color 200ms ease;
 }
 
 /* =====================================================================
@@ -112,134 +228,75 @@ body.blueprint-canvas {
 .tree-node-enter {
     transform-box: fill-box;
     transform-origin: center;
-    animation: treeNodePop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    animation: treeNodePop 340ms var(--ease-spring) both;
 }
 
-.tree-node-group {
-    cursor: pointer;
-}
+.tree-node-group { cursor: pointer; }
 .tree-node-group:hover .tree-dot-ring {
     stroke-width: 3;
     filter: drop-shadow(0 0 6px rgba(57, 255, 136, 0.65));
 }
 
 /* =====================================================================
-   CLEAN BLUEPRINT MASCOT (NO TOP BOX, WALL-SITTING, SCROLLS WITH BOX)
+   2-BONE ARTICULATED MASCOT (GPU translate3d ONLY — Zero Layout Thrash)
+   z-index: 25 stays ABOVE page boxes, BELOW header (z-30) & sidebar (z-50)
    ===================================================================== */
 #dash-mini-mascot {
     position: absolute;
-    left: 24px;
-    top: 120px;
-    width: 88px;
-    height: 90px;
-    z-index: 75;
+    left: 0;
+    top: 0;
+    width: 96px;
+    height: 80px;
+    z-index: 25;
     touch-action: none;
     user-select: none;
+    pointer-events: none;
+    transform: translate3d(24px, 120px, 0);
+    will-change: transform;
+}
+
+#dash-mini-mascot .mascot-hit {
     pointer-events: auto;
-    will-change: left, top;
+    cursor: grab;
+}
+#dash-mini-mascot.is-grabbing .mascot-hit {
+    cursor: grabbing;
 }
 
 #dash-mini-mascot.mascot-glide {
-    transition: left 0.3s cubic-bezier(0.22, 1, 0.36, 1), top 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 320ms var(--ease-smooth);
 }
 
-#dash-mascot-body { transform-origin: 190px 90px; will-change: transform; }
-#dash-leg-l { transform-origin: 164px 178px; will-change: transform; }
-#dash-leg-r { transform-origin: 216px 178px; will-change: transform; }
-#dash-arm-l { transform-origin: 134px 114px; will-change: transform; }
-#dash-arm-r { transform-origin: 246px 114px; will-change: transform; }
-
-#dash-pupil-group {
-    transform-origin: 190px 88px;
-    transition: transform 0.06s ease-out;
+#dash-torso-group {
+    transform-origin: 190px 180px;
     will-change: transform;
 }
+
+#dash-pupil-group,
 #dash-iris-ring {
     transform-origin: 190px 88px;
-    transition: transform 0.06s linear;
-}
-#dash-eyelid-top, #dash-eyelid-bottom {
-    transition: transform 0.16s ease;
+    will-change: transform;
 }
 
-/* ১. পাঁচিলে বসে পা দোলানো (Sitting Quietly on Box Ledge) */
-@keyframes sitBreath {
-    0%, 100% { transform: translateY(0px); }
-    50%      { transform: translateY(-2px); }
-}
-@keyframes sitLegSwingLeft {
-    0%, 100% { transform: rotate(-16deg) translateY(-2px); }
-    50%      { transform: rotate(12deg) translateY(1px); }
-}
-@keyframes sitLegSwingRight {
-    0%, 100% { transform: rotate(14deg) translateY(1px); }
-    50%      { transform: rotate(-14deg) translateY(-2px); }
-}
-@keyframes sitArmRestLeft {
-    0%, 100% { transform: rotate(-18deg); }
-    50%      { transform: rotate(-14deg); }
-}
-@keyframes sitArmRestRight {
-    0%, 100% { transform: rotate(18deg); }
-    50%      { transform: rotate(14deg); }
+#dash-eyelid-top,
+#dash-eyelid-bottom {
+    transition: transform 140ms var(--ease-smooth);
 }
 
-.mascot-sitting #dash-mascot-body { animation: sitBreath 3.2s ease-in-out infinite; }
-.mascot-sitting #dash-leg-l       { animation: sitLegSwingLeft 2.1s ease-in-out infinite; }
-.mascot-sitting #dash-leg-r       { animation: sitLegSwingRight 2.1s ease-in-out infinite; }
-.mascot-sitting #dash-arm-l       { animation: sitArmRestLeft 3.2s ease-in-out infinite; }
-.mascot-sitting #dash-arm-r       { animation: sitArmRestRight 3.2s ease-in-out infinite; }
-
-/* ২. ড্র্যাগ চলাকালীন উল্টো দিকে বাতাসে ওড়ার ফিজিক্স */
-.mascot-dragging #dash-mascot-body,
-.mascot-dragging #dash-leg-l,
-.mascot-dragging #dash-leg-r,
-.mascot-dragging #dash-arm-l,
-.mascot-dragging #dash-arm-r {
-    animation: none !important;
-    transition: none !important;
-}
-
-/* ৩. স্ক্যানিংয়ে কোড-লাইন পরিদর্শন */
-@keyframes inspectBob {
-    0%, 100% { transform: translateY(0px) rotate(-3deg); }
-    50%      { transform: translateY(-3px) rotate(-5deg); }
-}
-@keyframes inspectPointArm {
-    0%, 100% { transform: rotate(62deg); }
-    50%      { transform: rotate(74deg); }
-}
-.mascot-inspecting #dash-mascot-body { animation: inspectBob 0.9s ease-in-out infinite; }
-.mascot-inspecting #dash-arm-l       { animation: inspectPointArm 0.75s ease-in-out infinite; }
-.mascot-inspecting #dash-arm-r       { animation: none; transform: rotate(-14deg); }
-.mascot-inspecting #dash-leg-l       { animation: sitLegSwingLeft 1.2s ease-in-out infinite; }
-.mascot-inspecting #dash-leg-r       { animation: sitLegSwingRight 1.2s ease-in-out infinite; }
-
-/* ৪. ট্যাপ/ক্লিক করলে লাফানো */
-@keyframes dashMascotHop {
-    0%   { transform: translateY(0) scale(1); }
-    35%  { transform: translateY(-16px) rotate(-3deg) scale(1.04); }
-    70%  { transform: translateY(2px) rotate(2deg) scale(0.98); }
-    100% { transform: translateY(0) scale(1); }
-}
-.dash-hop-active {
-    animation: dashMascotHop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-}
-
-/* ৫. চোখের পলক */
 .mascot-blink #dash-eyelid-top { transform: translateY(24px); }
 .mascot-blink #dash-eyelid-bottom { transform: translateY(-20px); }
 
 @media (prefers-reduced-motion: reduce) {
-    .mascot-sitting #dash-mascot-body,
-    .mascot-sitting #dash-leg-l,
-    .mascot-sitting #dash-leg-r,
-    .mascot-sitting #dash-arm-l,
-    .mascot-sitting #dash-arm-r,
-    .mascot-inspecting #dash-mascot-body,
-    .mascot-inspecting #dash-arm-l,
-    .tree-node-enter {
+    html { scroll-behavior: auto; }
+    .tab-view-enter,
+    .tree-node-enter,
+    ::view-transition-old(tab-content),
+    ::view-transition-new(tab-content) {
         animation: none !important;
     }
-              }
-              
+    #dash-mini-mascot.mascot-glide,
+    .bp-panel,
+    button {
+        transition: none !important;
+    }
+}
