@@ -5,17 +5,30 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>TriScout v2.4 TAC-OPS // Blueprint Command Center</title>
     <meta name="description" content="TriScout v2.4 TAC-OPS interactive passive cybersecurity reconnaissance console for auditing HTTP security headers, synchronized tree topology, and source/credential leaks."/>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" href="/css/dashboard.css" as="style" />
+    <link rel="preload" href="/logo.svg" as="image" fetchpriority="high" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="stylesheet" href="/css/dashboard.css" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script async src="https://www.googletagmanager.com/gtm.js?id=GTM-NGN9WK5Z"></script>
+    <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
+        window.addEventListener('load', () => {
+            const loadGtm = () => {
+                const s = document.createElement('script');
+                s.async = true;
+                s.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-NGN9WK5Z';
+                document.head.appendChild(s);
+            };
+            if ('requestIdleCallback' in window) requestIdleCallback(loadGtm, { timeout: 2500 });
+            else setTimeout(loadGtm, 1200);
+        });
     </script>
 
     <script type="application/ld+json">
@@ -45,7 +58,7 @@
             <div class="h-16 px-4 flex items-center justify-between bg-[#091e3d]/95 border-b border-[#bae0ff]/60">
                 <div class="flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded bg-[#e6f3ff] border border-[#39ff88] p-1 flex items-center justify-center shadow-[0_0_10px_rgba(124,224,255,0.4)]">
-                        <img src="/logo.svg" alt="TriScout" class="w-full h-full object-contain" />
+                        <img src="/logo.svg" alt="TriScout" width="20" height="20" fetchpriority="high" class="w-full h-full object-contain" />
                     </div>
                     <div>
                         <span class="font-bold text-sm tracking-wider text-white block leading-none uppercase">TRISCOUT</span>
@@ -111,26 +124,23 @@
 
     <!-- MAIN VIEWPORT -->
     <div class="lg:pl-64">
-        <header class="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-[#0d2850]/95 backdrop-blur-md z-30 flex items-center justify-between px-4 lg:px-8 border-b border-[#bae0ff]/60">
-            <div class="flex items-center gap-3">
-                <button id="mobileMenuBtn" onclick="toggleMobileSidebar()" aria-label="Open navigation menu" aria-expanded="false" class="lg:hidden p-2 -ml-1 rounded-sm border border-[#bae0ff]/40 text-[#e6f3ff] hover:bg-[#1c539e] cursor-pointer">
-                    <span class="material-symbols-outlined text-xl">menu</span>
+        <header class="fixed top-0 left-0 lg:left-64 right-0 h-16 bg-[#0d2850]/90 z-30 flex items-center justify-between gap-2 px-3 sm:px-4 lg:px-8 border-b border-[#bae0ff]/60">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                <button id="mobileMenuBtn" onclick="toggleMobileSidebar()" aria-label="Open navigation menu" aria-expanded="false" class="lg:hidden shrink-0 p-2 -ml-1 rounded-sm border border-[#bae0ff]/40 text-[#e6f3ff] hover:bg-[#1c539e] cursor-pointer">
+                    <span class="material-symbols-outlined text-xl block">menu</span>
                 </button>
-                <div class="flex items-center gap-2">
-                    <span class="h-2.5 w-2.5 rounded-full bg-[#39ff88] animate-pulse"></span>
-                    <span id="top-page-title" class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">OVERVIEW // COMMAND CENTER</span>
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-[#39ff88] animate-pulse"></span>
+                    <span id="top-page-title" class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider truncate">OVERVIEW // COMMAND CENTER</span>
                 </div>
             </div>
 
-            <div class="flex items-center gap-2.5">
-                <button id="header-mascot-toggle" onclick="toggleMiniMascot()" aria-pressed="true" title="Show or Hide Mascot" type="button" class="px-2.5 py-2 rounded-sm bg-[#091e3d] hover:bg-[#1c539e] border border-[#bae0ff]/50 text-[#7ce0ff] text-[10px] uppercase font-bold cursor-pointer">
-                    Mascot
-                </button>
-                <button onclick="switchTab(null, 'scanner')" class="flex items-center gap-1.5 px-3.5 py-2 rounded-sm bg-[#39ff88] text-[#003918] text-xs uppercase font-bold hover:bg-[#63ff95] transition-all shadow-[0_0_12px_rgba(57,255,136,0.35)] cursor-pointer" type="button">
+            <div class="flex items-center gap-2.5 shrink-0">
+                <button onclick="switchTab(null, 'scanner')" class="flex items-center gap-1.5 px-3 py-2 rounded-sm bg-[#39ff88] text-[#003918] text-[11px] sm:text-xs uppercase font-bold hover:bg-[#63ff95] transition-all shadow-[0_0_12px_rgba(57,255,136,0.35)] cursor-pointer whitespace-nowrap" type="button">
                     <span class="material-symbols-outlined text-sm font-bold">radar</span>
                     <span>Launch Scan</span>
                 </button>
-                <button onclick="switchTab(null, 'profile')" type="button" class="flex items-center gap-2 pl-2.5 py-1 border-l border-[#bae0ff]/40 cursor-pointer">
+                <button onclick="switchTab(null, 'profile')" type="button" class="flex items-center gap-2 pl-2.5 py-1 border-l border-[#bae0ff]/40 cursor-pointer shrink-0">
                     <div id="navProfileAvatar" class="w-8 h-8 rounded-sm bg-[#1c539e] text-[#39ff88] flex items-center justify-center font-bold border border-[#bae0ff]/70 overflow-hidden">
                         <span class="material-symbols-outlined text-base">person</span>
                     </div>
@@ -154,7 +164,7 @@
                  ================================================================= -->
             <section id="tab-overview" class="tab-view flex flex-col gap-6">
 
-                <div data-mascot-ledge class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bp-frame bg-[#113466]/90 backdrop-blur-md p-5 sm:p-6 rounded-sm">
+                <div data-mascot-ledge class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bp-frame p-5 sm:p-6 rounded-sm">
                     <div class="max-w-3xl">
                         <div class="flex flex-wrap items-center gap-2 mb-2">
                             <span class="px-2 py-0.5 border border-[#39ff88]/60 bg-[#091e3d] text-[10px] text-[#39ff88] uppercase font-bold">PASSIVE ETHICAL RECON</span>
@@ -175,7 +185,7 @@
 
                 <!-- 4 Blueprint Metric Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-[#7ce0ff] cursor-pointer transition-all">
+                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-[#7ce0ff] cursor-pointer">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Evaluated Controls</span>
                             <span id="metric-assets-tag" class="text-[10px] text-[#7ce0ff] bg-[#091e3d] border border-[#bae0ff]/40 px-2 py-0.5">Idle</span>
@@ -187,7 +197,7 @@
                         <div class="text-[10px] text-[#bae0ff]/80 pt-2 border-t border-[#bae0ff]/30">HTTP Headers, DNS &amp; Source Probes</div>
                     </div>
 
-                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-amber-300 cursor-pointer transition-all">
+                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-amber-300 cursor-pointer">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Missing / Warnings</span>
                             <span id="metric-vuln-tag" class="text-[10px] text-[#bae0ff] bg-[#091e3d] border border-[#bae0ff]/40 px-2 py-0.5">No Scan</span>
@@ -203,7 +213,7 @@
                         </div>
                     </div>
 
-                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-red-400 cursor-pointer transition-all">
+                    <div data-mascot-ledge onclick="switchTab(null, 'scanner')" class="bp-panel p-5 rounded-sm hover:border-red-400 cursor-pointer">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-[10px] text-[#bae0ff] uppercase">Critical Leaks</span>
                             <span id="crit-status-label" class="text-[10px] text-[#ffb4ab] font-bold">0 EXPOSED</span>
@@ -235,7 +245,7 @@
                 </div>
 
                 <!-- SYNCHRONIZED COLLAPSIBLE TREE TOPOLOGY HUD -->
-                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 backdrop-blur-md p-4 sm:p-6 rounded-sm relative overflow-hidden flex flex-col gap-4">
+                <div data-mascot-ledge class="bp-frame p-4 sm:p-6 rounded-sm relative overflow-hidden flex flex-col gap-4">
                     <div class="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 pb-3 border-b border-[#bae0ff]/50">
                         <div>
                             <div class="flex flex-wrap items-center gap-2 mb-1">
@@ -250,8 +260,8 @@
                         </div>
 
                         <div class="flex flex-wrap items-center gap-2 text-[10px]">
-                            <button onclick="toggleAllTopologyBranches(true)" type="button" class="px-2.5 py-1 bg-[#1c539e] hover:bg-[#39ff88] hover:text-[#003918] text-white font-bold border border-[#bae0ff]/75 cursor-pointer transition-colors">Expand All</button>
-                            <button onclick="toggleAllTopologyBranches(false)" type="button" class="px-2.5 py-1 bg-[#091e3d] hover:bg-[#1c539e] text-[#bae0ff] hover:text-white border border-[#bae0ff]/50 cursor-pointer transition-colors">Collapse</button>
+                            <button onclick="toggleAllTopologyBranches(true)" type="button" class="px-2.5 py-1 bg-[#1c539e] hover:bg-[#39ff88] hover:text-[#003918] text-white font-bold border border-[#bae0ff]/75 cursor-pointer">Expand All</button>
+                            <button onclick="toggleAllTopologyBranches(false)" type="button" class="px-2.5 py-1 bg-[#091e3d] hover:bg-[#1c539e] text-[#bae0ff] hover:text-white border border-[#bae0ff]/50 cursor-pointer">Collapse</button>
                             <div class="flex items-center gap-1 bg-[#091e3d] border border-[#bae0ff]/40 px-2 py-1">
                                 <button onclick="zoomTopology(0.15)" class="text-[#bae0ff] hover:text-[#39ff88] p-0.5 cursor-pointer" title="Zoom In" type="button"><span class="material-symbols-outlined text-sm font-bold">zoom_in</span></button>
                                 <span id="topo-zoom-level" class="text-white px-1">100%</span>
@@ -274,11 +284,11 @@
 
                     <!-- Dynamic Tree SVG + Node Telemetry Inspector -->
                     <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
-                        <div class="xl:col-span-8 bg-[#091e3d]/95 p-3 relative overflow-x-auto border border-[#bae0ff]/55 flex items-center justify-center min-h-[300px]">
+                        <div class="xl:col-span-8 bg-[#091e3d]/90 p-3 relative overflow-x-auto border border-[#bae0ff]/55 flex items-center justify-center min-h-[300px]">
                             <svg id="topology-svg" class="w-full min-w-[600px] select-none transition-transform duration-300" fill="none" viewBox="0 0 880 320" aria-label="Interactive target tree topology"></svg>
                         </div>
 
-                        <div data-mascot-ledge class="xl:col-span-4 bg-[#0d2850]/95 p-4 border border-[#bae0ff]/55 flex flex-col justify-between">
+                        <div data-mascot-ledge class="xl:col-span-4 bg-[#0d2850]/90 p-4 border border-[#bae0ff]/55 flex flex-col justify-between">
                             <div>
                                 <div class="flex items-center justify-between pb-2 border-b border-[#bae0ff]/40 mb-3">
                                     <div class="flex items-center gap-1.5">
@@ -306,7 +316,7 @@
                                     <p id="tele-inspector-detail" class="text-xs text-[#bae0ff] font-sans leading-relaxed">Click any dot in the tree to expand branches or inspect its details.</p>
                                 </div>
                             </div>
-                            <button onclick="switchTab(null, 'scanner')" type="button" class="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1c539e] hover:bg-[#39ff88] hover:text-[#003918] text-white uppercase font-bold border border-[#bae0ff]/70 transition-all cursor-pointer text-xs">
+                            <button onclick="switchTab(null, 'scanner')" type="button" class="w-full flex items-center justify-center gap-2 py-2.5 bg-[#1c539e] hover:bg-[#39ff88] hover:text-[#003918] text-white uppercase font-bold border border-[#bae0ff]/70 cursor-pointer text-xs">
                                 <span class="material-symbols-outlined text-base">autorenew</span>
                                 <span>Scan / Sync New Target</span>
                             </button>
@@ -341,7 +351,7 @@
                  ================================================================= -->
             <section id="tab-scanner" class="tab-view hidden flex flex-col gap-6">
                 <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                    <div data-mascot-ledge class="xl:col-span-5 bp-frame bg-[#113466]/90 p-5 sm:p-6 rounded-sm flex flex-col justify-between">
+                    <div data-mascot-ledge class="xl:col-span-5 bp-frame p-5 sm:p-6 rounded-sm flex flex-col justify-between">
                         <div>
                             <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#bae0ff]/45">
                                 <div class="flex items-center gap-2">
@@ -376,14 +386,14 @@
                             </div>
                         </div>
 
-                        <button onclick="executeTargetAssessment()" class="w-full flex items-center justify-center gap-2 py-3 bg-[#39ff88] text-[#003918] text-xs uppercase font-bold hover:bg-[#63ff95] transition-all shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer" id="dispatch-recon-btn" type="button">
+                        <button onclick="executeTargetAssessment()" class="w-full flex items-center justify-center gap-2 py-3 bg-[#39ff88] text-[#003918] text-xs uppercase font-bold hover:bg-[#63ff95] shadow-[0_0_16px_rgba(57,255,136,0.3)] cursor-pointer" id="dispatch-recon-btn" type="button">
                             <span class="material-symbols-outlined text-base">rocket_launch</span>
                             <span>Initiate Target Scan</span>
                         </button>
                     </div>
 
-                    <div id="terminal-card" data-mascot-ledge class="xl:col-span-7 bp-frame bg-[#091e3d]/95 rounded-sm overflow-hidden flex flex-col justify-between">
-                        <div class="bg-[#0d2850] px-4 py-2.5 flex items-center justify-between border-b border-[#bae0ff]/50 text-xs">
+                    <div id="terminal-card" data-mascot-ledge class="xl:col-span-7 bp-frame rounded-sm overflow-hidden flex flex-col justify-between">
+                        <div class="bg-[#0d2850]/95 px-4 py-2.5 flex items-center justify-between border-b border-[#bae0ff]/50 text-xs">
                             <div class="flex items-center gap-2">
                                 <span class="h-2.5 w-2.5 rounded-full bg-red-400 inline-block"></span>
                                 <span class="h-2.5 w-2.5 rounded-full bg-amber-300 inline-block"></span>
@@ -398,22 +408,22 @@
                             </div>
                         </div>
 
-                        <div class="p-4 pr-24 text-xs space-y-1.5 overflow-y-auto h-72 bg-[#081933] text-[#e6f3ff] flex-1" id="terminal-body">
+                        <div class="p-4 pr-24 text-xs space-y-1.5 overflow-y-auto h-72 bg-[#081933]/95 text-[#e6f3ff] flex-1" id="terminal-body">
                             <div class="term-log-line"><span class="text-[#39ff88] font-bold">[SYSTEM]</span> TriScout v2.4 On-Demand Scanner Ready.</div>
                             <div class="term-log-line"><span class="text-[#7ce0ff] font-bold">[INFO]</span> Enter a domain on the left or type <span class="text-white font-bold">scan example.com</span> below.</div>
                             <div id="terminal-append-point"></div>
                         </div>
 
-                        <form onsubmit="handleTerminalCommand(event)" class="bg-[#0d2850] px-4 py-2.5 flex items-center gap-2 border-t border-[#bae0ff]/50 text-xs">
+                        <form onsubmit="handleTerminalCommand(event)" class="bg-[#0d2850]/95 px-4 py-2.5 flex items-center gap-2 border-t border-[#bae0ff]/50 text-xs">
                             <label for="terminal-input" class="sr-only">CLI Input</label>
                             <span class="text-[#39ff88] font-bold">&gt;</span>
                             <input class="w-full bg-transparent text-white placeholder:text-[#bae0ff]/45 focus:outline-none" id="terminal-input" placeholder="Type command ('scan example.com', 'help', 'status', 'clear')..." type="text"/>
-                            <button class="px-3 py-1 bg-[#1c539e] hover:bg-[#39ff88] hover:text-[#003918] text-white border border-[#bae0ff]/70 uppercase font-bold cursor-pointer transition-colors" type="submit">Run</button>
+                            <button class="px-3 py-1 bg-[#1c539e] hover:bg-[#39ff88] hover:text-[#003918] text-white border border-[#bae0ff]/70 uppercase font-bold cursor-pointer" type="submit">Run</button>
                         </form>
                     </div>
-    </div>
+                </div>
 
-                 <div data-mascot-ledge class="bp-panel p-5 sm:p-6 rounded-sm cv-section">
+                <div data-mascot-ledge class="bp-panel p-5 sm:p-6 rounded-sm cv-section">
                     <div class="flex flex-wrap items-center justify-between gap-4 pb-3 mb-4 border-b border-[#bae0ff]/45">
                         <div>
                             <h3 class="text-sm sm:text-base text-white font-bold uppercase flex items-center gap-2">
@@ -458,7 +468,7 @@
                     </div>
                 </div>
 
-                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 p-5 sm:p-6 rounded-sm">
+                <div data-mascot-ledge class="bp-frame p-5 sm:p-6 rounded-sm">
                     <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#bae0ff]/45">
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-outlined text-[#39ff88]">mail</span>
@@ -466,11 +476,11 @@
                         </div>
                         <span class="text-[10px] text-[#7ce0ff] bg-[#091e3d] border border-[#7ce0ff]/50 px-2.5 py-0.5 font-bold">SMTP RELAY</span>
                     </div>
-                    <div id="reportPreview" class="bg-[#081933] text-[#e6f3ff] p-4 mb-4 text-xs border border-[#bae0ff]/40 h-64 overflow-y-auto leading-relaxed whitespace-pre-wrap">No recent scan report found in session buffer. Run a scan in the Target Scanner tab first.</div>
+                    <div id="reportPreview" class="bg-[#081933]/95 text-[#e6f3ff] p-4 mb-4 text-xs border border-[#bae0ff]/40 h-64 overflow-y-auto leading-relaxed whitespace-pre-wrap">No recent scan report found in session buffer. Run a scan in the Target Scanner tab first.</div>
                     <div class="flex flex-col sm:flex-row gap-3">
                         <label for="emailInput" class="sr-only">Recipient email address</label>
                         <input type="email" id="emailInput" class="flex-1 bp-input px-4 py-2.5 text-xs" placeholder="Enter recipient email address (e.g. client@domain.com)"/>
-                        <button id="reportBtn" onclick="sendReportEmail()" type="button" class="bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] text-xs uppercase font-bold px-6 py-2.5 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                        <button id="reportBtn" onclick="sendReportEmail()" type="button" class="bg-[#39ff88] hover:bg-[#63ff95] text-[#003918] text-xs uppercase font-bold px-6 py-2.5 flex items-center justify-center gap-2 cursor-pointer">
                             <span class="material-symbols-outlined text-base">send</span><span>Send Report</span>
                         </button>
                     </div>
@@ -481,7 +491,7 @@
                  TAB 4: CLI TOOL
                  ================================================================= -->
             <section id="tab-cli" class="tab-view hidden max-w-4xl mx-auto">
-                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 p-6 sm:p-8 rounded-sm">
+                <div data-mascot-ledge class="bp-frame p-6 sm:p-8 rounded-sm">
                     <div class="flex items-center justify-between pb-3 mb-4 border-b border-[#bae0ff]/45">
                         <div class="flex items-center gap-2">
                             <span class="material-symbols-outlined text-[#39ff88] text-2xl">terminal</span>
@@ -490,7 +500,7 @@
                         <span class="text-[10px] text-[#39ff88] bg-[#091e3d] border border-[#39ff88]/60 px-2.5 py-0.5 font-bold">NPM GLOBAL</span>
                     </div>
                     <p class="text-sm text-[#bae0ff] font-sans mb-6 leading-relaxed">Execute passive security header checks and leak assessments directly from your terminal or automated CI/CD workflows.</p>
-                    <div class="bg-[#081933] p-5 border border-[#bae0ff]/50 text-xs sm:text-sm text-[#e6f3ff] mb-6 leading-relaxed">
+                    <div class="bg-[#081933]/95 p-5 border border-[#bae0ff]/50 text-xs sm:text-sm text-[#e6f3ff] mb-6 leading-relaxed">
                         <span class="text-[#bae0ff]/65"># Install globally via NPM</span><br>
                         <span class="text-[#39ff88] font-bold">$</span> npm install -g @kiran-mondal/triscout<br><br>
                         <span class="text-[#bae0ff]/65"># Run a quick passive scan</span><br>
@@ -502,13 +512,13 @@
                 </div>
             </section>
 
-            <!-- =================================================================
+         <!-- =================================================================
                  TAB 5: MY PROJECTS
                  ================================================================= -->
             <section id="tab-project" class="tab-view hidden max-w-6xl mx-auto">
-                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 p-6 sm:p-8 mb-6 flex flex-col items-center justify-center text-center rounded-sm">
+                <div data-mascot-ledge class="bp-frame p-6 sm:p-8 mb-6 flex flex-col items-center justify-center text-center rounded-sm">
                     <div class="p-1 rounded-full bg-gradient-to-tr from-[#39ff88] to-[#7ce0ff] mb-3 shadow-[0_0_24px_rgba(124,224,255,0.35)]">
-                        <img src="https://github.com/Kiran-mondal.png" alt="Kiran Mondal" width="80" height="80" class="w-20 h-20 rounded-full border-4 border-[#0d2850] object-cover">
+                        <img src="https://github.com/Kiran-mondal.png" alt="Kiran Mondal" width="80" height="80" loading="lazy" decoding="async" class="w-20 h-20 rounded-full border-4 border-[#0d2850] object-cover">
                     </div>
                     <h2 class="text-xl sm:text-2xl text-white font-bold uppercase tracking-wider mb-1">Kiran Mondal</h2>
                     <p class="text-[#bae0ff] text-xs mb-4 flex items-center gap-1.5">
@@ -521,7 +531,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff]">
                         <div class="flex items-center gap-3 mb-3">
                             <svg width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                 <rect width="512" height="512" rx="120" fill="#0D4FF0"/>
@@ -538,7 +548,7 @@
                         </div>
                     </div>
 
-                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff]">
                         <div class="flex items-center gap-3 mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32" aria-hidden="true">
                                 <path d="M 120 390 C 120 270, 392 350, 392 210 C 392 130, 310 90, 256 90" fill="none" stroke="#58a6ff" stroke-width="45" stroke-linecap="round" />
@@ -553,7 +563,7 @@
                         </div>
                     </div>
 
-                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff]">
                         <div class="flex items-center gap-3 mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="32" height="32" aria-hidden="true">
                                 <path d="M 280 250 C 420 250, 420 380, 350 400 C 450 420, 450 580, 280 580" stroke="#00f2fe" stroke-width="45" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -568,7 +578,7 @@
                         </div>
                     </div>
 
-                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff]">
                         <div class="flex items-center gap-3 mb-3">
                             <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="32" height="32" aria-hidden="true">
                                 <circle cx="50" cy="50" r="48" fill="#d97706" stroke="#ffffff" stroke-width="2"/>
@@ -583,7 +593,7 @@
                         </div>
                     </div>
 
-                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff] transition-all">
+                    <div data-mascot-ledge class="bp-panel p-5 flex flex-col rounded-sm hover:border-[#7ce0ff]">
                         <div class="flex items-center gap-3 mb-3">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32" aria-hidden="true">
                                 <circle cx="256" cy="256" r="168" fill="none" stroke="#dc2626" stroke-width="48" />
@@ -604,7 +614,7 @@
                  TAB 6: ACCOUNT & SYSTEM
                  ================================================================= -->
             <section id="tab-profile" class="tab-view hidden max-w-4xl mx-auto flex flex-col gap-6">
-                <div data-mascot-ledge class="bp-frame bg-[#113466]/90 p-6 rounded-sm">
+                <div data-mascot-ledge class="bp-frame p-6 rounded-sm">
                     <div class="flex flex-col sm:flex-row items-center gap-5 pb-5 mb-5 border-b border-[#bae0ff]/45">
                         <div class="w-20 h-20 rounded-sm bg-[#091e3d] flex items-center justify-center border-2 border-[#39ff88] overflow-hidden shrink-0" id="profileAvatar">
                             <span class="material-symbols-outlined text-4xl text-[#39ff88]">person</span>
@@ -616,7 +626,7 @@
                                 <span class="h-2 w-2 rounded-full bg-[#39ff88] animate-pulse"></span> ACTIVE &amp; RLS SECURED
                             </span>
                         </div>
-                     </div>
+                    </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs" id="profileActions"></div>
                 </div>
 
@@ -643,38 +653,31 @@
         </main>
     </div>
 
-    <!-- CLEAN BLUEPRINT MASCOT (No Top Label Box — Scrolls Naturally With Its Perched Box) -->
-    <div id="dash-mini-mascot" class="mascot-sitting" aria-label="TriScout interactive mascot">
-        <svg id="dash-mascot-svg" viewBox="70 28 240 245" class="w-[88px] h-[90px] cursor-grab active:cursor-grabbing overflow-visible drop-shadow-[0_8px_16px_rgba(4,15,35,0.75)]" fill="none">
+    <!-- 2-BONE ARTICULATED WALL-SITTING MASCOT (Sits on Box Top Edge, Stays Under Sidebar & Header) -->
+    <div id="dash-mini-mascot" aria-hidden="true" role="presentation">
+        <svg id="dash-mascot-svg" viewBox="40 20 300 250" class="w-[96px] h-[80px] overflow-visible drop-shadow-[0_6px_12px_rgba(4,15,35,0.65)]" fill="none">
             <defs>
                 <clipPath id="dash-eye-clip"><circle cx="190" cy="88" r="22"/></clipPath>
             </defs>
-            <g id="dash-mascot-body">
-                <g id="dash-leg-l">
-                    <path d="M164 178 L160 244" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
-                    <path d="M164 178 L160 244" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
-                    <ellipse cx="160" cy="250" rx="12" ry="7" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
-                </g>
-                <g id="dash-leg-r">
-                    <path d="M216 178 L220 244" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
-                    <path d="M216 178 L220 244" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
-                    <ellipse cx="220" cy="250" rx="12" ry="7" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
-                </g>
 
-                <g id="dash-arm-l">
-                    <path d="M134 114 L108 172" stroke="#e6f3ff" stroke-width="11" stroke-linecap="round"/>
-                    <path d="M134 114 L108 172" stroke="#18498a" stroke-width="7.5" stroke-linecap="round"/>
-                    <circle cx="106" cy="177" r="9.5" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
-                </g>
-                <g id="dash-arm-r">
-                    <path d="M246 114 L272 172" stroke="#e6f3ff" stroke-width="11" stroke-linecap="round"/>
-                    <path d="M246 114 L272 172" stroke="#18498a" stroke-width="7.5" stroke-linecap="round"/>
-                    <circle cx="274" cy="177" r="9.5" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
-                </g>
+            <ellipse id="dash-ledge-shadow" cx="190" cy="184" rx="88" ry="4.5" fill="#041024" opacity="0.62"/>
 
-                <rect x="130" y="42" width="120" height="140" rx="34" fill="#174786" stroke="#e6f3ff" stroke-width="2.4"/>
-                <rect x="139" y="51" width="102" height="122" rx="26" fill="none" stroke="#bae0ff" stroke-width="1.1" stroke-dasharray="4 4" stroke-opacity="0.7"/>
+            <!-- Articulated Arms (2-Bone IK: Palms brace flat ON the box ledge at y=183) -->
+            <g id="dash-arm-l" class="mascot-hit">
+                <path id="dash-arm-l-outer" d="M136 118 Q106 145 104 183" stroke="#e6f3ff" stroke-width="11.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path id="dash-arm-l-inner" d="M136 118 Q106 145 104 183" stroke="#18498a" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <ellipse id="dash-hand-l" cx="104" cy="183" rx="10.5" ry="6.2" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+            </g>
+            <g id="dash-arm-r" class="mascot-hit">
+                <path id="dash-arm-r-outer" d="M244 118 Q274 145 276 183" stroke="#e6f3ff" stroke-width="11.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path id="dash-arm-r-inner" d="M244 118 Q274 145 276 183" stroke="#18498a" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <ellipse id="dash-hand-r" cx="276" cy="183" rx="10.5" ry="6.2" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+            </g>
 
+            <!-- Torso -->
+            <g id="dash-torso-group" class="mascot-hit">
+                <rect x="134" y="46" width="112" height="136" rx="34" fill="#174786" stroke="#e6f3ff" stroke-width="2.4"/>
+                <rect x="143" y="55" width="94" height="118" rx="26" fill="none" stroke="#bae0ff" stroke-width="1.1" stroke-dasharray="4 4" stroke-opacity="0.7"/>
                 <g clip-path="url(#dash-eye-clip)">
                     <circle cx="190" cy="88" r="22" fill="#d8ecff"/>
                     <g id="dash-pupil-group">
@@ -691,6 +694,30 @@
                 </g>
                 <circle cx="190" cy="88" r="22" fill="none" stroke="#e6f3ff" stroke-width="2.2"/>
             </g>
+
+            <!-- 2-Bone Articulated Legs (Knees rest on front edge -> Shins & Shoes dangle over box face) -->
+            <g id="dash-leg-l" class="mascot-hit">
+                <path id="dash-thigh-l-outer" d="M164 176 Q158 184 156 192" stroke="#e6f3ff" stroke-width="13.5" stroke-linecap="round"/>
+                <path id="dash-thigh-l-inner" d="M164 176 Q158 184 156 192" stroke="#18498a" stroke-width="9.5" stroke-linecap="round"/>
+                <path id="dash-shin-l-outer" d="M156 192 Q154 214 154 238" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
+                <path id="dash-shin-l-inner" d="M156 192 Q154 214 154 238" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
+                <circle id="dash-knee-l" cx="156" cy="192" r="7.5" fill="#1c539e" stroke="#e6f3ff" stroke-width="1.8"/>
+                <g id="dash-shoe-l" transform="translate(154, 244)">
+                    <ellipse cx="0" cy="0" rx="13" ry="7.5" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+                    <line x1="-6" y1="2" x2="6" y2="2" stroke="#7ce0ff" stroke-width="1.2" stroke-opacity="0.7"/>
+                </g>
+            </g>
+            <g id="dash-leg-r" class="mascot-hit">
+                <path id="dash-thigh-r-outer" d="M216 176 Q222 184 224 192" stroke="#e6f3ff" stroke-width="13.5" stroke-linecap="round"/>
+                <path id="dash-thigh-r-inner" d="M216 176 Q222 184 224 192" stroke="#18498a" stroke-width="9.5" stroke-linecap="round"/>
+                <path id="dash-shin-r-outer" d="M224 192 Q226 214 226 238" stroke="#e6f3ff" stroke-width="12" stroke-linecap="round"/>
+                <path id="dash-shin-r-inner" d="M224 192 Q226 214 226 238" stroke="#18498a" stroke-width="8" stroke-linecap="round"/>
+                <circle id="dash-knee-r" cx="224" cy="192" r="7.5" fill="#1c539e" stroke="#e6f3ff" stroke-width="1.8"/>
+                <g id="dash-shoe-r" transform="translate(226, 244)">
+                    <ellipse cx="0" cy="0" rx="13" ry="7.5" fill="#18498a" stroke="#e6f3ff" stroke-width="2"/>
+                    <line x1="-6" y1="2" x2="6" y2="2" stroke="#7ce0ff" stroke-width="1.2" stroke-opacity="0.7"/>
+                </g>
+            </g>
         </svg>
     </div>
 
@@ -699,4 +726,4 @@
     <script defer src="/js/topology-tree.js"></script>
     <script defer src="/js/dashboard.js"></script>
 </body>
-                            </html>
+    </html>
