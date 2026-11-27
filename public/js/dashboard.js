@@ -78,12 +78,19 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-function switchTab(e, tabId) {
-    if (e) e.preventDefault();
-
-    document.querySelectorAll('.tab-view').forEach(sec => sec.classList.add('hidden'));
+function applyTabDomSwitch(tabId) {
+    document.querySelectorAll('.tab-view').forEach(sec => {
+        sec.classList.add('hidden');
+        sec.classList.remove('tab-view-enter');
+    });
     const activeSec = document.getElementById('tab-' + tabId);
-    if (activeSec) activeSec.classList.remove('hidden');
+    if (activeSec) {
+        activeSec.classList.remove('hidden');
+        if (!document.startViewTransition) {
+            void activeSec.offsetWidth;
+            activeSec.classList.add('tab-view-enter');
+        }
+    }
 
     document.querySelectorAll('.sidebar-item').forEach(link => link.classList.remove('sidebar-active'));
     const activeNav = document.querySelector('[data-tab="' + tabId + '"]');
@@ -99,18 +106,36 @@ function switchTab(e, tabId) {
     };
     const titleEl = document.getElementById('top-page-title');
     if (titleEl && titles[tabId]) titleEl.textContent = titles[tabId];
+}
+
+function switchTab(e, tabId) {
+    if (e) e.preventDefault();
 
     const sb = document.getElementById('mobileSidebar');
     const ov = document.getElementById('sidebarOverlay');
+    const btn = document.getElementById('mobileMenuBtn');
     if (sb && !sb.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
         sb.classList.add('-translate-x-full');
         if (ov) ov.classList.add('hidden');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+
+    const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (typeof document.startViewTransition === 'function' && !reducedMotion) {
+        const vt = document.startViewTransition(() => applyTabDomSwitch(tabId));
+        vt.finished.finally(() => {
+            if (window.TriScoutMascot && typeof window.TriScoutMascot.onTabChange === 'function') {
+                window.TriScoutMascot.onTabChange();
+            }
+        });
+    } else {
+        applyTabDomSwitch(tabId);
+        if (window.TriScoutMascot && typeof window.TriScoutMascot.onTabChange === 'function') {
+            window.TriScoutMascot.onTabChange();
+        }
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (window.TriScoutMascot && typeof window.TriScoutMascot.onTabChange === 'function') {
-        window.TriScoutMascot.onTabChange();
-    }
     return false;
 }
 
@@ -270,6 +295,9 @@ async function executeTargetAssessment(customTarget) {
 
         if (window.TriScoutMascot) {
             await window.TriScoutMascot.sweepTerminalScrollReview();
+            if (typeof window.TriScoutMascot.celebrate === 'function') {
+                window.TriScoutMascot.celebrate();
+            }
         }
     } catch (err) {
         appendTerm('[ERROR]', err.name === 'TimeoutError' ? 'Scan request timed out.' : 'Could not reach scanning API.');
@@ -626,4 +654,3 @@ document.addEventListener('DOMContentLoaded', () => {
         switchTab(null, 'profile');
     }
 });
-    
