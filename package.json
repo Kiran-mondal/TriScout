@@ -1,6 +1,6 @@
 {
   "name": "tri-scout",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "TriScout - Defensive Cyber Security and Vulnerability Assessment Tool",
   "main": "web_dashboard/server.js",
   "scripts": {
@@ -8,14 +8,14 @@
     "test": "node --test"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.9.4",
+    "@neondatabase/serverless": "^1.2.1",
     "axios": "^1.7.2",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^9.1.1"
+    "dotenv": "^16.6.1",
+    "express": "^4.22.2",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.6.1"
   },
   "engines": {
-    "node": ">=18.x"
+    "node": ">=20.x"
   }
 }
