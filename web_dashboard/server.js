@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const axios = require('axios');
 const { neon } = require('@neondatabase/serverless');
 require('dotenv').config();
@@ -13,6 +12,7 @@ const http = require('http');
 const https = require('https');
 
 const { requireHTTPAuth, JWT_SECRET, getEnv } = require('./middleware/auth.js');
+const { isMailerConfigured, sendTriScoutEmail } = require('./lib/mailer.js');
 
 const app = express();
 app.disable('x-powered-by');
@@ -23,7 +23,12 @@ const GITHUB_CLIENT_SECRET = getEnv('GITHUB_CLIENT_SECRET');
 const ADMIN_USER = getEnv('ADMIN_USERNAME');
 const ADMIN_PASS = getEnv('ADMIN_PASSWORD');
 
-const sql = DATABASE_URL ? neon(DATABASE_URL) : async () => { throw new Error('Database URL not configured'); };
+const sql = DATABASE_URL
+    ? neon(DATABASE_URL)
+    : Object.assign(
+        async () => { throw new Error('Database URL not configured'); },
+        { transaction: async () => { throw new Error('Database URL not configured'); } }
+    );
 
 // Module-level compiled regexes
 const secretRegex = /(?:AIza[0-9A-Za-z\-_]{35}|sk-(?:proj-)?[a-zA-Z0-9\-_]{32,}|gh[pousr]_[A-Za-z0-9_]{36,255}|AKIA[0-9A-Z]{16}|xox[baprs]-[0-9a-zA-Z\-]{10,48}|sk_live_[0-9a-zA-Z]{24,}|-----BEGIN (?:RSA|OPENSSH|EC|PGP) PRIVATE KEY-----)/g;
@@ -121,7 +126,7 @@ try {
 const ROUTE_MARKDOWN_MAP = {
     '/': `# TriScout v2.4 TAC-OPS — Ethical Passive Reconnaissance & Security Posture Console\n\nOn-demand passive cybersecurity reconnaissance dashboard and CLI tool for auditing HTTP security headers, DNS topology, and source leaks.\n\n- **Console URL:** https://triscout.quarry.dpdns.org/\n- **CLI Package:** \`npx @kiran-mondal/triscout\`\n- **Authentication:** Operator Sign-In with 2FA Email OTP or GitHub OAuth\n- **Security Controls:** Neon PostgreSQL Row-Level Security (RLS), Token Bucket rate limiting, and SSRF guardrails\n`,
     '/login': `# TriScout Operator Sign-In\n\nAuthenticate via operator credentials (with 2FA Email OTP) or GitHub OAuth at https://triscout.quarry.dpdns.org/.\n`,
-    '/dashboard': `# TriScout Command Center & Passive Recon Scanner HUD\n\nInteractive 11-node DMZ network topology HUD and on-demand 12-point passive security scanner.\n\n- Evaluates HSTS, CSP, X-Frame-Options, MIME sniffing, cookie flags, CORS, and source/credential leaks.\n- Live Console: https://triscout.quarry.dpdns.org/dashboard\n`,
+    '/dashboard': `# TriScout Command Center & Passive Recon Scanner HUD\n\nInteractive synchronized target tree topology HUD and on-demand 12-point passive security scanner.\n\n- Evaluates HSTS, CSP, X-Frame-Options, MIME sniffing, cookie flags, CORS, and source/credential leaks.\n- Live Console: https://triscout.quarry.dpdns.org/dashboard\n`,
     '/reports': `# TriScout Security Reports & Export\n\nGenerate security posture grades (0-100) and export findings as PDF, JSON, CSV, or email via SMTP relay.\n\n- URL: https://triscout.quarry.dpdns.org/reports\n`,
     '/cli': `# TriScout CLI Edition\n\nRun passive security header and leak checks directly from your terminal or CI/CD pipeline:\n\n\`\`\`bash\nnpm install -g @kiran-mondal/triscout\ntriscout example.com\n\`\`\`\n`,
     '/about': `# TriScout System Architecture\n\n- **Engine Build:** TriScout v2.4 TAC-OPS (On-Demand Zero-Preload)\n- **Core Stack:** Node.js, Express, Axios, Neon Serverless PostgreSQL (RLS)\n- **Capabilities:** HTTP Header Audit, Source Leak Regex, Google DoH DNS, SSRF Guardrail\n- **Maintainer:** Kiran Mondal (https://github.com/Kiran-mondal)\n`,
@@ -225,15 +230,19 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 // ============================================================================
-// Health Check Endpoint (Check 38)
+// Health Check Endpoint (DB + SMTP Readiness)
 // ============================================================================
 app.get(['/health', '/api/health'], async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
+    const smtpStatus = isMailerConfigured() ? 'configured' : 'unconfigured';
+
     if (!DATABASE_URL) {
         return res.status(503).json({
             status: 'degraded',
             service: 'triscout-web-dashboard',
+            version: '2.4.1',
             db: 'unconfigured',
+            smtp: smtpStatus,
             timestamp: new Date().toISOString()
         });
     }
@@ -245,8 +254,9 @@ app.get(['/health', '/api/health'], async (req, res) => {
         return res.status(200).json({
             status: 'ok',
             service: 'triscout-web-dashboard',
-            version: '2.4.0',
+            version: '2.4.1',
             db: 'connected',
+            smtp: smtpStatus,
             uptimeSec: Math.round(process.uptime()),
             timestamp: new Date().toISOString()
         });
@@ -255,15 +265,12 @@ app.get(['/health', '/api/health'], async (req, res) => {
         return res.status(503).json({
             status: 'degraded',
             service: 'triscout-web-dashboard',
+            version: '2.4.1',
             db: 'unreachable',
+            smtp: smtpStatus,
             timestamp: new Date().toISOString()
         });
     }
-});
-
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: getEnv('GMAIL_USER'), pass: getEnv('GMAIL_PASS') }
 });
 
 // ============================================================================
@@ -299,7 +306,7 @@ function checkTokenBucket(key) {
 }
 
 // ============================================================================
-// 3. Database Tables & Row-Level Security (RLS)
+// 3. Database Tables & Atomic Neon HTTPS Row-Level Security (RLS)
 // ============================================================================
 let isDbInitialized = false;
 async function ensureUsersTable() {
@@ -377,14 +384,14 @@ async function ensureUsersTable() {
     isDbInitialized = true;
 }
 
-async function runWithRlsUser(username, queryFn) {
+// Atomic HTTPS Transaction Batch: binds set_config(..., true) to the exact same transaction
+async function runRlsBatch(username, buildQueries) {
     const safeUser = String(username || '').replace(/[^a-zA-Z0-9_@.-]/g, '');
-    await sql`SELECT set_config('app.current_user', ${safeUser}, false)`;
-    try {
-        return await queryFn();
-    } finally {
-        await sql`SELECT set_config('app.current_user', '', false)`;
-    }
+    const results = await sql.transaction([
+        sql`SELECT set_config('app.current_user', ${safeUser}, true)`,
+        ...buildQueries()
+    ]);
+    return results.slice(1);
 }
 
 function hashPassword(password) {
@@ -434,6 +441,14 @@ app.post('/api/auth/register-request', async (req, res) => {
         return res.status(409).json({ success: false, error: 'This username is reserved. Please choose a different name.' });
     }
 
+    if (!isMailerConfigured()) {
+        logFlow('ERROR', 'REGISTER_OTP_SMTP_UNCONFIGURED', {});
+        return res.status(503).json({
+            success: false,
+            error: 'Email service is not configured on the server (missing GMAIL_USER / GMAIL_PASS).'
+        });
+    }
+
     const bucketCheck = checkTokenBucket(email);
     if (!bucketCheck.allowed) {
         return res.status(429).json({
@@ -442,25 +457,29 @@ app.post('/api/auth/register-request', async (req, res) => {
         });
     }
 
+    const otp = generateOTP();
+    const passHash = hashPassword(password);
+
+    // Phase 1: Isolated DB check & atomic RLS OTP write
     try {
         await ensureUsersTable();
-        const otp = generateOTP();
-        const passHash = hashPassword(password);
-
-        const existingError = await runWithRlsUser('__SYSTEM_AUTH__', async () => {
-            const existingUser = await sql`
+        const [existingUser] = await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 SELECT username, email FROM users
                 WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${email})
                 LIMIT 1
-            `;
-            if (existingUser.length > 0) {
-                if (existingUser[0].username && existingUser[0].username.toLowerCase() === username.toLowerCase()) {
-                    return 'Username "' + username + '" is already taken! Please choose another name.';
-                }
-                return 'This email address is already registered.';
-            }
+            `
+        ]);
 
-            await sql`
+        if (existingUser.length > 0) {
+            const msg = existingUser[0].username && existingUser[0].username.toLowerCase() === username.toLowerCase()
+                ? `Username "${username}" is already taken! Please choose another name.`
+                : 'This email address is already registered.';
+            return res.status(409).json({ success: false, error: msg });
+        }
+
+        await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 INSERT INTO auth_otps (email, username, password_hash, otp_code, purpose, expires_at)
                 VALUES (${email}, ${username}, ${passHash}, ${otp}, 'register', NOW() + INTERVAL '10 minutes')
                 ON CONFLICT (email) DO UPDATE
@@ -469,24 +488,38 @@ app.post('/api/auth/register-request', async (req, res) => {
                     otp_code = EXCLUDED.otp_code,
                     purpose = 'register',
                     expires_at = NOW() + INTERVAL '10 minutes'
-            `;
-            return null;
-        });
+            `
+        ]);
+    } catch (dbErr) {
+        logFlow('ERROR', 'REGISTER_OTP_DB_FAILED', { code: dbErr.code || null, message: dbErr.message });
+        return res.status(500).json({ success: false, error: 'Database error while preparing verification code.' });
+    }
 
-        if (existingError) {
-            return res.status(409).json({ success: false, error: existingError });
-        }
-
-        await transporter.sendMail({
-            from: getEnv('GMAIL_USER'),
+    // Phase 2: Isolated SMTP dispatch (with cleanup on failure)
+    try {
+        await sendTriScoutEmail({
             to: email,
             subject: `[TriScout] Sign-Up Verification Code: ${otp}`,
             text: `Hello Operator ${username},\n\nYour TriScout v2.4 TAC-OPS registration verification code is: ${otp}\n\nThis code will expire in 10 minutes.`
-        });
+        }, { logger: logFlow });
 
-        res.json({ success: true, message: `Verification code sent to ${email} (Tokens remaining: ${bucketCheck.remaining}/5)` });
-    } catch (err) {
-        res.status(500).json({ success: false, error: 'Failed to send verification email. Check SMTP settings.' });
+        return res.json({
+            success: true,
+            message: `Verification code sent to ${email} (Tokens remaining: ${bucketCheck.remaining}/5)`
+        });
+    } catch (mailErr) {
+        try {
+            await runRlsBatch('__SYSTEM_AUTH__', () => [
+                sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email}) AND purpose = 'register'`
+            ]);
+        } catch (cleanupErr) {
+            logFlow('WARN', 'OTP_CLEANUP_FAILED', { message: cleanupErr.message });
+        }
+
+        return res.status(502).json({
+            success: false,
+            error: mailErr.userMessage || 'Failed to send verification email. Check SMTP settings.'
+        });
     }
 });
 
@@ -500,42 +533,43 @@ app.post('/api/auth/register-verify', async (req, res) => {
 
     try {
         await ensureUsersTable();
-        const result = await runWithRlsUser('__SYSTEM_AUTH__', async () => {
-            const records = await sql`
+        const [records] = await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 SELECT * FROM auth_otps
                 WHERE LOWER(email) = LOWER(${email}) AND purpose = 'register' AND expires_at > NOW()
                 LIMIT 1
-            `;
-            if (records.length === 0 || records[0].otp_code !== otp) {
-                return { error: 'Invalid or expired verification code.', status: 400 };
-            }
+            `
+        ]);
 
-            const pending = records[0];
-            const nameTaken = await sql`SELECT id FROM users WHERE LOWER(username) = LOWER(${pending.username}) LIMIT 1`;
-            if (nameTaken.length > 0) {
-                return { error: 'Username was just taken. Please register with a new username.', status: 409 };
-            }
-
-            await sql`
-                INSERT INTO users (username, email, password_hash, provider, is_verified, last_login)
-                VALUES (${pending.username}, ${pending.email}, ${pending.password_hash}, 'registered', TRUE, NOW())
-            `;
-            await sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email})`;
-            return { user: pending.username, email: pending.email };
-        });
-
-        if (result.error) {
-            return res.status(result.status).json({ success: false, error: result.error });
+        if (records.length === 0 || records[0].otp_code !== otp) {
+            return res.status(400).json({ success: false, error: 'Invalid or expired verification code.' });
         }
 
+        const pending = records[0];
+        const [nameTaken] = await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`SELECT id FROM users WHERE LOWER(username) = LOWER(${pending.username}) LIMIT 1`
+        ]);
+        if (nameTaken.length > 0) {
+            return res.status(409).json({ success: false, error: 'Username was just taken. Please register with a new username.' });
+        }
+
+        await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
+                INSERT INTO users (username, email, password_hash, provider, is_verified, last_login)
+                VALUES (${pending.username}, ${pending.email}, ${pending.password_hash}, 'registered', TRUE, NOW())
+            `,
+            sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email})`
+        ]);
+
         const token = jwt.sign(
-            { user: result.user, email: result.email, provider: 'registered' },
+            { user: pending.username, email: pending.email, provider: 'registered' },
             JWT_SECRET,
             { expiresIn: '2h', algorithm: 'HS256' }
         );
-        res.json({ success: true, token });
+        return res.json({ success: true, token });
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Could not complete registration.' });
+        logFlow('ERROR', 'REGISTER_VERIFY_FAILED', { code: err.code || null, message: err.message });
+        return res.status(500).json({ success: false, error: 'Could not complete registration.' });
     }
 });
 
@@ -556,52 +590,70 @@ app.post('/api/auth/login', async (req, res) => {
         return res.json({ success: true, token });
     }
 
+    let userRecord;
+    let targetEmail;
+    let otp;
+    let bucketCheck;
+
     try {
         await ensureUsersTable();
-        const authCheck = await runWithRlsUser('__SYSTEM_AUTH__', async () => {
-            const rows = await sql`
+        const [rows] = await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 SELECT username, email, password_hash, avatar_url, provider
                 FROM users
                 WHERE LOWER(username) = LOWER(${username}) OR LOWER(email) = LOWER(${username})
                 LIMIT 1
-            `;
-            if (rows.length === 0) {
-                return { status: 401, error: 'Account not found. Please create an account first.' };
-            }
+            `
+        ]);
 
-            const userRecord = rows[0];
-            if (userRecord.password_hash) {
-                const isValid = await verifyPassword(password, userRecord.password_hash);
-                if (!isValid) {
-                    return { status: 401, error: 'ACCESS DENIED: Incorrect passkey.' };
-                }
-            } else {
-                const newHash = hashPassword(password);
-                await sql`UPDATE users SET password_hash = ${newHash} WHERE username = ${userRecord.username}`;
-            }
+        if (rows.length === 0) {
+            return res.status(401).json({ success: false, error: 'Account not found. Please create an account first.' });
+        }
 
-            const targetEmail = userRecord.email || providedEmail;
-            if (!targetEmail) {
-                return {
-                    needsEmail: true,
-                    error: 'Your existing database account has no email linked. Please enter your email below to receive a sign-in OTP.'
-                };
+        userRecord = rows[0];
+        if (userRecord.password_hash) {
+            const isValid = await verifyPassword(password, userRecord.password_hash);
+            if (!isValid) {
+                return res.status(401).json({ success: false, error: 'ACCESS DENIED: Incorrect passkey.' });
             }
+        } else {
+            const newHash = hashPassword(password);
+            await runRlsBatch('__SYSTEM_AUTH__', () => [
+                sql`UPDATE users SET password_hash = ${newHash} WHERE username = ${userRecord.username}`
+            ]);
+        }
 
-            const bucketCheck = checkTokenBucket(targetEmail);
-            if (!bucketCheck.allowed) {
-                return {
-                    status: 429,
-                    error: `Token bucket empty! Rate limit exceeded. Please wait ${bucketCheck.waitSec}s.`
-                };
-            }
+        targetEmail = userRecord.email || providedEmail;
+        if (!targetEmail) {
+            return res.json({
+                success: false,
+                needsEmail: true,
+                error: 'Your existing database account has no email linked. Please enter your email below to receive a sign-in OTP.'
+            });
+        }
 
-            if (!userRecord.email && providedEmail) {
-                await sql`UPDATE users SET email = ${providedEmail} WHERE username = ${userRecord.username}`;
-            }
+        if (!isMailerConfigured()) {
+            logFlow('ERROR', 'LOGIN_OTP_SMTP_UNCONFIGURED', {});
+            return res.status(503).json({
+                success: false,
+                error: 'Email service is not configured on the server (missing GMAIL_USER / GMAIL_PASS).'
+            });
+        }
 
-            const otp = generateOTP();
-            await sql`
+        bucketCheck = checkTokenBucket(targetEmail);
+        if (!bucketCheck.allowed) {
+            return res.status(429).json({
+                success: false,
+                error: `Token bucket empty! Rate limit exceeded. Please wait ${bucketCheck.waitSec}s.`
+            });
+        }
+
+        otp = generateOTP();
+        await runRlsBatch('__SYSTEM_AUTH__', () => [
+            ...(!userRecord.email && providedEmail
+                ? [sql`UPDATE users SET email = ${providedEmail} WHERE username = ${userRecord.username}`]
+                : []),
+            sql`
                 INSERT INTO auth_otps (email, username, otp_code, purpose, expires_at)
                 VALUES (${targetEmail}, ${userRecord.username}, ${otp}, 'login', NOW() + INTERVAL '10 minutes')
                 ON CONFLICT (email) DO UPDATE
@@ -609,33 +661,39 @@ app.post('/api/auth/login', async (req, res) => {
                     otp_code = EXCLUDED.otp_code,
                     purpose = 'login',
                     expires_at = NOW() + INTERVAL '10 minutes'
-            `;
+            `
+        ]);
+    } catch (dbErr) {
+        logFlow('ERROR', 'LOGIN_AUTH_DB_FAILED', { code: dbErr.code || null, message: dbErr.message });
+        return res.status(500).json({ success: false, error: 'Authentication service unavailable.' });
+    }
 
-            return { ok: true, username: userRecord.username, targetEmail, otp, remaining: bucketCheck.remaining };
-        });
-
-        if (authCheck.needsEmail) {
-            return res.json({ success: false, needsEmail: true, error: authCheck.error });
-        }
-        if (authCheck.error) {
-            return res.status(authCheck.status || 400).json({ success: false, error: authCheck.error });
-        }
-
-        await transporter.sendMail({
-            from: getEnv('GMAIL_USER'),
-            to: authCheck.targetEmail,
-            subject: `[TriScout] Sign-In Verification Code: ${authCheck.otp}`,
-            text: `Hello Operator ${authCheck.username},\n\nYour TriScout 2FA Sign-In OTP code is: ${authCheck.otp}\n\nThis code expires in 10 minutes.`
-        });
+    try {
+        await sendTriScoutEmail({
+            to: targetEmail,
+            subject: `[TriScout] Sign-In Verification Code: ${otp}`,
+            text: `Hello Operator ${userRecord.username},\n\nYour TriScout 2FA Sign-In OTP code is: ${otp}\n\nThis code expires in 10 minutes.`
+        }, { logger: logFlow });
 
         return res.json({
             success: true,
             requireOtp: true,
-            email: authCheck.targetEmail,
-            message: `Sign-In OTP sent to ${authCheck.targetEmail} (Tokens remaining: ${authCheck.remaining}/5)`
+            email: targetEmail,
+            message: `Sign-In OTP sent to ${targetEmail} (Tokens remaining: ${bucketCheck.remaining}/5)`
         });
-    } catch (err) {
-        return res.status(500).json({ success: false, error: 'Authentication service unavailable.' });
+    } catch (mailErr) {
+        try {
+            await runRlsBatch('__SYSTEM_AUTH__', () => [
+                sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${targetEmail}) AND purpose = 'login'`
+            ]);
+        } catch (cleanupErr) {
+            logFlow('WARN', 'LOGIN_OTP_CLEANUP_FAILED', { message: cleanupErr.message });
+        }
+
+        return res.status(502).json({
+            success: false,
+            error: mailErr.userMessage || 'Failed to send sign-in OTP email.'
+        });
     }
 });
 
@@ -649,44 +707,45 @@ app.post('/api/auth/login-verify', async (req, res) => {
 
     try {
         await ensureUsersTable();
-        const verifiedUser = await runWithRlsUser('__SYSTEM_AUTH__', async () => {
-            const records = await sql`
+        const [records] = await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 SELECT * FROM auth_otps
                 WHERE LOWER(email) = LOWER(${email}) AND purpose = 'login' AND expires_at > NOW()
                 LIMIT 1
-            `;
-            if (records.length === 0 || records[0].otp_code !== otp) {
-                return { error: 'Invalid or expired Sign-In OTP code.', status: 400 };
-            }
+            `
+        ]);
 
-            const userRows = await sql`
+        if (records.length === 0 || records[0].otp_code !== otp) {
+            return res.status(400).json({ success: false, error: 'Invalid or expired Sign-In OTP code.' });
+        }
+
+        const [userRows] = await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 SELECT username, email, avatar_url, provider FROM users
                 WHERE LOWER(username) = LOWER(${records[0].username}) OR LOWER(email) = LOWER(${email})
                 LIMIT 1
-            `;
-            if (userRows.length === 0) {
-                return { error: 'User record not found.', status: 404 };
-            }
+            `
+        ]);
 
-            const userRecord = userRows[0];
-            await sql`UPDATE users SET last_login = NOW(), is_verified = TRUE WHERE username = ${userRecord.username}`;
-            await sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email})`;
-            return { userRecord };
-        });
-
-        if (verifiedUser.error) {
-            return res.status(verifiedUser.status).json({ success: false, error: verifiedUser.error });
+        if (userRows.length === 0) {
+            return res.status(404).json({ success: false, error: 'User record not found.' });
         }
 
-        const u = verifiedUser.userRecord;
+        const u = userRows[0];
+        await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`UPDATE users SET last_login = NOW(), is_verified = TRUE WHERE username = ${u.username}`,
+            sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email})`
+        ]);
+
         const token = jwt.sign(
             { user: u.username, email: u.email || email, avatar: u.avatar_url, provider: u.provider || 'registered' },
             JWT_SECRET,
             { expiresIn: '2h', algorithm: 'HS256' }
         );
-        res.json({ success: true, token });
+        return res.json({ success: true, token });
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Failed to verify sign-in OTP.' });
+        logFlow('ERROR', 'LOGIN_VERIFY_FAILED', { code: err.code || null, message: err.message });
+        return res.status(500).json({ success: false, error: 'Failed to verify sign-in OTP.' });
     }
 });
 
@@ -699,53 +758,82 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         return res.status(400).json({ success: false, error: 'Please enter your registered Email or Username.' });
     }
 
+    if (!isMailerConfigured()) {
+        logFlow('ERROR', 'RESET_OTP_SMTP_UNCONFIGURED', {});
+        return res.status(503).json({
+            success: false,
+            error: 'Email service is not configured on the server (missing GMAIL_USER / GMAIL_PASS).'
+        });
+    }
+
+    let user;
+    let otp;
+    let bucketCheck;
+
     try {
         await ensureUsersTable();
-        const resetReq = await runWithRlsUser('__SYSTEM_AUTH__', async () => {
-            const rows = await sql`
+        const [rows] = await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 SELECT username, email, provider FROM users
                 WHERE LOWER(email) = LOWER(${identifier}) OR LOWER(username) = LOWER(${identifier})
                 LIMIT 1
-            `;
-            if (rows.length === 0 || !rows[0].email) {
-                return { status: 404, error: 'No registered email found for that account.' };
-            }
+            `
+        ]);
 
-            const user = rows[0];
-            const bucketCheck = checkTokenBucket(user.email);
-            if (!bucketCheck.allowed) {
-                return {
-                    status: 429,
-                    error: `Token bucket empty! Rate limit exceeded. Please wait ${bucketCheck.waitSec}s.`
-                };
-            }
+        if (rows.length === 0 || !rows[0].email) {
+            return res.status(404).json({ success: false, error: 'No registered email found for that account.' });
+        }
 
-            const otp = generateOTP();
-            await sql`
+        user = rows[0];
+        bucketCheck = checkTokenBucket(user.email);
+        if (!bucketCheck.allowed) {
+            return res.status(429).json({
+                success: false,
+                error: `Token bucket empty! Rate limit exceeded. Please wait ${bucketCheck.waitSec}s.`
+            });
+        }
+
+        otp = generateOTP();
+        await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 INSERT INTO auth_otps (email, username, otp_code, purpose, expires_at)
                 VALUES (${user.email}, ${user.username}, ${otp}, 'reset', NOW() + INTERVAL '10 minutes')
                 ON CONFLICT (email) DO UPDATE
                 SET otp_code = EXCLUDED.otp_code,
                     purpose = 'reset',
                     expires_at = NOW() + INTERVAL '10 minutes'
-            `;
-            return { user, otp, remaining: bucketCheck.remaining };
-        });
+            `
+        ]);
+    } catch (dbErr) {
+        logFlow('ERROR', 'FORGOT_PASSWORD_DB_FAILED', { code: dbErr.code || null, message: dbErr.message });
+        return res.status(500).json({ success: false, error: 'Database error while preparing reset code.' });
+    }
 
-        if (resetReq.error) {
-            return res.status(resetReq.status).json({ success: false, error: resetReq.error });
+    try {
+        await sendTriScoutEmail({
+            to: user.email,
+            subject: `[TriScout] Password Reset Code: ${otp}`,
+            text: `Hello Operator ${user.username},\n\nYour password reset verification code is: ${otp}\n\nThis code expires in 10 minutes.`
+        }, { logger: logFlow });
+
+        return res.json({
+            success: true,
+            email: user.email,
+            message: `Password reset code sent (Tokens remaining: ${bucketCheck.remaining}/5).`
+        });
+    } catch (mailErr) {
+        try {
+            await runRlsBatch('__SYSTEM_AUTH__', () => [
+                sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${user.email}) AND purpose = 'reset'`
+            ]);
+        } catch (cleanupErr) {
+            logFlow('WARN', 'RESET_OTP_CLEANUP_FAILED', { message: cleanupErr.message });
         }
 
-        await transporter.sendMail({
-            from: getEnv('GMAIL_USER'),
-            to: resetReq.user.email,
-            subject: `[TriScout] Password Reset Code: ${resetReq.otp}`,
-            text: `Hello Operator ${resetReq.user.username},\n\nYour password reset verification code is: ${resetReq.otp}\n\nThis code expires in 10 minutes.`
+        return res.status(502).json({
+            success: false,
+            error: mailErr.userMessage || 'Failed to send reset email.'
         });
-
-        res.json({ success: true, email: resetReq.user.email, message: `Password reset code sent (Tokens remaining: ${resetReq.remaining}/5).` });
-    } catch (err) {
-        res.status(500).json({ success: false, error: 'Failed to send reset email.' });
     }
 });
 
@@ -763,29 +851,28 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
     try {
         await ensureUsersTable();
-        const resetResult = await runWithRlsUser('__SYSTEM_AUTH__', async () => {
-            const records = await sql`
+        const [records] = await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 SELECT * FROM auth_otps
                 WHERE LOWER(email) = LOWER(${email}) AND purpose = 'reset' AND expires_at > NOW()
                 LIMIT 1
-            `;
-            if (records.length === 0 || records[0].otp_code !== otp) {
-                return { error: 'Invalid or expired reset code.' };
-            }
+            `
+        ]);
 
-            const newHash = hashPassword(newPassword);
-            await sql`UPDATE users SET password_hash = ${newHash} WHERE LOWER(email) = LOWER(${email})`;
-            await sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email})`;
-            return { ok: true };
-        });
-
-        if (resetResult.error) {
-            return res.status(400).json({ success: false, error: resetResult.error });
+        if (records.length === 0 || records[0].otp_code !== otp) {
+            return res.status(400).json({ success: false, error: 'Invalid or expired reset code.' });
         }
 
-        res.json({ success: true, message: 'Passkey updated successfully! You can now sign in.' });
+        const newHash = hashPassword(newPassword);
+        await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`UPDATE users SET password_hash = ${newHash} WHERE LOWER(email) = LOWER(${email})`,
+            sql`DELETE FROM auth_otps WHERE LOWER(email) = LOWER(${email})`
+        ]);
+
+        return res.json({ success: true, message: 'Passkey updated successfully! You can now sign in.' });
     } catch (err) {
-        res.status(500).json({ success: false, error: 'Failed to reset password.' });
+        logFlow('ERROR', 'RESET_PASSWORD_FAILED', { code: err.code || null, message: err.message });
+        return res.status(500).json({ success: false, error: 'Failed to reset password.' });
     }
 });
 
@@ -809,9 +896,9 @@ async function ensureDatabaseIndexesAndCleanup() {
         await sql`CREATE INDEX IF NOT EXISTS idx_auth_otps_expires ON auth_otps (expires_at)`;
         areIndexesCreated = true;
     }
-    await runWithRlsUser('__SYSTEM_AUTH__', async () => {
-        await sql`DELETE FROM auth_otps WHERE expires_at <= NOW()`;
-    });
+    await runRlsBatch('__SYSTEM_AUTH__', () => [
+        sql`DELETE FROM auth_otps WHERE expires_at <= NOW()`
+    ]);
 }
 
 // ============================================================================
@@ -1115,15 +1202,15 @@ app.post('/api/scan-headers', requireHTTPAuth, async (req, res) => {
 
         try {
             await ensureDatabaseIndexesAndCleanup();
-            await runWithRlsUser(currentOperator, async () => {
-                await sql`
+            await runRlsBatch(currentOperator, () => [
+                sql`
                     INSERT INTO scan_logs (owner_username, target_url, score, report)
                     VALUES (${currentOperator}, ${target}, ${score}, ${report})
-                `;
-            });
+                `
+            ]);
             logFlow('INFO', 'SCAN_COMPLETED', { operator: currentOperator, target, score });
         } catch (dbErr) {
-            logFlow('ERROR', 'RLS_SCAN_LOG_SAVE_FAILED', { operator: currentOperator });
+            logFlow('ERROR', 'RLS_SCAN_LOG_SAVE_FAILED', { operator: currentOperator, message: dbErr.message });
         }
 
         res.json({ success: true, report, score, checks });
@@ -1139,17 +1226,18 @@ app.get('/api/scan-history', requireHTTPAuth, async (req, res) => {
     try {
         await ensureDatabaseIndexesAndCleanup();
         const username = cleanInput(req.user.user, 100);
-        const history = await runWithRlsUser(username, async () => {
-            return await sql`
+        const [history] = await runRlsBatch(username, () => [
+            sql`
                 SELECT id, target_url AS target, score, scanned_at AS time
                 FROM scan_logs
                 WHERE LOWER(owner_username) = LOWER(${username})
                 ORDER BY scanned_at DESC
                 LIMIT 10
-            `;
-        });
+            `
+        ]);
         res.json({ success: true, history });
     } catch (err) {
+        logFlow('ERROR', 'SCAN_HISTORY_LOAD_FAILED', { message: err.message });
         res.status(500).json({ success: false, error: 'Failed to load protected scan history.' });
     }
 });
@@ -1165,16 +1253,17 @@ app.post('/api/send-report', requireHTTPAuth, async (req, res) => {
     if (!emailRegex.test(emailTo)) return res.status(400).json({ success: false, error: 'Invalid recipient email address.' });
 
     try {
-        const mailOptions = {
-            from: getEnv('GMAIL_USER'),
+        await sendTriScoutEmail({
             to: emailTo,
             subject: `[ALERT] TriScout Security Assessment: ${target}`,
             text: `TriScout Defensive Cyber Security System\n\nTarget Analyzed: ${target}\n\n${reportData}\n\n--------------------\nConfidential Report Generated by TriScout.`
-        };
-        await transporter.sendMail(mailOptions);
-        res.json({ success: true, message: 'Email sent successfully' });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Internal Email Service Error.' });
+        }, { logger: logFlow });
+        return res.json({ success: true, message: 'Email sent successfully' });
+    } catch (mailErr) {
+        return res.status(502).json({
+            success: false,
+            error: mailErr.userMessage || 'Internal Email Service Error.'
+        });
     }
 });
 
@@ -1219,14 +1308,14 @@ app.get('/api/auth/github/callback', async (req, res) => {
         }
 
         await ensureDatabaseIndexesAndCleanup();
-        await runWithRlsUser('__SYSTEM_AUTH__', async () => {
-            await sql`
+        await runRlsBatch('__SYSTEM_AUTH__', () => [
+            sql`
                 INSERT INTO users (username, avatar_url, provider, is_verified, last_login)
                 VALUES (${userData.login}, ${userData.avatar_url}, 'github', TRUE, NOW())
                 ON CONFLICT (username) DO UPDATE
                 SET avatar_url = EXCLUDED.avatar_url, last_login = NOW()
-            `;
-        });
+            `
+        ]);
 
         const token = jwt.sign(
             { user: userData.login, avatar: userData.avatar_url, provider: 'github' },
@@ -1241,30 +1330,24 @@ app.get('/api/auth/github/callback', async (req, res) => {
 });
 
 // ============================================================================
-// 12. Account Deletion (RLS + Transactional Rollback)
+// 12. Account Deletion (Atomic RLS Transaction)
 // ============================================================================
 app.post('/api/account/delete', requireHTTPAuth, async (req, res) => {
     try {
         await ensureDatabaseIndexesAndCleanup();
         const username = cleanInput(req.user.user, 100);
 
-        await runWithRlsUser(username, async () => {
-            await sql`BEGIN`;
-            try {
-                await sql`DELETE FROM scan_logs WHERE LOWER(owner_username) = LOWER(${username})`;
-                await sql`DELETE FROM users WHERE LOWER(username) = LOWER(${username})`;
-                await sql`COMMIT`;
-            } catch (txErr) {
-                await sql`ROLLBACK`;
-                throw txErr;
-            }
-        });
+        await runRlsBatch(username, () => [
+            sql`DELETE FROM scan_logs WHERE LOWER(owner_username) = LOWER(${username})`,
+            sql`DELETE FROM users WHERE LOWER(username) = LOWER(${username})`
+        ]);
 
         res.json({
             success: true,
-            message: 'RLS & Rollback Verified: Your account and all associated scan logs have been permanently deleted.'
+            message: 'RLS & Transaction Verified: Your account and all associated scan logs have been permanently deleted.'
         });
     } catch (err) {
+        logFlow('ERROR', 'ACCOUNT_DELETE_FAILED', { message: err.message });
         res.status(500).json({ success: false, error: 'Failed to delete account data (Transaction rolled back safely).' });
     }
 });
